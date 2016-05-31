@@ -28,6 +28,7 @@ from django.db import models
 from django.conf import settings
 
 import os
+import datetime
 
 import logging
 
@@ -53,7 +54,7 @@ class Contaminant(models.Model):
     long_name = models.CharField(max_length = 100, null = True, blank = True)
     sequence = models.TextField()
     organism = models.CharField(max_length = 50, null = True, blank = True)
-    organism_pdb = models.CharFIeld(max_length = 50, null = True, blank = True)
+    organism_pdb = models.CharField(max_length = 50, null = True, blank = True)
 
 class Pack(models.Model):
     """
@@ -109,4 +110,4 @@ class Task(models.Model):
     # Result
     percent = models.IntegerField(default = None)
     q_factor = models.FloatField(default = None)
-    exec_time = models.DurantionField(default = datetime.timedelta(0))
+    exec_time = models.DurationField(default = datetime.timedelta(0))
