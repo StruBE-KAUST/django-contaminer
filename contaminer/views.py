@@ -83,3 +83,7 @@ def newjob(request):
 
 def newjob_handler(request):
     pass
+
+def download(request):
+    result = render(request, 'ContaMiner/download.html')
+    return result
