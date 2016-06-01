@@ -84,6 +84,11 @@ def newjob(request):
 def newjob_handler(request):
     pass
 
+def list_contaminants(request):
+    context = {'list_contaminants': get_contaminants_by_category()}
+    result = render(request, 'ContaMiner/list.html', context = context)
+    return result
+
 def download(request):
     result = render(request, 'ContaMiner/download.html')
     return result

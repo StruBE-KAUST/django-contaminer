@@ -21,6 +21,6 @@ from . import views
 
 urlpatterns = [
         url(r'^$', views.newjob, name='home'),
-        url(r'^contaminants$', views.newjob, name='contaminants'),
+        url(r'^contaminants$', views.list_contaminants, name='contaminants'),
         url(r'^download$', views.download, name='download'),
 ]
