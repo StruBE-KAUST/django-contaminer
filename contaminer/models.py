@@ -42,6 +42,9 @@ class Category(models.Model):
     name = models.CharField(max_length = 60)
     selected_by_default = models.BooleanField(default = False)
 
+    def __str__(self):
+        return self.name
+
 class Contaminant(models.Model):
     """
         A possible contaminant
@@ -50,11 +53,15 @@ class Contaminant(models.Model):
         used to test a file of diffraction data
     """
     uniprot_ID = models.CharField(max_length = 10)
+    category = models.ForeignKey(Category)
     short_name = models.CharField(max_length = 20)
     long_name = models.CharField(max_length = 100, null = True, blank = True)
     sequence = models.TextField()
     organism = models.CharField(max_length = 50, null = True, blank = True)
     organism_pdb = models.CharField(max_length = 50, null = True, blank = True)
+
+    def __str__(self):
+        return self.uniprot_ID
 
 class Pack(models.Model):
     """
@@ -91,6 +98,7 @@ class Job(models.Model):
             null = True)
     submitted = models.BooleanField(default = False)
     finished = models.BooleanField(default = False)
+    email = models.EmailField(blank = True, null = True)
 
 class Task(models.Model):
     """
