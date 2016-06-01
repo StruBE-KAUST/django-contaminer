@@ -30,10 +30,10 @@ class UploadStructure(forms.Form):
         Form to upload a mtz or cif file
     """
     def __init__(self, *args, **kwargs):
-        if kwargs.has_key("list_contam"):
-            list_contam = kwargs.pop("list_contam")
-        else:
-            list_contam = []
+        grouped_contaminants = {}
+        if kwargs.has_key("grouped_contaminants"):
+            grouped_contaminants = kwargs.pop("grouped_contaminants")
+
         super(UploadStructure, self).__init__(*args, **kwargs)
 
         self.helper = FormHelper()
@@ -57,20 +57,18 @@ class UploadStructure(forms.Form):
                 )
             )
 
-        # Add selection of contaminants
-        grouped_list_contam = list_contam
-
-        for category in grouped_list_contam.keys():
+        for category in grouped_contaminants.keys():
             self.helper.layout[0][1].append(HTML("<h3>" + str(category) +
             "</h3>"))
-            for contam in grouped_list_contam[category]:
+            for contaminant in grouped_contaminants[category]:
                 initial = False
-                initial = (contam.category == "Protein in E.Coli")
-                self.fields[contam.uniprot_id] = forms.BooleanField(
-                        label = contam.short_name + " - " + contam.long_name,
+                initial = (category == "Protein in E.Coli")
+                self.fields[contaminant.uniprot_ID] = forms.BooleanField(
+                        label = contaminant.short_name + " - " +\
+                                contaminant.long_name,
                         required = False,
                         initial = initial)
-                self.helper.layout[0][1].append(contam.uniprot_id)
+                self.helper.layout[0][1].append(contaminant.uniprot_ID)
 
     name = forms.CharField(max_length = 50, required = False)
     structure_file = forms.FileField()
