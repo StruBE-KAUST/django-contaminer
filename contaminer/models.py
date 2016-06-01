@@ -100,6 +100,12 @@ class Job(models.Model):
     finished = models.BooleanField(default = False)
     email = models.EmailField(blank = True, null = True)
 
+    def __str__(self):
+        res = str(self.name) + " - " + \
+                str(self.id) + " (" + \
+                str(self.finished) + ")"
+        return res
+
 class Task(models.Model):
     """
         A task is the test of one pack against one diffraction data file
