@@ -106,6 +106,26 @@ class Job(models.Model):
                 str(self.finished) + ")"
         return res
 
+    def create(self):
+        """Populate the fields of a job"""
+        log = logging.getLogger(__name__)
+        log.debug("Entering function with args :\n\
+                self : " + str(self) + "\n\
+                name : " + str(name) + "\n\
+                author : " + str(author) + "\n\
+                email : " + str(email))
+        self.name = name
+        self.author = author
+        self.submitted = False
+        self.finished = False
+        if author:
+            self.email = author.email
+        if email:
+            self.email = email
+
+        self.save()
+        log.debug("Exiting function"
+
 class Task(models.Model):
     """
         A task is the test of one pack against one diffraction data file
