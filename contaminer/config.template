@@ -1,0 +1,15 @@
+# Copy this file on config.ini
+[SSH]
+hostname = login.cbrc.kaust.edu.sa
+port = 22
+username = hungleaj
+password = 
+identityfile = /home/dunatotatos/.ssh/id_rsa3
+
+[CLUSTER]
+contaminer_location = /home/hungleaj/ContaMiner
+work_directory = /data/dragon/hungleaj
+
+[LOCAL]
+tmp_dir = /tmp
+website_dir = /home/dunatotatos/Programmation/StruBE-website/
