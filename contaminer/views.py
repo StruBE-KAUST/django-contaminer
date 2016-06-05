@@ -19,15 +19,21 @@
 """
 
 from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from django.conf import settings
 
 import logging
+import os
+import re
+import errno
 
 from .forms import UploadStructure
 from .models import Contaminant
-from .apps import ContaminerConfig
+from .models import Job
+from .models import Task
 
 def get_contaminants():
     contaminants = Contaminant.objects.all()
@@ -82,7 +88,72 @@ def newjob(request):
     return result
 
 def newjob_handler(request):
-    pass
+    log = logging.getLogger(__name__)
+    log.debug("Entering function with arg : \n\
+            request : " + str(request))
+
+    # Define user
+    user = None
+    if request.user is not None and request.user.is_authenticated():
+        user = request.user
+
+    # Define job name
+    name = ""
+    if request.POST.has_key('name') and request.POST['name'] :
+        name = request.POST['name']
+    else:
+        for filename, file in request.FILES.iteritems():
+            name = file.name
+
+    # Define the file extension
+    suffix = ""
+    if re.match(".*\.cif$", request.FILES['structure_file'].name):
+        suffix = "cif"
+    elif re.match(".*\.mtz", request.FILES['structure_file'].name):
+        suffix = "mtz"
+    else:
+        log.warning("Submit an incorrect file")
+        # TODO : add messages
+        raise ValueError
+
+    # Define email
+    email = ""
+    if request.POST.has_key('email'):
+        email = request.POST['email']
+
+    # Create job
+    newjob = Job()
+    newjob.create(name = name, author = user, email = email)
+
+    # Save file in media path
+    filename = newjob.get_filename(suffix = suffix)
+    log.debug("filename : " + str(filename))
+    file_path = os.path.join(settings.MEDIA_ROOT, filename)
+    try:
+        os.makedirs(settings.MEDIA_ROOT)
+    except OSError as e:
+        if e.errno == errno.EEXIST and os.path.isdir(settings.MEDIA_ROOT):
+            pass
+        else:
+            raise
+
+    with open(file_path, 'wb') as destination:
+        for chunk in request.FILES['structure_file']:
+            destination.write(chunk)
+
+    # Define list of contaminants
+    listname = newjob.get_filename(suffix='txt')
+    list_path = os.path.join(settings.MEDIA_ROOT, listname)
+    with open(list_path, 'wb') as destination:
+        for cont in get_contaminants():
+            if request.POST.has_key(cont.uniprot_ID):
+                destination.write(cont.uniprot_ID + '\n')
+
+    # Submit job
+    newjob.submit(file_path, list_path)
+
+    log.debug("Exiting function")
+
 
 def list_contaminants(request):
     context = {'list_contaminants': get_contaminants_by_category()}
