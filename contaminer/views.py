@@ -154,6 +154,15 @@ def newjob_handler(request):
 
     log.debug("Exiting function")
 
+def result(request, jobid):
+    log = logging.getLogger(__name__)
+    job = get_object_or_404(Job, pk = jobid)
+    if not job.finished:
+        messages.warning(request, "This job is not yet complete.")
+        result = HttpResponseRedirect(reverse('ContaMiner:home'))
+        log.debug("Exiting function")
+        return result
+
 
 def list_contaminants(request):
     context = {'list_contaminants': get_contaminants_by_category()}
