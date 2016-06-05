@@ -11,3 +11,6 @@ class ContaminerConfig(AppConfig):
     ssh_username = 'hungleaj'
     ssh_password = ''
     ssh_identityfile = '/home/dunatotatos/.ssh/id_rsa3'
+    ssh_contaminer_location = '/home/hungleaj/ContaMiner'
+    ssh_work_directory = '/data/dragon/hungleaj'
+    tmp_dir = '/tmp'
