@@ -208,6 +208,9 @@ class Job(models.Model):
 
         self.send_complete_mail()
 
+        self.finished = True
+        self.save()
+
     def send_complete_mail(self):
         current_site = Site.objects.get_current()
         result_url = "{0}://{1}{2}".format(

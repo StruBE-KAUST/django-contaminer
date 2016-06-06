@@ -4,9 +4,9 @@
 <h3>{{ job.name }}</h3>
 <div class="bullet">
     <ul class="no-bullet">
-    {% for cont in contaminants %}
-    <li>{% if cont.percent != 0 %}
-        {% if cont.percent > 97 %}
+    {% for task in tasks %}
+    <li>{% if task.percent != 0 %}
+        {% if task.percent > 97 %}
         <img src="{% static "images/true.png" %}" style="height:1em;" />
         {% else %}
         <img src="{% static "images/warning.png" %}" style="height:1em;" />
@@ -19,30 +19,30 @@
            data-trigger="focus"
            data-html="true"
            title='
-<a href="http://www.uniprot.org/uniprot/{{ cont.contaminant.uniprot_id }}">Uniprot</a>'
+<a href="http://www.uniprot.org/uniprot/{{ task.pack.contaminant.uniprot_id }}">Uniprot</a>'
            data-content='
-{% if cont.percent == 0 %}
+{% if task.percent == 0 %}
 <dl><dt>No solution</dt></dl>
 {% else %}
 <dl><dt>Percent</dt>
-    <dd>{{ cont.percent }}</dd>
+    <dd>{{ task.percent }}</dd>
     <dt>Q factor</dt>
-    <dd>{{ cont.q_factor }}</dd>
+    <dd>{{ task.q_factor }}</dd>
     <dt>Space group</dt>
-    <dd>{{ cont.space_group }}</dd>
-{% if cont.percent > 97 %}
+    <dd>{{ task.space_group }}</dd>
+{% if task.percent > 97 %}
     <dt>Files</dt>
     <dd>
-        <a href="{{ MEDIA_URL }}contaminer_{{ job.id }}/{{ cont }}.pdb">PDB</a>
+        <a href="{{ MEDIA_URL }}contaminer_{{ job.id }}/{{ task }}.pdb">PDB</a>
     </dd>
     <dd>
-        <a href="{{ MEDIA_URL }}contaminer_{{ job.id }}/{{ cont }}.mtz">MTZ</a>
+        <a href="{{ MEDIA_URL }}contaminer_{{ job.id }}/{{ task }}.mtz">MTZ</a>
     </dd>
 {% endif %}
 </dl>
 {% endif %}
 '>
-{{ cont.contaminant.short_name }} - {{ cont.contaminant.long_name }}
+{{ task.pack.contaminant.short_name }} - {{ task.pack.contaminant.long_name }}
         </a>
     </li>
     {% endfor %}
