@@ -179,7 +179,7 @@ def result(request, jobid):
             co_task = co_tasks[0]
             if co_task.error or co_task.q_factor < task.q_factor:
                 task_index = best_tasks.index(co_task)
-                best_tasks[task_index] = co_task
+                best_tasks[task_index] = task
 
         else:
             best_tasks.append(task)
