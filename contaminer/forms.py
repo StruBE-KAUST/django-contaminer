@@ -61,8 +61,7 @@ class UploadStructure(forms.Form):
             self.helper.layout[0][1].append(HTML("<h3>" + str(category) +
             "</h3>"))
             for contaminant in grouped_contaminants[category]:
-                initial = False
-                initial = (category == "Protein in E.Coli")
+                initial = (category.selected_by_default)
                 self.fields[contaminant.uniprot_ID] = forms.BooleanField(
                         label = contaminant.short_name + " - " +\
                                 contaminant.long_name,
