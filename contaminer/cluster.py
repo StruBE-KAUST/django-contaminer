@@ -29,6 +29,8 @@ import paramiko
 import logging
 import errno
 
+from django.conf import settings
+
 from .apps import ContaminerConfig
 
 class SSHChannel():
