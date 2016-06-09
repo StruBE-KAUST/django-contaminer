@@ -179,7 +179,6 @@ class Job(models.Model):
         cluster_comm = SSHChannel()
         result_file = cluster_comm.get_result(self.id)
 
-        log.debug("###################")
         with open(result_file, 'r') as f:
             for line in f:
                 label, value, elaps_time = line[:-1].split(':')
@@ -203,6 +202,14 @@ class Job(models.Model):
                     task.q_factor = q_factor
                     task.percent = percent
                     task.error = False
+
+                    if percent > 95:
+                        cluster_comm.get_final(
+                                self.id,
+                                task.pack.contaminant.uniprot_ID,
+                                task.pack.number,
+                                task.space_group
+                                )
 
                 task.save()
 
