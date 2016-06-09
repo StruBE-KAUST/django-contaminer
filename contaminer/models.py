@@ -253,3 +253,11 @@ class Task(models.Model):
 
     def __str__(self):
         return (str(self.job) + str(self.pack) + str(self.space_group))
+
+    def name(self):
+        space_group = self.space_group.replace(' ', '-')
+        name = str(self.pack.contaminant.uniprot_ID) + '_'\
+                + str(self.pack.number) + '_'\
+                + space_group
+
+        return name
