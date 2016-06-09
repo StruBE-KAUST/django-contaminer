@@ -139,7 +139,7 @@ class SSHChannel():
                 )
 
         local_dir = os.path.join(
-                settings.MEDIA_URL,
+                settings.MEDIA_ROOT,
                 "contaminer_" + str(job_id)
                 )
         try:
