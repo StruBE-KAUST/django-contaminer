@@ -158,8 +158,8 @@ class SSHChannel():
         local_pdb_file = local_global_file + ".pdb"
         local_mtz_file = local_global_file + ".mtz"
 
-        self.getfile(remote_pdb_file, local_pdb_file)
-        self.getfile(remote_mtz_file, local_mtz_file)
+        self.get_file(remote_pdb_file, local_pdb_file)
+        self.get_file(remote_mtz_file, local_mtz_file)
 
     def get_result(self, job_id):
         log = logging.getLogger(__name__)
