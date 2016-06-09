@@ -145,7 +145,7 @@ class SSHChannel():
         try:
             os.makedirs(local_dir)
         except OSError as e:
-            if e.errno == errno.EEXIST and os.path.isdir(lcoal_dir):
+            if e.errno == errno.EEXIST and os.path.isdir(local_dir):
                 pass
             else:
                 raise
