@@ -203,7 +203,7 @@ class Job(models.Model):
                     task.percent = percent
                     task.error = False
 
-                    if percent > 95:
+                    if int(percent) > 95:
                         cluster_comm.get_final(
                                 self.id,
                                 task.pack.contaminant.uniprot_ID,
