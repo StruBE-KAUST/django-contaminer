@@ -29,6 +29,8 @@ import paramiko
 import logging
 import errno
 
+from django.conf import settings
+
 from .apps import ContaminerConfig
 
 class SSHChannel():
@@ -114,6 +116,51 @@ class SSHChannel():
         log.warning("Debug : " + command)
         res = self.command(command)
         return res
+
+    def get_final(self, job_id, contaminant, pack_nb, space_group):
+        remote_result_rel_dir = "contaminer_" + str(job_id)
+        remote_task_rel_dir = contaminant + "_"\
+                + str(pack_nb) + "_"\
+                + space_group.replace(' ', '-')
+
+        remote_task_abs_dir = os.path.join(
+                ContaminerConfig.ssh_work_directory,
+                remote_result_rel_dir,
+                remote_task_rel_dir,
+                "results_solve")
+
+        remote_pdb_file = os.path.join(
+                remote_task_abs_dir,
+                "final.pdb"
+                )
+
+        remote_mtz_file = os.path.join(
+                remote_task_abs_dir,
+                "final.mtz"
+                )
+
+        local_dir = os.path.join(
+                settings.STATIC_ROOT,
+                "contaminer_" + str(job_id)
+                )
+        try:
+            os.makedirs(local_dir)
+        except OSError as e:
+            if e.errno == errno.EEXIST and os.path.isdir(local_dir):
+                pass
+            else:
+                raise
+
+        local_global_file = os.path.join(
+                local_dir,
+                contaminant + '_'\
+                        + str(pack_nb) + '_'\
+                        + space_group.replace(' ','-'))
+        local_pdb_file = local_global_file + ".pdb"
+        local_mtz_file = local_global_file + ".mtz"
+
+        self.get_file(remote_pdb_file, local_pdb_file)
+        self.get_file(remote_mtz_file, local_mtz_file)
 
     def get_result(self, job_id):
         log = logging.getLogger(__name__)

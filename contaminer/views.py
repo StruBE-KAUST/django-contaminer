@@ -163,6 +163,31 @@ def result(request, jobid):
         log.debug("Exiting function")
         return result
 
+    # Retrieve all tasks for this job
+    tasks = job.task_set.all()
+
+    # Keep only the best pack for each contaminant
+    best_tasks = []
+    for task in tasks:
+        # co_tasks are tasks for the same contaminant and same job
+        # (different pack and different space group)
+        co_tasks = [e_task
+                for e_task in best_tasks
+                if e_task.pack.contaminant == task.pack.contaminant]
+        if co_tasks:
+            # Can only be one pack
+            co_task = co_tasks[0]
+            if co_task.error or co_task.q_factor < task.q_factor:
+                task_index = best_tasks.index(co_task)
+                best_tasks[task_index] = task
+
+        else:
+            best_tasks.append(task)
+
+    result = render(request, 'ContaMiner/result.html',
+            {'job': job, 'tasks': best_tasks})
+    return result
+
 
 def list_contaminants(request):
     context = {'list_contaminants': get_contaminants_by_category()}

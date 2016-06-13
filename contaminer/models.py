@@ -179,7 +179,6 @@ class Job(models.Model):
         cluster_comm = SSHChannel()
         result_file = cluster_comm.get_result(self.id)
 
-        log.debug("###################")
         with open(result_file, 'r') as f:
             for line in f:
                 label, value, elaps_time = line[:-1].split(':')
@@ -204,9 +203,20 @@ class Job(models.Model):
                     task.percent = percent
                     task.error = False
 
+                    if int(percent) > 95:
+                        cluster_comm.get_final(
+                                self.id,
+                                task.pack.contaminant.uniprot_ID,
+                                task.pack.number,
+                                task.space_group
+                                )
+
                 task.save()
 
         self.send_complete_mail()
+
+        self.finished = True
+        self.save()
 
     def send_complete_mail(self):
         current_site = Site.objects.get_current()
@@ -250,3 +260,11 @@ class Task(models.Model):
 
     def __str__(self):
         return (str(self.job) + str(self.pack) + str(self.space_group))
+
+    def name(self):
+        space_group = self.space_group.replace(' ', '-')
+        name = str(self.pack.contaminant.uniprot_ID) + '_'\
+                + str(self.pack.number) + '_'\
+                + space_group
+
+        return name
