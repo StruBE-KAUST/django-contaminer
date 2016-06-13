@@ -23,3 +23,4 @@ apps_dir=$(dirname $(readlink -f $0))
 website_dir=$(awk -F "= " '/website_dir/ {print $2}' "$apps_dir/config.ini")
 . "$website_dir"venv/bin/activate
 python "$website_dir"manage.py terminate $1
+echo "yes" | python "$website_dir"manage.py collectstatic
