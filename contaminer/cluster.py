@@ -126,6 +126,7 @@ class SSHChannel():
         remote_task_abs_dir = os.path.join(
                 ContaminerConfig.ssh_work_directory,
                 remote_result_rel_dir,
+                remote_task_rel_dir,
                 "results_solve")
 
         remote_pdb_file = os.path.join(
@@ -139,7 +140,7 @@ class SSHChannel():
                 )
 
         local_dir = os.path.join(
-                settings.MEDIA_ROOT,
+                settings.STATIC_ROOT,
                 "contaminer_" + str(job_id)
                 )
         try:
