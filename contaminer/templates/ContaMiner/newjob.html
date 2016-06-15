@@ -1,0 +1,75 @@
+{% extends "ContaMiner/base.html" %}
+{% block content %}
+<h1>ContaMiner</h1>
+<h2>What is it ?</h2>
+<p>ContaMiner is a rapid automated large-scale detection of contaminant
+crystals.</p>
+<p>Protein contaminants, from the expression host, purification buffers or from
+the affinity tags used, may cristallise instead of a protein of interest.
+Unfortunately, this only becomes clear once the crystal structure has been
+determined...</p>
+<p>ContaMiner allows rapid screening of X-ray diffraction data against the most
+likely proteins contaminants.</p>
+<h3>How does it work ?</h3>
+<p>Given an <a href=
+"http://ccp4wiki.org/~ccp4wiki/wiki/index.php?title=MTZ_reflection_file_format">
+    mtz</a> or <a href=
+    "https://en.wikipedia.org/wiki/Crystallographic_Information_File">cif</a>
+data file, ContaMiner uses an optimized molecular replacement procedure, based
+on the <a href= "http://www.biomexsolutions.co.uk/morda/">MoRDa</a> automatic
+molecular replacement pipeline. Contaminants tested include 33 E. coli
+contaminants, 8 protein tags and 5 proteins often added during purification.
+The full list is available <a href="{% url "ContaMiner:contaminants" %}">here</a>. Any
+additional suggestions or comments? -- Please
+<a href="{% url "contact" %}">let us know</a>.</p>
+<h3>Why should I use it ?</h3>
+<p>Possible benefits of using ContaMiner may include not wasting your time for
+solving that chloramphenicol acetyltransferase crystal, or reassuring reviewers
+and yourself that your <i>Crystallisation and Preliminary X-ray Analysis</i>
+paper does not report, in fact, another structure of MBP.</p>
+<h3>How to use it ?</h3>
+<p>
+<ol>
+    <li>Choose an optional name for your task. If not given, the default name is
+        the name of the uploaded file.</li>
+    <li>Upload your structure file.</li>
+    <li>Indicate your email address to receive a message when
+        your task is completed. If you are logged in, your email address is used
+        by default.</li>
+    <li>To speed up the procedure, select only likely added contaminants in the
+        dedicated tab.</li>
+</ol>
+The ouput is easy to read. Names refer to <a
+href="http://www.uniprot.org/">Uniprot</a> identifiers. Click on the
+identifiers to obtain MoRDa statistics.</p>
+<p>Colour code :
+{% load staticfiles %}
+<ul class="no-bullet">
+    <li>
+<img src="{% static "images/true.png" %}" style="height:1em;" />
+Contaminant highly likely
+    </li>
+    <li>
+<img src="{% static "images/warning.png" %}" style="height:1em;" />
+Possibly, but not likely, a contaminant
+    </li>
+    <li>
+<img src="{% static "images/false.png" %}" style="height:1em;" />
+Not a contaminant
+    </li>
+</ul></p>
+If ContaMiner gives you a positive result, you are encouraged to check if the submitted dataset is of significantly higher resolution as the currently available MR template. This case might justify deposition of you model and data at the PDB.
+<!-- After publication : If ContaMiner was useful, please cite : -->
+
+<h3>It's your turn !</h3>
+<div class="row">
+    <div class="col-md-8">
+        {% load crispy_forms_tags %}
+        {% crispy form %}
+    </div>
+</div>
+
+<h3>Do it by yourself</h3>
+If you want to run ContaMiner on your own cluster, you can download it <a
+         href="{% url "ContaMiner:download" %}">here</a>.
+{% endblock %}

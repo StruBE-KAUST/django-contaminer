@@ -1,0 +1,19 @@
+{% extends "ContaMiner/base.html" %}
+{% block content %}<h1>ContaMiner</h1>
+<h3>Download ContaMiner</h3>
+<p>If you want to run ContaMiner on your own cluster, you can consult <a
+    href="https://github.com/StruBE-KAUST/ContaMiner">our GitHub repository</a>.
+For instructions on installation and usage, please read the README.md file.</p>
+
+<p>If you want to improve this software, you can <a href=
+"{% url "contact" %}">contact us</a>, or submit a pull request on <a href="https://github.com/StruBE-KAUST/ContaMiner">our GitHub repository</a></p>
+
+<p>If you encounter any problem, feel free to <a href=
+"{% url "contact" %}">contact us</a>.</p>
+
+<p>Known bugs :
+<ul><li>ContaMiner is still slow</li>
+    <li>ContaMiner works only with SLURM</li>
+    <li>ContaMiner web interface works only with a Django website</li></ul>
+</p>
+{% endblock %}

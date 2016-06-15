@@ -1,0 +1,58 @@
+{% extends "ContaMiner/base.html" %}
+{% block content %}<h1>ContaMiner</h1>
+{% load staticfiles %}
+<h3>{{ job.name }}</h3>
+<div class="bullet">
+    <ul class="no-bullet">
+    {% for task in tasks %}
+    <li>{% if task.percent != 0 %}
+        {% if task.percent > 97 %}
+        <img src="{% static "images/true.png" %}" style="height:1em;" />
+        {% else %}
+        <img src="{% static "images/warning.png" %}" style="height:1em;" />
+        {% endif %}
+        {% else %}
+        <img src="{% static "images/false.png" %}" style="height:1em;" />
+        {% endif %}
+        <a href="#"
+           data-toggle="popover" 
+           data-trigger="focus"
+           data-html="true"
+           title='
+<a href="http://www.uniprot.org/uniprot/{{ task.pack.contaminant.uniprot_ID }}">Uniprot</a>'
+           data-content='
+{% if task.percent == 0 %}
+<dl><dt>No solution</dt></dl>
+{% else %}
+<dl><dt>Percent</dt>
+    <dd>{{ task.percent }}</dd>
+    <dt>Q factor</dt>
+    <dd>{{ task.q_factor }}</dd>
+    <dt>Space group</dt>
+    <dd>{{ task.space_group }}</dd>
+{% if task.percent > 97 %}
+    <dt>Files</dt>
+    <dd>
+        <a href="{% static "" %}contaminer_{{ job.id }}/{{ task.name }}.pdb">PDB</a>
+    </dd>
+    <dd>
+        <a href="{% static "" %}contaminer_{{ job.id }}/{{ task.name }}.mtz">MTZ</a>
+    </dd>
+{% endif %}
+</dl>
+{% endif %}
+'>
+{{ task.pack.contaminant.short_name }} - {{ task.pack.contaminant.long_name }}
+        </a>
+    </li>
+    {% endfor %}
+    </ul>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('[data-toggle="popover"]').popover();
+});
+</script>
+{% endblock %}

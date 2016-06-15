@@ -1,0 +1,15 @@
+# Copy this file on config.ini
+[SSH]
+hostname = cluster.exmaple.com
+port = 22
+username = you
+password = no need if an identityfile is given
+identityfile = /home/you/.ssh/id_rsa
+
+[CLUSTER]
+contaminer_location = /opt/ContaMiner
+work_directory = /data/contaminer
+
+[LOCAL]
+tmp_dir = /tmp
+website_dir = /home/django/website/
