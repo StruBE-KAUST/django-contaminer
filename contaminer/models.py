@@ -69,6 +69,32 @@ class Contaminant(models.Model):
     def __str__(self):
         return self.uniprot_ID
 
+
+    @staticmethod
+    def get_all():
+        """ Get the list of all registered contaminants """
+        contaminants = Contaminant.objects.all()
+        return contaminants
+
+
+    @staticmethod
+    def get_all_by_category():
+        """ Get contaminants grouped by category """
+        contaminants = Contaminant.get_all()
+
+        if not contaminants:
+            contaminants = []
+
+        grouped_contaminants = {}
+        for contaminant in contaminants:
+            try:
+                grouped_contaminants[contaminant.category].append(contaminant)
+            except KeyError:
+                grouped_contaminants[contaminant.category] = [contaminant]
+
+        return grouped_contaminants
+
+
 class Pack(models.Model):
     """
         A pack of models prepared by morda_prep
