@@ -41,8 +41,8 @@ class ContaminerConfig(AppConfig):
         res = config.read(config_file)
 
         if res == []:
-            log.error("config.ini does not exist. Please copy config.template to
-            config.ini, then configure your application")
+            log.error("config.ini does not exist.")
+            log.info("Use config.template to create your config.ini")
             raise IOError
 
         self.ssh_hostname = config.get("SSH", "hostname")
@@ -54,3 +54,5 @@ class ContaminerConfig(AppConfig):
                 "contaminer_location")
         self.ssh_work_directory = config.get("CLUSTER", "work_directory")
         self.tmp_dir = config.get("LOCAL", "tmp_dir")
+
+        log.debug("Exit function")
