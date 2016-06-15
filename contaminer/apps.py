@@ -28,6 +28,8 @@ import logging
 
 
 class ContaminerConfig(AppConfig):
+    """ Configuration of contaminer application """
+
     name = 'contaminer'
     verbose_name = 'ContaMiner'
 
