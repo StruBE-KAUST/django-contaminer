@@ -24,6 +24,11 @@
     "ContaMiner".
 """
 
+import os
+import datetime
+import paramiko
+import logging
+
 from django.db import models
 from django.conf import settings
 from django.core.mail import send_mail
@@ -31,12 +36,8 @@ from django.template.loader import render_to_string
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 
-import os
-import datetime
-import paramiko
-import logging
-
 from .cluster import SSHChannel
+
 
 class Category(models.Model):
     """
@@ -50,6 +51,7 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Contaminant(models.Model):
     """
@@ -111,6 +113,7 @@ class Pack(models.Model):
     def __str__(self):
         return (str(self.contaminant) + str(self.number))
 
+
 class Model(models.Model):
     """
         A model prepared by morda_prep
@@ -125,6 +128,7 @@ class Model(models.Model):
 
     def __str__(self):
         return (str(self.pdb_code) + self.chain + str(self.domain))
+
 
 class Job(models.Model):
     """
@@ -146,11 +150,11 @@ class Job(models.Model):
                 str(self.finished) + ")"
         return res
 
+
     def create(self, name, author, email):
-        """Populate the fields of a job"""
+        """ Populate the fields of a job """
         log = logging.getLogger(__name__)
         log.debug("Entering function with args :\n\
-                self : " + str(self) + "\n\
                 name : " + str(name) + "\n\
                 author : " + str(author) + "\n\
                 email : " + str(email))
@@ -166,8 +170,9 @@ class Job(models.Model):
         self.save()
         log.debug("Exiting function")
 
+
     def get_filename(self, suffix = "mtz"):
-        """Return the name of the file associated to the job"""
+        """ Return the name of the file associated to the job """
         if not suffix:
             result = "contaminer_" + str(self.id)
         else:
@@ -175,7 +180,9 @@ class Job(models.Model):
 
         return result
 
+
     def submit(self, filepath, listpath):
+        """ Send the files to the cluster, then launch ContaMiner """
         log = logging.getLogger(__name__)
         log.debug("Entering function with args : \n\
                 self : " + str(self) + "\n\
@@ -185,21 +192,30 @@ class Job(models.Model):
         cluster_comm = SSHChannel()
         cluster_comm.send_file(filepath)
         cluster_comm.send_file(listpath)
+        log.debug("Files sent")
+        os.remove(filepath)
+        os.remove(listpath)
+        log.debug("Files deleted from MEDIA_ROOT")
 
-        log.warning("Debug : " +
-                str(cluster_comm.launch_contaminer(os.path.basename(filepath),
-            os.path.basename(listpath))))
+        cluster_comm.launch_contaminer(
+                os.path.basename(filepath),
+                os.path.basename(listpath)
+                )
+
+        self.submitted = True
+        self.save()
+
+        log.debug("Job " + str(self.id) + " submitted")
+        log.debug("Exiting function")
+
 
     def terminate(self):
-        """
-            Retrieve the job from the cluster, then clean-up
-        """
+        """ Retrieve the job from the cluster, then clean-up """
         log = logging.getLogger(__name__)
-        log.debug("Entering function with args : \n\
-                self : " + str(self))
+        log.debug("Entering function for job : " + str(self.id))
 
         if self.finished:
-            log.debug("Job is already finished")
+            log.info("Job is already finished")
             return
 
         cluster_comm = SSHChannel()
@@ -244,13 +260,22 @@ class Job(models.Model):
         self.finished = True
         self.save()
 
+        log.info("Job complete")
+
+        log.debug("Exiting function")
+
+
     def send_complete_mail(self):
+        log = logging.getLogger(__name__)
+        log.debug("Entering function")
+
         current_site = Site.objects.get_current()
         result_url = "{0}://{1}{2}".format(
                 "https",
                 current_site.domain,
                 reverse("ContaMiner:result", args=[self.id])
                 )
+        log.debug("Result URL : " + str(result_url))
 
         ctx = { 'job_name': self.name,
                 'result_link': result_url,
@@ -262,6 +287,9 @@ class Job(models.Model):
         send_mail("Job complete", "",
                 settings.DEFAULT_MAIL, [self.email],
                 html_message = message)
+        log.info("E-Mail sent to " + str(self.email))
+
+        log.debug("Exiting function")
 
 
 class Task(models.Model):
