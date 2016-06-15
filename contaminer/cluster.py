@@ -52,11 +52,11 @@ class SSHChannel():
 
         self.sshclient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.sshconfig = {
-                'hostname': ContaminerConfig.ssh_hostname,
-                'port': ContaminerConfig.ssh_port,
-                'username': ContaminerConfig.ssh_username,
-                'password': ContaminerConfig.ssh_password,
-                'key_filename': ContaminerConfig.ssh_identityfile,
+                'hostname': ContaminerConfig().ssh_hostname,
+                'port': ContaminerConfig().ssh_port,
+                'username': ContaminerConfig().ssh_username,
+                'password': ContaminerConfig().ssh_password,
+                'key_filename': ContaminerConfig().ssh_identityfile,
                 }
 
         self.is_configured = True
@@ -79,7 +79,7 @@ class SSHChannel():
         if not self.sftpclient:
             self.connectFTP()
 
-        remote_filename = os.path.join(ContaminerConfig.ssh_work_directory,
+        remote_filename = os.path.join(ContaminerConfig().ssh_work_directory,
                 os.path.basename(filename))
 
         self.sftpclient.put(filename, remote_filename)
@@ -102,11 +102,11 @@ class SSHChannel():
                 self : " + str(self) +  "\n\
                 filename : " + str(filename) + "\n\
                 listname : " + str(listname))
-        cm_bin_path = ContaminerConfig.ssh_contaminer_location + "/contaminer"
+        cm_bin_path = ContaminerConfig().ssh_contaminer_location + "/contaminer"
         remote_filename = os.path.basename(filename)
         remote_listname = os.path.basename(listname)
 
-        cm_cd = "cd " + ContaminerConfig.ssh_work_directory
+        cm_cd = "cd " + ContaminerConfig().ssh_work_directory
 
         command = cm_cd + " && "\
             + cm_bin_path + " "\
@@ -124,7 +124,7 @@ class SSHChannel():
                 + space_group.replace(' ', '-')
 
         remote_task_abs_dir = os.path.join(
-                ContaminerConfig.ssh_work_directory,
+                ContaminerConfig().ssh_work_directory,
                 remote_result_rel_dir,
                 remote_task_rel_dir,
                 "results_solve")
@@ -168,7 +168,7 @@ class SSHChannel():
                 self : " + str(self) + "\n\
                 job_id : " + str(job_id))
 
-        tmp_dir = ContaminerConfig.tmp_dir
+        tmp_dir = ContaminerConfig().tmp_dir
         try:
             os.makedirs(tmp_dir)
         except OSError as e:
@@ -187,7 +187,7 @@ class SSHChannel():
                 raise
 
         remote_result_dir = "contaminer_" + str(job_id)
-        remote_result_file = ContaminerConfig.ssh_work_directory
+        remote_result_file = ContaminerConfig().ssh_work_directory
         remote_result_file = os.path.join(remote_result_file, remote_result_dir)
         remote_result_file = os.path.join(remote_result_file, "results.txt")
         local_result_file = os.path.join(job_tmp_dir, "results.txt")
