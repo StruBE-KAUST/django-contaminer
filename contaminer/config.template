@@ -1,15 +1,15 @@
 # Copy this file on config.ini
 [SSH]
-hostname = login.cbrc.kaust.edu.sa
+hostname = cluster.exmaple.com
 port = 22
-username = hungleaj
-password = 
-identityfile = /home/dunatotatos/.ssh/id_rsa3
+username = you
+password = no need if an identityfile is given
+identityfile = /home/you/.ssh/id_rsa
 
 [CLUSTER]
-contaminer_location = /home/hungleaj/ContaMiner
-work_directory = /data/dragon/hungleaj
+contaminer_location = /opt/ContaMiner
+work_directory = /data/contaminer
 
 [LOCAL]
 tmp_dir = /tmp
-website_dir = /home/dunatotatos/Programmation/StruBE-website/
+website_dir = /home/django/website/

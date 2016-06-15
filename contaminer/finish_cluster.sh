@@ -1,4 +1,4 @@
-# -*- coding : utf-8 -*-
+#!/bin/sh
 
 ##    Copyright (C) 2016 Hungler Arnaud
 ##
@@ -16,16 +16,14 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    URL configuration for contaminer
-"""
+## This script communicates with the script temrinate.sh on the webserver to 
+## complete a job.
 
-from django.conf.urls import url
-from . import views
+# Copy this script to the ContaMiner installation on the cluster, overwrite 
+# existing finish.sh script, and change the path to the finish_webserver.sh
+# script
+path_terminate="webserver/contaminer/finish_webserver.sh"
 
-urlpatterns = [
-        url(r'^$', views.newjob, name='home'),
-        url(r'^(?P<jobid>\d+)$', views.result, name='result'),
-        url(r'^contaminants$', views.list_contaminants, name='contaminants'),
-        url(r'^download$', views.download, name='download'),
-]
+job_name=$(basename $(dirname "$1"))
+job_id=$(echo "$job_name" | sed 's/contaminer_\([0-9]*\)/\1/')
+ssh webserver "sh $path_terminate $job_id"
