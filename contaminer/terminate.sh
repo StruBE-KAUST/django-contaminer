@@ -15,9 +15,12 @@
 ##    You should have received a copy of the GNU General Public License along
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-##
-## finish.sh version 1.0.0
-## Example script called when a job is completed
+
+## Script called by the cluster when a job is complete
+## Complete the job thanks the terminate command in manage.py
+## Then collectstatic because of new static files
+
+set -e
 
 apps_dir=$(dirname $(readlink -f $0))
 website_dir=$(awk -F "= " '/website_dir/ {print $2}' "$apps_dir/config.ini")
