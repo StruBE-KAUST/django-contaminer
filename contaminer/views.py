@@ -57,7 +57,7 @@ def newjob(request):
                 messages.error(request,
                         "Bad input file. Please upload a valid cif or mtz\
                         file.")
-            except:
+            except Exception as e:
                 log.error("Error when submitting new job : " + str(e))
                 messages.error(request,
                         "Something went wrong. Please try again later.")

@@ -145,7 +145,7 @@ class SSHChannel():
                 os.path.basename(filename)
                 )
 
-        log.debug("Send " + str(local_filename) + " to " + str(remote_filename))
+        log.debug("Send " + str(filename) + " to " + str(remote_filename))
         self.sftpclient.put(filename, remote_filename)
 
         log.debug("Exiting function")
