@@ -35,6 +35,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
 
 from .cluster import SSHChannel
 
@@ -227,10 +228,17 @@ class Job(models.Model):
                 uniprot_ID, ipack, space_group = label.split('_')
                 task = Task()
                 task.job = self
-                contaminant = Contaminant.objects.get(uniprot_ID = uniprot_ID)
-                pack = Pack.objects.filter(
-                        contaminant = contaminant).get(
-                                number = ipack)
+                try:
+                    contaminant = Contaminant.objects.get(
+                            uniprot_ID = uniprot_ID)
+                    pack = Pack.objects.filter(
+                            contaminant = contaminant).get(
+                                    number = ipack)
+                except ObjectDoesNotExist:
+                    log.error("Database and MoRDa preparation are not "\
+                            + "synchronized. Please run "\
+                            + "`python manage.py cm_sync`")
+                    raise
                 task.pack = pack
                 task.space_group = space_group
                 task.finished = True
