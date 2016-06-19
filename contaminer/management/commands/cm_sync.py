@@ -21,9 +21,12 @@
     django-contaminer
 """
 
+import os
+import re
 import logging
 
 from django.core.management.base import BaseCommand, CommandError
+from django.core.exceptions import ObjectDoesNotExist
 
 from contaminer.models import Contaminant
 from contaminer.models import Pack
@@ -50,14 +53,22 @@ class Command(BaseCommand):
                     "Installation is not complete on the cluster. " \
                             + "Please retry later.")
 
-        self.update_contaminants()
-        log.info("Contaminant DB updated")
+        missing_contaminants = self.check_contaminants()
+        if missing_contaminants:
+            log.error("The contaminant DB is not synchronized with the cluster")
+            raise CommandError(
+                    "Please add these contaminants through the admin "\
+                            + "interface : "\
+                            + str(missing_contaminants))
+        log.info("Contaminant DB up-to-date")
 
         self.update_packs()
         log.info("Pack DB updated")
 
         self.update_models()
         log.info("Model DB updated")
+
+        self.stdout.write('Successfully updated database')
 
 
     def is_prep_complete(self):
@@ -77,11 +88,40 @@ class Command(BaseCommand):
         return (len(stdout) <= 1)
 
 
-    def update_contaminants(self):
+    def check_contaminants(self):
+        """ Returns a list of contaminants presents on the cluster but not in
+        the local DB """
         log = logging.getLogger(__name__)
         log.debug("Entering function")
 
-        raise NotImplementedError
+        cluster_comm = SSHChannel()
+        cm_bin_path = ContaminerConfig().ssh_contaminer_location
+        cm_cont_path = os.path.join(cm_bin_path, "data/contaminants")
+        log.debug("Remote contaminants path : " + cm_cont_path)
+
+        stdin, stderr = cluster_comm.command(
+                "ls " + cm_cont_path \
+                + ' | grep -v "slurm-.*\.out"' \
+                + ' | grep -v "big_struct.cif"'
+                )
+
+        if stderr:
+            log.error("ls command gives an error : " + stderr[0])
+            raise RuntimeError(stderr[0])
+
+
+        missing_contaminants = []
+
+        for uniprot_ID in stdin:
+            uniprot_ID = re.sub(r'\n', '', uniprot_ID)
+
+            try:
+                exist_cont = Contaminant.objects.get(uniprot_ID = uniprot_ID)
+            except ObjectDoesNotExist:
+                missing_contaminants.append(uniprot_ID)
+
+        log.debug("Exiting function")
+        return missing_contaminants
 
 
     def update_packs(self):
