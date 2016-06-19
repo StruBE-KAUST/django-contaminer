@@ -65,9 +65,6 @@ class Command(BaseCommand):
         self.update_packs()
         log.info("Pack DB updated")
 
-        self.update_models()
-        log.info("Model DB updated")
-
         self.stdout.write('Successfully updated database')
 
 
@@ -77,7 +74,7 @@ class Command(BaseCommand):
 
         cluster_comm = SSHChannel()
         stdout, stderr = cluster_comm.command(
-                "squeue -u cbrc-strube -n \"sbatch_prep.sh\""
+                "squeue -u $(whoami) -n \"sbatch_prep.sh\""
                 )
 
         if stderr:
@@ -89,7 +86,7 @@ class Command(BaseCommand):
 
 
     def check_contaminants(self):
-        """ Returns a list of contaminants presents on the cluster but not in
+        """ Returns a list of contaminants existing on the cluster but not in
         the local DB """
         log = logging.getLogger(__name__)
         log.debug("Entering function")
@@ -109,7 +106,6 @@ class Command(BaseCommand):
             log.error("ls command gives an error : " + stderr[0])
             raise RuntimeError(stderr[0])
 
-
         missing_contaminants = []
 
         for uniprot_ID in stdin:
@@ -128,7 +124,50 @@ class Command(BaseCommand):
         log = logging.getLogger(__name__)
         log.debug("Entering function")
 
-        raise NotImplementedError
+        for contaminant in Contaminant.objects.all():
+            self.update_packs_for_contaminant(contaminant)
+
+        log.debug("Exiting function")
+
+
+    def update_packs_for_contaminant(self, contaminant):
+        log = logging.getLogger(__name__)
+        log.debug("Entering function")
+
+        cluster_comm = SSHChannel()
+        cm_bin_path = ContaminerConfig().ssh_contaminer_location
+        cm_cont_path = os.path.join(cm_bin_path, "data/contaminants")
+        cm_cont_path = os.path.join(cm_cont_path, contaminant.uniprot_ID)
+
+        nbpacks_file = os.path.join(cm_cont_path, "nbpacks")
+
+        stdout, stderr = cluster_comm.command("cat " + nbpacks_file + "|wc -l")
+
+        if stderr:
+            log.error("cat command gives an error : " + stderr[0])
+            raise RuntimeError(stderr[0])
+
+        nb_packs = int(stdout[0])
+        for nb_pack in range(1, nb_packs):
+            try:
+                pack = Pack.objects.filter(
+                        contaminant = contaminant).filter(
+                                number = nb_pack
+                                )
+            except ObjectDoesNotExist:
+                log.info("Pack does not exist. Create pack nb "\
+                        + str(nb_pack)\
+                        + " for contaminant "\
+                        + str(contaminant.uniprot_ID)
+                        )
+                pack = Pack()
+                pack.contaminant = contaminant
+                pack.number = nb_pack
+                pack.architecture = "unknown"
+                pack.coverage = 0
+                pack.save()
+            else:
+                log.debug("Pack exists : " + str(nb_pack))
 
 
     def update_models(self):
@@ -137,10 +176,4 @@ class Command(BaseCommand):
 
         raise NotImplementedError
 
-
-    def get_list_contaminants(self):
-        log = logging.getLogger(__name__)
-        log.debug("Entering function")
-
-        raise NotImplementedError
 
