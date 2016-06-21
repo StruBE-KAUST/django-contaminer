@@ -179,6 +179,14 @@ def result(request, jobid):
     log.debug("Entering function")
 
     job = get_object_or_404(Job, pk = jobid)
+
+    if job.confidential and request.user != job.author:
+        messages.error(request, "This job is confidential. You are not "\
+                + "allowed to see the results.")
+        result = HttpResponseRedirect(reverse('ContaMiner:home'))
+        log.debug("Exiting function")
+        return result
+
     if not job.finished:
         messages.warning(request, "This job is not yet complete.")
         result = HttpResponseRedirect(reverse('ContaMiner:home'))
