@@ -46,7 +46,8 @@ def newjob(request):
 
         form = UploadStructure(request.POST,
                 request.FILES,
-                grouped_contaminants = Contaminant.get_all_by_category())
+                grouped_contaminants = Contaminant.get_all_by_category(),
+                authenticated = request.user.is_authenticated())
 
         if form.is_valid():
             log.debug("Valid form")
@@ -76,7 +77,8 @@ def newjob(request):
     else:
         log.debug("Give the form")
         form = UploadStructure(
-                grouped_contaminants = Contaminant.get_all_by_category()
+                grouped_contaminants = Contaminant.get_all_by_category(),
+                authenticated = request.user.is_authenticated()
                 )
 
     result = render(request, 'ContaMiner/newjob.html', {'form': form})
@@ -90,11 +92,18 @@ def newjob_handler(request):
     log = logging.getLogger(__name__)
     log.debug("Entering function")
 
-    # Define user
+    # Define user and confidentiality
     user = None
+    confidential = False
     if request.user is not None and request.user.is_authenticated():
         user = request.user
+
+        # If choosen, define confidential
+        if request.POST.has_key('confidential'):
+            confidential = request.POST['confidential']
+
     log.debug("User : " + str(user))
+    log.debug("Conf : " + str(confidential))
 
     # Define job name
     name = ""
@@ -123,7 +132,12 @@ def newjob_handler(request):
 
     # Create job
     newjob = Job()
-    newjob.create(name = name, author = user, email = email)
+    newjob.create(
+            name = name,
+            author = user,
+            email = email,
+            confidential = confidential
+            )
     log.debug("Job created")
 
     # Save file in media path

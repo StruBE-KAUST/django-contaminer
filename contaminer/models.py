@@ -145,6 +145,8 @@ class Job(models.Model):
     finished = models.BooleanField(default = False)
     email = models.EmailField(blank = True, null = True)
 
+    confidential = models.BooleanField(default = False)
+
     def __str__(self):
         res = str(self.name) + " - " + \
                 str(self.id) + " (" + \
@@ -152,7 +154,7 @@ class Job(models.Model):
         return res
 
 
-    def create(self, name, author, email):
+    def create(self, name, author, email, confidential):
         """ Populate the fields of a job """
         log = logging.getLogger(__name__)
         log.debug("Entering function with args :\n\
@@ -161,6 +163,7 @@ class Job(models.Model):
                 email : " + str(email))
         self.name = name
         self.author = author
+        self.confidential = confidential
         self.submitted = False
         self.finished = False
         if author:
