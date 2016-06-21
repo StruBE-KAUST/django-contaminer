@@ -33,10 +33,15 @@ class UploadStructure(forms.Form):
     name = forms.CharField(max_length = 50, required = False)
     structure_file = forms.FileField()
     email = forms.EmailField(required = True)
+    confidential = forms.BooleanField(
+            label = "Make your job confidential",
+            required = False)
 
     def __init__(self, *args, **kwargs):
         log = logging.getLogger(__name__)
         log.debug("Entering function")
+
+        authenticated = kwargs.pop("authenticated")
 
         grouped_contaminants = {}
         if kwargs.has_key("grouped_contaminants"):
@@ -65,6 +70,9 @@ class UploadStructure(forms.Form):
                     data_style="expand-right",
                 )
             )
+
+        if authenticated:
+            self.helper.layout[0][0].append("confidential")
 
         for category in grouped_contaminants.keys():
             log.debug("Category found : " + str(category))
