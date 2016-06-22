@@ -78,7 +78,7 @@ def newjob(request):
         log.debug("Give the form")
         form = UploadStructure(
                 grouped_contaminants = Contaminant.get_all_by_category(),
-                authenticated = request.user.is_authenticated()
+                request = request
                 )
 
     result = render(request, 'ContaMiner/newjob.html', {'form': form})
