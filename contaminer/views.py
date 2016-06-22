@@ -214,7 +214,22 @@ def result(request, jobid):
         else:
             best_tasks.append(task)
 
-    log.debug("Slected tasks : " + str(best_tasks))
+    log.debug("Selected tasks : " + str(best_tasks))
+
+    # If a positive result is found for a pack with low coverage or low identity
+    # display a message to encourage publication
+    for task in best_tasks:
+        if task.percent > 95:
+            coverage = task.pack.coverage
+
+            models = task.pack.model_set.all()
+            identity = sum([model.identity for model in models]) / len(models)
+
+            if coverage < 85 or identity < 90:
+                messages.info(request, "Your dataset gives a positive result "\
+                        + "for a contaminant for which no identical "\
+                        + "model is available in the PDB.\nYou could deposit "\
+                        + "or publish this structure.")
 
     result = render(request, 'ContaMiner/result.html',
             {'job': job, 'tasks': best_tasks})
