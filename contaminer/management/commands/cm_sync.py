@@ -148,12 +148,13 @@ class Command(BaseCommand):
             raise RuntimeError(stderr[0])
 
         nb_packs = int(stdout[0])
-        for nb_pack in range(1, nb_packs + 1):
-            pack = Pack.objects.filter(
-                    contaminant = contaminant).filter(
-                            number = nb_pack
-                            )
-            if not pack:
+        for nb_pack in range(1, nb_packs):
+            try:
+                pack = Pack.objects.filter(
+                        contaminant = contaminant).filter(
+                                number = nb_pack
+                                )
+            except ObjectDoesNotExist:
                 log.info("Pack does not exist. Create pack nb "\
                         + str(nb_pack)\
                         + " for contaminant "\
