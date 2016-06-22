@@ -47,7 +47,7 @@ def newjob(request):
         form = UploadStructure(request.POST,
                 request.FILES,
                 grouped_contaminants = Contaminant.get_all_by_category(),
-                authenticated = request.user.is_authenticated())
+                request = request)
 
         if form.is_valid():
             log.debug("Valid form")
@@ -106,13 +106,13 @@ def newjob_handler(request):
     log.debug("Conf : " + str(confidential))
 
     # Define job name
-    name = ""
-    if request.POST.has_key('name') and request.POST['name'] :
-        name = request.POST['name']
+    job_name = ""
+    if request.POST.has_key('job_name') and request.POST['job_name'] :
+        job_name = request.POST['job_name']
     else:
         for filename, file in request.FILES.iteritems():
-            name = file.name
-    log.debug("Name : " + str(name))
+            job_name = file.name
+    log.debug("Job name : " + str(job_name))
 
     # Define the file extension
     suffix = ""
@@ -133,7 +133,7 @@ def newjob_handler(request):
     # Create job
     newjob = Job()
     newjob.create(
-            name = name,
+            name = job_name,
             author = user,
             email = email,
             confidential = confidential

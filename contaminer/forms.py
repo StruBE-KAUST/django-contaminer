@@ -30,7 +30,7 @@ from crispy_forms.bootstrap import StrictButton, Tab, TabHolder
 class UploadStructure(forms.Form):
     """ Form to upload a mtz or cif file """
 
-    name = forms.CharField(max_length = 50, required = False)
+    job_name = forms.CharField(max_length = 50, required = False)
     structure_file = forms.FileField()
     confidential = forms.BooleanField(
             label = "Make your job confidential",
@@ -54,7 +54,7 @@ class UploadStructure(forms.Form):
                 TabHolder(
                     Tab('File',
                         Field(
-                            'name',
+                            'job_name',
                             'structure_file',
                             'email'
                         ),
