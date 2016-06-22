@@ -16,7 +16,7 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-## This script communicates with the script temrinate.sh on the webserver to 
+## This script communicates with the script finish.sh on the webserver to 
 ## complete a job.
 
 # Copy this script to the ContaMiner installation on the cluster, overwrite 

@@ -47,7 +47,7 @@ def newjob(request):
         form = UploadStructure(request.POST,
                 request.FILES,
                 grouped_contaminants = Contaminant.get_all_by_category(),
-                authenticated = request.user.is_authenticated())
+                request = request)
 
         if form.is_valid():
             log.debug("Valid form")
@@ -106,13 +106,13 @@ def newjob_handler(request):
     log.debug("Conf : " + str(confidential))
 
     # Define job name
-    name = ""
-    if request.POST.has_key('name') and request.POST['name'] :
-        name = request.POST['name']
+    job_name = ""
+    if request.POST.has_key('job_name') and request.POST['job_name'] :
+        job_name = request.POST['job_name']
     else:
         for filename, file in request.FILES.iteritems():
-            name = file.name
-    log.debug("Name : " + str(name))
+            job_name = file.name
+    log.debug("Job name : " + str(job_name))
 
     # Define the file extension
     suffix = ""
@@ -133,7 +133,7 @@ def newjob_handler(request):
     # Create job
     newjob = Job()
     newjob.create(
-            name = name,
+            name = job_name,
             author = user,
             email = email,
             confidential = confidential
@@ -214,7 +214,22 @@ def result(request, jobid):
         else:
             best_tasks.append(task)
 
-    log.debug("Slected tasks : " + str(best_tasks))
+    log.debug("Selected tasks : " + str(best_tasks))
+
+    # If a positive result is found for a pack with low coverage or low identity
+    # display a message to encourage publication
+    for task in best_tasks:
+        if task.percent > 95:
+            coverage = task.pack.coverage
+
+            models = task.pack.model_set.all()
+            identity = sum([model.identity for model in models]) / len(models)
+
+            if coverage < 85 or identity < 90:
+                messages.info(request, "Your dataset gives a positive result "\
+                        + "for a contaminant for which no identical "\
+                        + "model is available in the PDB.\nYou could deposit "\
+                        + "or publish this structure.")
 
     result = render(request, 'ContaMiner/result.html',
             {'job': job, 'tasks': best_tasks})

@@ -239,8 +239,9 @@ class Job(models.Model):
                                     number = ipack)
                 except ObjectDoesNotExist:
                     log.error("Database and MoRDa preparation are not "\
-                            + "synchronized. Please run "\
-                            + "`python manage.py cm_sync`")
+                            + "synchronized. Please use the same version "\
+                            + "of ContaMiner and django-contaminer, and "\
+                            + "load data from fixtures")
                     raise
                 task.pack = pack
                 task.space_group = space_group
