@@ -1,19 +1,39 @@
 {% extends "ContaMiner/base.html" %}
 {% block content %}
-<h1>ContaMiner</h1>
-<h2>List of contaminants available</h2>
+<h3>List of contaminants available</h3>
 <dl>
 {% for category, content in list_contaminants.items %}
     <dt><span>{{ category }}</span></dt>
     <dd><ul class="no-bullet">
         {% for contaminant in content %}
         <li>
-        <a href="http://www.uniprot.org/uniprot/{{ contaminant.uniprot_ID }}">
-            {{ contaminant.short_name }} - {{ contaminant.long_name }}</a>
+        <a href="#"
+           data-toggle="popover"
+           data-trigger="focus"
+           data-html="true"
+           data-content='
+<a href="http://www.uniprot.org/uniprot/{{ contaminant.uniprot_ID }}">
+    Uniprot
+</a>
+<br/>
+{% if contaminant.publication_id %}
+<a href="http://www.ncbi.nlm.nih.gov/pubmed/
+{{ contaminant.publication_id }}">
+    Reference
+</a>
+{% endif %}
+            '>
+           {{ contaminant.short_name }} -  {{ contaminant.long_name }}</a>
         </li>
         {% endfor %}
     </ul></dd>
 {% endfor %}
 </dl>
 {% endblock %}
-
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('[data-toggle="popover"]').popover();
+});
+</script>
+{% endblock %}

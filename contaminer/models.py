@@ -69,6 +69,9 @@ class Contaminant(models.Model):
     organism = models.CharField(max_length = 50, null = True, blank = True)
     organism_pdb = models.CharField(max_length = 50, null = True, blank = True)
 
+    # Publication mentioning this contaminant
+    publication_id = models.CharField(max_length=200, null = True, blank = True)
+
     def __str__(self):
         return self.uniprot_ID
 
