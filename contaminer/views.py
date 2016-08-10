@@ -219,7 +219,7 @@ def result(request, jobid):
     # If a positive result is found for a pack with low coverage or low identity
     # display a message to encourage publication
     for task in best_tasks:
-        if task.percent > 95:
+        if task.percent > 97:
             coverage = task.pack.coverage
 
             models = task.pack.model_set.all()
