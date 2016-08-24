@@ -42,7 +42,7 @@ paper does not report, in fact, another structure of MBP.</p>
 The ouput is easy to read. Names refer to <a
 href="http://www.uniprot.org/">Uniprot</a> identifiers. Click on the
 identifiers to obtain MoRDa statistics.</p>
-<p>Colour code :
+<p>Colour code:
 {% load staticfiles %}
 <ul class="no-bullet">
     <li>
@@ -72,4 +72,13 @@ If ContaMiner gives you a positive result, you are encouraged to check if the su
 <h3>Do it by yourself</h3>
 If you want to run ContaMiner on your own cluster, you can download it <a
          href="{% url "ContaMiner:download" %}">here</a>.
+{% endblock %}
+{% block scripts %}
+<script type="text/javascript">
+function toggle_all(category){
+    $('.' + category + ' input[type="checkbox"]').each(function() {
+        this.checked = !this.checked;
+    });
+}
+</script>
 {% endblock %}

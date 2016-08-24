@@ -23,8 +23,9 @@
 import logging
 
 from django import forms
+from django.utils import text
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Field, HTML
+from crispy_forms.layout import Layout, Field, HTML, Fieldset
 from crispy_forms.bootstrap import StrictButton, Tab, TabHolder
 
 class UploadStructure(forms.Form):
@@ -84,16 +85,26 @@ class UploadStructure(forms.Form):
         for category in grouped_contaminants.keys():
             log.debug("Category found : " + str(category))
 
-            self.helper.layout[0][1].append(HTML("<h3>" + str(category) +
-            "</h3>"))
+            initial = (category.selected_by_default)
 
+            title = "<h3 onclick=\"toggle_all('" \
+                    + text.slugify(category) + "')\">" \
+                    + str(category) \
+                    + " <button type=\"button\" class=\"btn btn-primary "\
+                    + "btn-xs\">" \
+                    + "Toggle all" \
+                    + "</button></h3>"
+
+            fields = []
             for contaminant in grouped_contaminants[category]:
-                initial = (category.selected_by_default)
                 self.fields[contaminant.uniprot_ID] = forms.BooleanField(
                         label = contaminant.short_name + " - " +\
                                 contaminant.long_name,
                         required = False,
-                        initial = initial)
-                self.helper.layout[0][1].append(contaminant.uniprot_ID)
+                        initial = initial,
+                        )
+                fields.append(contaminant.uniprot_ID)
+            self.helper.layout[0][1].append(Fieldset(title,*fields,
+                css_class=text.slugify(category)))
 
         log.debug("Exiting function")
