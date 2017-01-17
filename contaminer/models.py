@@ -294,13 +294,13 @@ class Job(models.Model):
 
         ctx = { 'job_name': self.name,
                 'result_link': result_url,
-                'SITE_NAME': current_site.name,
+                'site_name': "ContaMiner",
                 }
 
         message = render_to_string("ContaMiner/email/complete_message.html",
                 ctx)
         send_mail("Job complete", "",
-                settings.DEFAULT_MAIL, [self.email],
+                settings.DEFAULT_MAIL_FROM, [self.email],
                 html_message = message)
         log.info("E-Mail sent to " + str(self.email))
 
