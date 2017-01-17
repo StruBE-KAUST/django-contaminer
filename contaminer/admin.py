@@ -27,6 +27,8 @@ from .models import Pack
 from .models import Model
 from .models import Job
 from .models import Task
+from .models import Reference
+from .models import Suggestion
 
 admin.site.register(Category)
 admin.site.register(Contaminant)
@@ -34,3 +36,5 @@ admin.site.register(Pack)
 admin.site.register(Model)
 admin.site.register(Job)
 admin.site.register(Task)
+admin.site.register(Reference)
+admin.site.register(Suggestion)

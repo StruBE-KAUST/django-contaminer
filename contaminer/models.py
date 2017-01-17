@@ -69,17 +69,19 @@ class Contaminant(models.Model):
     organism = models.CharField(max_length = 50, null = True, blank = True)
     organism_pdb = models.CharField(max_length = 50, null = True, blank = True)
 
-    # Publication mentioning this contaminant
-    publication_id = models.CharField(max_length=200, null = True, blank = True)
-
     def __str__(self):
         return self.uniprot_ID
 
 
     @staticmethod
     def get_all():
-        """ Get the list of all registered contaminants """
+        """ Get the list of all registered contaminants with the references """
         contaminants = Contaminant.objects.all()
+        for contaminant in contaminants:
+            refs = Reference.objects.filter(contaminant = contaminant)
+            contaminant.references = refs
+            sugg = Suggestion.objects.filter(contaminant = contaminant)
+            contaminant.suggestions = sugg
         return contaminants
 
 
@@ -99,6 +101,16 @@ class Contaminant(models.Model):
                 grouped_contaminants[contaminant.category] = [contaminant]
 
         return grouped_contaminants
+
+
+class Reference(models.Model):
+    publication_id = models.CharField(max_length=200, null=True, blank=True)
+    contaminant = models.ForeignKey(Contaminant)
+
+
+class Suggestion(models.Model):
+    name = models.CharField(max_length=200, null=True, blank=True)
+    contaminant = models.ForeignKey(Contaminant)
 
 
 class Pack(models.Model):

@@ -20,11 +20,20 @@
     Uniprot
 </a>
 <br/>
-{% if contaminant.publication_id %}
+{% for ref in contaminant.references %}
 <a href="http://www.ncbi.nlm.nih.gov/pubmed/
-{{ contaminant.publication_id }}">
+{{ ref.publication_id }}">
     Reference
 </a>
+<br/>
+{% endfor %}
+{% if contaminant.suggestions %}
+<strong>Suggested by:</strong>
+<br/>
+{% for sugg in contaminant.suggestions %}
+{{ sugg.name }}
+</br/>
+{% endfor %}
 {% endif %}
             '>
            {{ contaminant.short_name }} -  {{ contaminant.long_name }}</a>
