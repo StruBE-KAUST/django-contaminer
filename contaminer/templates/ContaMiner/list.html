@@ -36,7 +36,11 @@
 {% endfor %}
 {% endif %}
             '>
-           {{ contaminant.short_name }} -  {{ contaminant.long_name }}</a>
+            {{ contaminant.short_name }} - {{ contaminant.long_name }} 
+            {% if contaminant.organism %}
+                (<em>{{ contaminant.organism }}</em>)
+                {% endif %}
+            </a>
         </li>
         {% endfor %}
     </ul></dd>
