@@ -22,6 +22,7 @@ import logging
 import os
 import re
 import errno
+import threading
 
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
@@ -167,7 +168,8 @@ def newjob_handler(request):
     log.debug("Contaminants list file saved")
 
     # Submit job
-    newjob.submit(file_path, list_path)
+    threading.Thread(target=newjob.submit, args=(file_path, list_path)).start()
+#    newjob.submit(file_path, list_path)
     log.debug("Job is submitted")
 
     log.debug("Exiting function")
