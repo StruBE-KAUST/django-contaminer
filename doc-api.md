@@ -1,12 +1,99 @@
-{domain} in the Example Requests can be replaced by 
-https://strube.cbrc.kaust.edu.sa/contaminer to 
-access the service hosted in KAUST.
+# API documentation
 
-Words starting with an uppercase are objects. Words starting with a lowercase are primary elements (int, string, ...)
-A link = is unique (One to One)
-A link * is multiple (One to Many) and gives a list in JSON
+This django application provides an API to interact with ContaMiner. This API
+gives a way to consult the ContaBase (contaminants database), submit a new
+job, and retrieve the state and the result of a given job. However, this API
+does not allow to make update the ContaBase or a previous job, neither to
+cancel or remove a job or a contaminant.
 
+This documentation is divided in three sections.
+1. Common workflow
+2. General structure of the data
+3. Functions documentation
 
+All the requests are made over HTTP(S). Depending on the function called, you
+could have to use either GET or POST.
+
+### Conventions used in this documentation
+{domain} represents the root URL to your ContaMiner django installation. To
+access the service hosted in KAUST, replace {domain} by 
+[https://strube.cbrc.kaust.edu.sa/contaminer](https://strube.cbrc.kaust.edu.sa/contaminer).
+
+## Common workflow
+The most probable workflow would be to get the list of contaminants,
+display a form to the end-user allowing him to upload a file, select some
+contaminants, and submit the form.
+When receiving the data from the end-user, the data can be sent to this django
+application through the API. A job ID is sent in response.
+This job ID can be used to follow the status of the job.
+When the status if "complete", the details of the results can be retrieved, 
+and displayed to the end-user.
+ __________         ____________        ____________________
+|          |       |            |      |                    |
+| End-user |       | Web server |      | Django application |
+|__________|       |____________|      |  (API provider)    |
+     |                   |             |____________________|
+     |                   |                       |
+     |                   |   GET contaminants    |
+     |                   |---------------------->|
+     |                   |                       |
+     |                   |  contaminants (JSON)  |
+     |                   |<----------------------|
+     |                   |                       |
+     |    Display form   |                       |
+     |<------------------|                       |
+     |                   |                       |
+     |     Send form     |                       |
+     |------------------>|                       |
+     |                   |__                     |
+     |                   |  |                    |
+     |                   |  | Local stuff        |
+     |                   |  |                    |
+     |                   |<--                    |
+     |                   |                       |
+     |                   |    POST submit_job    |
+     |                   |---------------------->|
+     |                   |                       |
+     |                   |     job ID (JSON)     |
+     |                   |<----------------------|
+     |                   |                       |
+     |                   |                       |<--
+     |                   |       GET status      |   |
+     |                   |---------------------->|   |
+     |                   |                       |  Repeat until
+     |                   |     status (JSON)     |  status is
+     |                   |<----------------------|  "complete"
+     |                   |                       |   |
+     |                   |                       |___|
+     |                   |                       |
+     |                   |      GET results      |
+     |                   |---------------------->|
+     |                   |                       |
+     |                   |       results (JSON)  |
+     |                   |<----------------------|
+     |                   |                       |
+     |  Display results  |                       |
+     |<------------------|                       |
+     |                   |                       |
+
+This workflow can be modified, for example by using a cache version of the 
+list of contaminants. 
+
+## General structure
+Data sent as a reply to a query follow a given structure. This structure is
+shown in this section.
+
+Words starting with an uppercase are objects. Words starting with a lowercase
+are primary elements (int, string, ...)
+A link = is unique (One to One) and gives a 'key': 'value' relationship in
+JSON
+A link * is multiple (One to Many) and gives a 'key': ['value1', 'value2',...]
+in JSON
+
+The first block shows the structure of the ContaBase, as given when querying
+the full list of contaminants. This structure is used only to give some
+information about ContaBase (as opposed to ContaMiner which manages jobs).
+```
 ContaBase       Database of possible contaminants which may cristallise
   |             instead of a protein of interest. The contabase also contains
   |             the models prepared by morda_prep for a molecular replacement
@@ -77,8 +164,12 @@ ContaBase       Database of possible contaminants which may cristallise
         |
         |=name        (string) Firstname Lastname of the person who suggested
                       the protein as a contaminant
+```
 
-
+The second block shows the structure of the jobs, as managed by ContaMiner.
+This structure is used only to manage jobs (submit, get the status, and 
+retrieve the results).
+```
 Job             Set of tasks to run with one unique diffraction data file.
   |             One job allows the user to know if any contaminant is in his
   |             crystal.
@@ -115,19 +206,43 @@ Job             Set of tasks to run with one unique diffraction data file.
     |=percent       (int) probability for solution to be a good solution.
     |               See MoRDa documentation for more details
     |
-    |=q_factor      Indicator of the solution quality. See MoRDa documentation
+    |=q_factor      (float)Indicator of the solution quality.
+    |               See MoRDa documentation
                     for more details
+```
+
+## Functions documentation
+This section provides the needed information to interact with ContaMiner
+through the API. Each function description goes with one or more examples
+requests and responses.
+
+Here is the list of available functions.
+- GET contabase
+- GET categories
+- GET detailed_categories
+- GET category
+- GET detailed_category
+- GET contaminants
+- GET detailed_contaminants
+- GET contaminant
+- GET detailed_contaminant
+- POST submit_job
+- GET job/status
+- GET job/result
+- GET job/detailed_result
+- GET job/final_pdb
+- GET job/final_mtz
 
 
-#################################
-GET contabase                   #
-Parameters: none                #
-Returns the complete ContaBase  #
+## GET contabase
+Parameters: none
+Returns the complete ContaBase
 
-Example Request
-GET https://{domain}/api/contabase
+### Example Request
+> GET https://{domain}/api/contabase
 
-Example Response
+### Example Response
+```
 {
     "categories": [
         {
@@ -200,17 +315,18 @@ Example Response
         [... Truncated output ...]
     ]
 }
+```
 
 
-#################################
-GET categories                  #
-Parameters: none                #
-Returns the list of categories  #
+## GET categories
+Parameters: none
+Returns the list of categories
 
-Example Request
-GET https://{domain}/api/categories
+### Example Request
+> GET https://{domain}/api/categories
 
-Example Response
+### Example Response
+```
 {
     "categories": [
         {
@@ -245,28 +361,28 @@ Example Response
         }
      ]
 }
+```
 
-################################################################
-GET detailed_categories                                        #
-Parameters: none                                               #
-Returns the list of categories, with the included contaminants #
+## GET detailed_categories
+Parameters: none
+Returns the list of categories, with the included contaminants
 The response is exactly the same as GET contabase
 
-Example Request
-GET https://{domain}/api/detailed_categories
+### Example Request
+> GET https://{domain}/api/detailed_categories
 
-Example Response
+### Example Response
 See GET contabase
 
-#########################################
-GET category                            #
-Parameters: (int) category_id           #
-Returns the category with the given ID  #
+## GET category
+Parameters: (int) category_id
+Returns the category with the given ID
 
-Example Request
-GET https://{domain}/api/category/2
+### Example Request
+> GET https://{domain}/api/category/2
 
-Example Response
+### Example Response
+```
 {
     "category": {
         "id": 2,
@@ -274,19 +390,20 @@ Example Response
         "selected_by_default": false
     }
 }
+```
 
-#########################################################################
-GET detailed_category                                                   #
-Parameters: (int) id                                                    #
-Returns the category with the given ID, with the included contaminants  #
+## GET detailed_category
+Parameters: (int) id
+Returns the category with the given ID, with the included contaminants
 
-Example Request
-GET https://{domain}/api/detailed_category?id=2
+### Example Request
+> GET https://{domain}/api/detailed_category?id=2
 
-Example Alternative Request
-GET https://{domain}/api/detaild_category/2
+### Example Alternative Request
+> GET https://{domain}/api/detaild_category/2
 
-Example Response
+### Example Response
+```
 {
     "id": 2,
     "name": "Tag",
@@ -342,16 +459,17 @@ Example Response
         [... Truncated output ...]
     ]
 }
+```
 
-##########################################################
-GET contaminants                                         #
-Parameters: none                                         #
-Returns the list of contaminants without the categories  #
+## GET contaminants
+Parameters: none
+Returns the list of contaminants without the categories
 
-Example Request
-GET https://{domain}/api/contaminants
+### Example Request
+> GET https://{domain}/api/contaminants
 
-Example Response
+### Example Response
+```
 {
     "contaminants": [
         {
@@ -378,16 +496,17 @@ Example Response
         [... Truncated output ...]
     ]
 }
+```
 
-##########################################################################
-GET details_contaminants                                                 #
-Parameters: none                                                         #
-Returns the list of contaminants without the categories, with the packs  #
+## GET detailed_contaminants
+Parameters: none
+Returns the list of contaminants without the categories, with the packs
 
-Example Request
-GET https://{domain}/api/detailed_contaminants
+### Example Request
+> GET https://{domain}/api/detailed_contaminants
 
-Example Response
+> Example Response
+```
 {
     "contaminants": [
         { 
@@ -440,19 +559,20 @@ Example Response
         [... Truncated output ...]
     ]
 }
+```
 
-####################################################
-GET contaminant                                    #
-Parameters: (string) uniprot_ID                    #
-Returns the contaminant with the given uniprot ID  #
+## GET contaminant
+Parameters: (string) uniprot_ID
+Returns the contaminant with the given uniprot ID
 
-Example Request
-GET https://{domain}/api/contaminant?uniprot_id=P0AA25
+### Example Request
+> GET https://{domain}/api/contaminant?uniprot_id=P0AA25
 
-Example Alternative Request
-GET https://{domain}/api/containant/P0AA25
+### Example Alternative Request
+> GET https://{domain}/api/containant/P0AA25
 
-Example Response
+### Example Response
+```
 {
     "uniprot_id": "P0AA25",
     "short_name": "THIO_ECOLI",
@@ -460,20 +580,21 @@ Example Response
     "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPT3LLLFKNGEVAATKVGALSKGQLKEFLDANLA",
     "organism": "E. Coli",
 }
+```
 
-#####################################################
-GET detailed_contaminant                            #
-Parameters: (string) uniprot_id                     #
-Returns the contaminant with the given uniprot ID,  #
-with the packs and references                       #
+## GET detailed_contaminant
+Parameters: (string) uniprot_id
+Returns the contaminant with the given uniprot ID,
+with the packs and references
 
-Example Request
-GET https://{domain}/contaminer/api/contaminant?uniprot_id=P0AA25
+### Example Request
+> GET https://{domain}/contaminer/api/contaminant?uniprot_id=P0AA25
 
-Example Aternative Request
-GET https://{domain}/contaminer/api/contaminant/P0AA25
+### Example Aternative Request
+> GET https://{domain}/contaminer/api/contaminant/P0AA25
 
-Example Response
+### Example Response
+```
 {
     "uniprot_id": "P0AA25",
     "short_name": "THIO_ECOLI",
@@ -515,99 +636,110 @@ Example Response
         }
     ]
 }
+```
 
-##############################################################
-POST submit_job                                              #
-Parameters: (string) contaminants                            #
-            (file) diffraction_data                          #
-            (string)(opt) email_address                           #
-Returns a new job ID and submits the job to the cluster      #
-Returns an error if the submitted file is not valid          #
-This function submits a new job to the cluster. The job uses #
-the diffraction data from $diffraction_data, and tests       #
-it against the contaminants whose uniprot IDs are in         #
-$contaminants. When the job is complete, an email is sent    #
-to "mail_address".                                           #
-                                                             #
-$contaminants is a list of the uniprot IDs, separated by     #
-commas, without space.                                       #
+## POST job
+Parameters: (string) contaminants
+            (file) diffraction_data
+            (string)(opt) email_address
+Returns a new job ID and submits the job to the cluster
+Returns an error if the submitted file is not valid
+This function submits a new job to the cluster. The job uses
+the diffraction data from $diffraction_data, and tests
+it against the contaminants whose uniprot IDs are in
+$contaminants. When the job is complete, an email is sent
+to "mail_address".
+
+$contaminants is a list of the uniprot IDs, separated by
+commas, without space.
 
 
-Example Request
-POST https://{domain}/api/submit_job
+### Example Request
+> POST https://{domain}/api/job
 with:
+```
 $_POST['email_address'] = 'you@example.com'
 $_POST['contaminants'] = "P0ACJ8,P0AA25,P63165"
 $_FILES['diffraction_data'] = A valid diffraction file
+```
 
-Example Response
+### Example Response
+```
 {
     "error": false,
     "id": 168,
 }
+```
 
-Example Request
-POST https://{domain}/api/submit_job
+### Example Request
+> POST https://{domain}/api/job
 with:
+```
 $_POST['email_address'] = 'you@example.com'
 $_POST['contaminants'] = "P0ACJ8,P0AA25,P63165"
 $_FILES['diffraction_data'] = An invalid diffraction file
+```
 
-Example Reponse
+### Example Reponse
+```
 {
     "error": true,
     "message": "Invalid data file"
 }
+```
 
-##############################################################
-GET status                                                   #
-Parameters: (int) id                                         #
-Returns the current status of the job with the given job ID  #
-The returned status can be:                                  #
-* "submitted": when the file is uploaded to the server and   #
-the tasks are queued                                         #
-* "running": when the tasks started on the cluster           #
-* "complete": when all the tasks are complete on the cluster #
-* "error": when an error has been encountered                #
+## GET job/status
+Parameters: (int) id
+Returns the current status of the job with the given job ID
+The returned status can be:
+* "submitted": when the file is uploaded to the server and
+the tasks are queued
+* "running": when the tasks started on the cluster
+* "complete": when all the tasks are complete on the cluster
+* "error": when an error has been encountered
 
-Example Request
-GET https://{domain}/api/status?id=165
+### Example Request
+> GET https://{domain}/api/job?id=165
 
-Example Alternative Request
-GET https://{domain}/api/status/165
+### Example Alternative Request
+> GET https://{domain}/api/job/165
 
 Example Response
+```
 {
     "id": 165,
     "status": "submitted"
 }
+```
 
-######################################################
-GET result                                           #
-Parameters: (int) id                                 #
-Returns the resuls for the job with the given ID.    #
-Returns an error if the job is not yet complete      #
-Use GET status to know the current state of the job  #
+## GET job/result
+Parameters: (int) id
+Returns the resuls for the job with the given ID.
+Returns an error if the job is not yet complete
+Use GET status to know the current state of the job
 
-Example Request
-GET https://{domain}/api/result?id=166
+### Example Request
+> GET https://{domain}/api/result?id=166
 
-Example Alternative Request
-GET https://{domain}/api/result/166
+### Example Alternative Request
+> GET https://{domain}/api/result/166
 
-Example Response
+### Example Response
+```
 {
     "error": true,
     "message": "Job does not exist"
 }
+```
 
-Example Request
-GET https://{domain}/api/result?id=165
+### Example Request
+> GET https://{domain}/api/job/result?id=165
 
-Example Alternative Request
-GET https://{domain}/api/result/165
+### Example Alternative Request
+> GET https://{domain}/api/job/result/165
 
-Example Response
+### Example Response
+```
 {
     "id": 164,
     "results": [
@@ -631,34 +763,37 @@ Example Response
         }
     ]
 }
+```
 
-######################################################
-GET detailed_result                                  #
-Parameters: (int) id                                 #
-Returns the results for the job with the given ID,   #
-with the result for each space_group and pack pairs  #
-Returns an error if the job is not yet complete      #
-Use GET status to know the current state of the job  #
+## GET job/detailed_result
+Parameters: (int) id
+Returns the results for the job with the given ID,
+with the result for each space_group and pack pairs
+Returns an error if the job is not yet complete
+Use GET status to know the current state of the job
 
-Example Request
-GET https://{domain}/api/detailed_result?id=166
+### Example Request
+> GET https://{domain}/api/job/detailed_result?id=166
 
-Example Alternative Request
-GET https://{domain}/api/detailed_result/166
+### Example Alternative Request
+> GET https://{domain}/api/job/detailed_result/166
 
-Example Response
+### Example Response
+```
 {
     "error": true,
     "message": "Job does not exist"
 }
+```
 
-Example Request
-GET https://{domain}/api/detailed_result?id=164
+### Example Request
+> GET https://{domain}/api/job/detailed_result?id=164
 
-Example Alternative Request
-GET https://{domain}/api/detailed_result/164
+### Example Alternative Request
+> GET https://{domain}/api/job/detailed_result/164
 
-Example Response
+### Example Response
+```
 {
     "id": 164,
     "results": [
@@ -690,63 +825,66 @@ Example Response
         [... Truncated output ...]
     ] 
 }
+```
 
-##############################################################
-GET final_pdb                                                #
-Parameters: (int) id                                         #
-            (string) uniprot_id                              #
-            (string) space_group                             #
-            (int) pack_nb                                    #
-Returns the final PDB file generated by morda_solve for the  #
-job with the given ID, tested against the contaminant        #
-with the given uniprot ID, in the given space_group          #
-(for example P-21-21-21), and the given pack number.         #
-The file is available only if the result for the combination #
-of contaminant, space group and pack gave a result with      #
-a percentage higher than 90.                                 #
-Returns an error if the file is not available.               #
+## GET job/final_pdb
+Parameters: (int) id
+            (string) uniprot_id
+            (string) space_group
+            (int) pack_nb
+Returns the final PDB file generated by morda_solve for the
+job with the given ID, tested against the contaminant
+with the given uniprot ID, in the given space_group
+(for example P-21-21-21), and the given pack number.
+The file is available only if the result for the combination
+of contaminant, space group and pack gave a result with
+a percentage higher than 90.
+Returns an error if the file is not available.
 
-Example Request
-https://{domain}/api/final_pdb?id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
+### Example Request
+> https://{domain}/api/job/final_pdb?id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
 
-Example Response
+### Example Response
+```
 {
     "error": true",
     "message": "File does not exist"
 }
+```
 
-Example Request
-https://{domain}/api/final_pdb?id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
+### Example Request
+> https://{domain}/api/job/final_pdb?id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
 
-Example Response
-*PDB file content*
+### Example Response
+PDB file content
 
-##############################################################
-GET final_mtz                                                #
-Parameters: (int) id                                         #
-            (string) uniprot_id                              #
-            (string) space_group                             #
-            (int) pack_nb                                    #
-Returns the final MTZ file generated by morda_solve for the  #
-job with the given ID, tested against the contaminant        #
-with the given uniprot ID, in the given space_group          #
-(for example P-21-21-21), and the given pack number.         #
-The file is available only if the result for the combination #
-of contaminant, space group and pack gave a result with      #
-a percentage higher than 90.                                 #
-Returns an error if the file is not available.               #
+## GET job/final_mtz
+Parameters: (int) id
+            (string) uniprot_id
+            (string) space_group
+            (int) pack_nb
+Returns the final MTZ file generated by morda_solve for the
+job with the given ID, tested against the contaminant
+with the given uniprot ID, in the given space_group
+(for example P-21-21-21), and the given pack number.
+The file is available only if the result for the combination
+of contaminant, space group and pack gave a result with
+a percentage higher than 90.
+Returns an error if the file is not available.
 
-Example Request
-https://{domain}/api/final_mtz?id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
+### Example Request
+> https://{domain}/api/job/final_mtz?id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
 
-Example Response
+### Example Response
+```
 {
     "error": true",
     "message": "File does not exist"
 }
+```
 
-Example Request
-https://{domain}/api/final_mtz?id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
+### Example Request
+> https://{domain}/api/job/final_mtz?id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
 
-Example Response
-*MTZ file content*
+### Example Response
+MTZ file content
