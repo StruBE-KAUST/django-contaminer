@@ -3,21 +3,17 @@
 This django application provides an API to interact with ContaMiner. This API
 gives a way to consult the ContaBase (contaminants database), submit a new
 job, and retrieve the state and the result of a given job. However, this API
-does not allow to make update the ContaBase or a previous job, neither to
-cancel or remove a job or a contaminant.
+does not allow to update the ContaBase or a previous job, neither to cancel
+or remove a job or a contaminant.
 
 This documentation is divided in three sections.
+
 1. Common workflow
 2. General structure of the data
 3. Functions documentation
 
 All the requests are made over HTTP(S). Depending on the function called, you
 could have to use either GET or POST.
-
-### Conventions used in this documentation
-{domain} represents the root URL to your ContaMiner django installation. To
-access the service hosted in KAUST, replace {domain} by 
-[https://strube.cbrc.kaust.edu.sa/contaminer](https://strube.cbrc.kaust.edu.sa/contaminer).
 
 ## Common workflow
 The most probable workflow would be to get the list of contaminants,
@@ -26,8 +22,9 @@ contaminants, and submit the form.
 When receiving the data from the end-user, the data can be sent to this django
 application through the API. A job ID is sent in response.
 This job ID can be used to follow the status of the job.
-When the status if "complete", the details of the results can be retrieved, 
+When the status is "complete", the details of the results can be retrieved, 
 and displayed to the end-user.
+```
  __________         ____________        ____________________
 |          |       |            |      |                    |
 | End-user |       | Web server |      | Django application |
@@ -75,6 +72,7 @@ and displayed to the end-user.
      |  Display results  |                       |
      |<------------------|                       |
      |                   |                       |
+```
 
 This workflow can be modified, for example by using a cache version of the 
 list of contaminants. 
@@ -83,13 +81,17 @@ list of contaminants.
 Data sent as a reply to a query follow a given structure. This structure is
 shown in this section.
 
+### Convention used
 Words starting with an uppercase are objects. Words starting with a lowercase
 are primary elements (int, string, ...)
-A link = is unique (One to One) and gives a 'key': 'value' relationship in
-JSON
-A link * is multiple (One to Many) and gives a 'key': ['value1', 'value2',...]
-in JSON
 
+A link = is unique (One to One) and gives a 'key': 'value' relationship in
+JSON.
+
+A link * is multiple (One to Many) and gives a 'key': ['value1', 'value2',...]
+in JSON.
+
+### ContaBase
 The first block shows the structure of the ContaBase, as given when querying
 the full list of contaminants. This structure is used only to give some
 information about ContaBase (as opposed to ContaMiner which manages jobs).
@@ -166,6 +168,7 @@ ContaBase       Database of possible contaminants which may cristallise
                       the protein as a contaminant
 ```
 
+### ContaMiner
 The second block shows the structure of the jobs, as managed by ContaMiner.
 This structure is used only to manage jobs (submit, get the status, and 
 retrieve the results).
@@ -216,6 +219,12 @@ This section provides the needed information to interact with ContaMiner
 through the API. Each function description goes with one or more examples
 requests and responses.
 
+In the Example Requests, {domain} represents the root URL to your ContaMiner
+django installation. To access the service hosted in KAUST, replace {domain}
+by 
+[https://strube.cbrc.kaust.edu.sa/contaminer](https://strube.cbrc.kaust.edu.sa/contaminer).
+
+
 Here is the list of available functions.
 - GET contabase
 - GET categories
@@ -235,8 +244,8 @@ Here is the list of available functions.
 
 
 ## GET contabase
-Parameters: none
-Returns the complete ContaBase
+> Parameters: none
+> Returns the complete ContaBase
 
 ### Example Request
 > GET https://{domain}/api/contabase
@@ -254,7 +263,7 @@ Returns the complete ContaBase
                     "uniprot_id": "P0ACJ8",
                     "short_name": "CRP_ECOLI",
                     "long_name": "cAMP-activated global transcriptional regulator CRP",
-                    "sequence": "MVLGKPQTDPTLEWFLSHCHIHKYPSKSTLIHQGEKAETLYYIVKGSVAVLIKDEEGKEMILSYLNQGDFIGELGLFEEGQERSAWVRAKTACEVAEISYKKFRQLIQVNPDILMRLSAQMARRLQVTSEKVGNLAFLDVTGRIAQTLLNLAKQPDAMTHPDGMQIKITRQEIGQIVGCSRETVGRILKMLEDQNLISAHGKTIVVYGTR",
+                    "sequence": "MVLGKPQTDPTLEW[...Truncated output ...]ISAHGKTIVVYGTR",
                     "organism": "E. Coli",
                     "packs": [
                         {
@@ -319,8 +328,8 @@ Returns the complete ContaBase
 
 
 ## GET categories
-Parameters: none
-Returns the list of categories
+> Parameters: none
+> Returns the list of categories
 
 ### Example Request
 > GET https://{domain}/api/categories
@@ -364,8 +373,8 @@ Returns the list of categories
 ```
 
 ## GET detailed_categories
-Parameters: none
-Returns the list of categories, with the included contaminants
+> Parameters: none
+> Returns the list of categories, with the included contaminants
 The response is exactly the same as GET contabase
 
 ### Example Request
@@ -375,8 +384,8 @@ The response is exactly the same as GET contabase
 See GET contabase
 
 ## GET category
-Parameters: (int) category_id
-Returns the category with the given ID
+> Parameters: (int) category_id
+> Returns the category with the given ID
 
 ### Example Request
 > GET https://{domain}/api/category/2
@@ -393,8 +402,8 @@ Returns the category with the given ID
 ```
 
 ## GET detailed_category
-Parameters: (int) id
-Returns the category with the given ID, with the included contaminants
+> Parameters: (int) id
+> Returns the category with the given ID, with the included contaminants
 
 ### Example Request
 > GET https://{domain}/api/detailed_category?id=2
@@ -413,7 +422,7 @@ Returns the category with the given ID, with the included contaminants
             "uniprot_id": "P0AA25",
             "short_name": "THIO_ECOLI",
             "long_name": "Thioredoxin-1",
-            "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPTLLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+            "sequence": "MSDKIIHLTDDSF[... Truncated output ...]SKGQLKEFLDANLA",
             "organism": "E. Coli",
             "packs": [
                 {
@@ -462,8 +471,8 @@ Returns the category with the given ID, with the included contaminants
 ```
 
 ## GET contaminants
-Parameters: none
-Returns the list of contaminants without the categories
+> Parameters: none
+> Returns the list of contaminants without the categories
 
 ### Example Request
 > GET https://{domain}/api/contaminants
@@ -476,21 +485,21 @@ Returns the list of contaminants without the categories
             "uniprot_id": "P0ACJ8",
             "short_name": "CRP_ECOLI",
             "long_name": "cAMP-activated global transcriptional regulator CRP",
-            "sequence": "MVLGKPQTDPTLEWFLSHCHIHKYPSKSTLIHQGEKAETLYYIVKGSVAVLIKDEEGKEMILSYLNQGDFIGELGLFE5EGQERSAWVRAKTACEVAEISYKKFRQLIQVNPDILMRLSAQMARRLQVTSEKVGNLAFLDVTGRIAQTLLNLAKQPDA5MTHPDGMQIKITRQEIGQIVGCSRETVGRILKMLEDQNLISAHGKTIVVYGTR",
+            "sequence": "MVLGKPQTDPTLE[... Truncated output ...]ISAHGKTIVVYGTR",
             "organism": "E.Coli"
         },
         {
             "uniprot_id": "P0AA25",
             "short_name": "THIO_ECOLI",
             "long_name": "Thioredoxin-1",
-            "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPT3LLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+            "sequence": "MSDKIIHLTDDSF[... Truncated output ...]SKGQLKEFLDANLA",
             "organism": "E. Coli"
         },
         {
             "uniprot_id": "P63165",
             "short_name": "SUMO1_HUMAN",
             "long_name": "Small ubiquitin-related modifier 1",
-            "sequence": "MSDQEAKPSTEDLGDKKEGEYIKLKVIGQDSSEIHFKVKMTTHLKKLKESYCQRQGVPMNSLRFLFEGQRIADNHTPKELGMEEEDVIEVYQEQTGGHSTV",
+            "sequence": "MSDQEAKPSTEDL[... Truncated output ...]IEVYQEQTGGHSTV",
             "organism": "Homo sapiens"
         },
         [... Truncated output ...]
@@ -499,8 +508,8 @@ Returns the list of contaminants without the categories
 ```
 
 ## GET detailed_contaminants
-Parameters: none
-Returns the list of contaminants without the categories, with the packs
+> Parameters: none
+> Returns the list of contaminants without the categories, with the packs
 
 ### Example Request
 > GET https://{domain}/api/detailed_contaminants
@@ -513,7 +522,7 @@ Returns the list of contaminants without the categories, with the packs
             "uniprot_id": "P0AA25",
             "short_name": "THIO_ECOLI",
             "long_name": "Thioredoxin-1",
-            "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPTLLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+            "sequence": "MSDKIIHLTDDSF[... Truncated output ...]SKGQLKEFLDANLA",
             "organism": "E.Coli",
             "packs": [
                 {
@@ -562,8 +571,8 @@ Returns the list of contaminants without the categories, with the packs
 ```
 
 ## GET contaminant
-Parameters: (string) uniprot_ID
-Returns the contaminant with the given uniprot ID
+> Parameters: (string) uniprot_ID
+> Returns the contaminant with the given uniprot ID
 
 ### Example Request
 > GET https://{domain}/api/contaminant?uniprot_id=P0AA25
@@ -577,15 +586,15 @@ Returns the contaminant with the given uniprot ID
     "uniprot_id": "P0AA25",
     "short_name": "THIO_ECOLI",
     "long_name": "Thioredoxin-1",
-    "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPT3LLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+    "sequence": "MSDKIIHLTDDSF[... Truncated output ...]SKGQLKEFLDANLA",
     "organism": "E. Coli",
 }
 ```
 
 ## GET detailed_contaminant
-Parameters: (string) uniprot_id
-Returns the contaminant with the given uniprot ID,
-with the packs and references
+> Parameters: (string) uniprot_id
+> Returns the contaminant with the given uniprot ID,
+> with the packs and references
 
 ### Example Request
 > GET https://{domain}/contaminer/api/contaminant?uniprot_id=P0AA25
@@ -599,7 +608,7 @@ with the packs and references
     "uniprot_id": "P0AA25",
     "short_name": "THIO_ECOLI",
     "long_name": "Thioredoxin-1",
-    "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPT3LLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+    "sequence": "MSDKIIHLTDDSF[... Truncated output ...]SKGQLKEFLDANLA",
     "organism": "E. Coli",
     "packs": [
         {
@@ -639,18 +648,18 @@ with the packs and references
 ```
 
 ## POST job
-Parameters: (string) contaminants
-            (file) diffraction_data
-            (string)(opt) email_address
-Returns a new job ID and submits the job to the cluster
-Returns an error if the submitted file is not valid
+> Parameters: (string) contaminants
+>             (file) diffraction_data
+>             (string)(opt) email_address
+> Returns a new job ID and submits the job to the cluster
+> Returns an error if the submitted file is not valid
 This function submits a new job to the cluster. The job uses
 the diffraction data from $diffraction_data, and tests
 it against the contaminants whose uniprot IDs are in
 $contaminants. When the job is complete, an email is sent
 to "mail_address".
 
-$contaminants is a list of the uniprot IDs, separated by
+`contaminants` is a list of the uniprot IDs, separated by
 commas, without space.
 
 
@@ -689,8 +698,8 @@ $_FILES['diffraction_data'] = An invalid diffraction file
 ```
 
 ## GET job/status
-Parameters: (int) id
-Returns the current status of the job with the given job ID
+> Parameters: (int) id
+> Returns the current status of the job with the given job ID
 The returned status can be:
 * "submitted": when the file is uploaded to the server and
 the tasks are queued
@@ -713,10 +722,10 @@ Example Response
 ```
 
 ## GET job/result
-Parameters: (int) id
-Returns the resuls for the job with the given ID.
-Returns an error if the job is not yet complete
-Use GET status to know the current state of the job
+> Parameters: (int) id
+> Returns the resuls for the job with the given ID.
+> Returns an error if the job is not yet complete
+Use `GET status` to know the current state of the job
 
 ### Example Request
 > GET https://{domain}/api/result?id=166
@@ -766,11 +775,11 @@ Use GET status to know the current state of the job
 ```
 
 ## GET job/detailed_result
-Parameters: (int) id
-Returns the results for the job with the given ID,
-with the result for each space_group and pack pairs
-Returns an error if the job is not yet complete
-Use GET status to know the current state of the job
+> Parameters: (int) id
+> Returns the results for the job with the given ID,
+> with the result for each space_group and pack pairs
+> Returns an error if the job is not yet complete
+Use `GET status` to know the current state of the job
 
 ### Example Request
 > GET https://{domain}/api/job/detailed_result?id=166
@@ -828,18 +837,18 @@ Use GET status to know the current state of the job
 ```
 
 ## GET job/final_pdb
-Parameters: (int) id
-            (string) uniprot_id
-            (string) space_group
-            (int) pack_nb
-Returns the final PDB file generated by morda_solve for the
-job with the given ID, tested against the contaminant
-with the given uniprot ID, in the given space_group
-(for example P-21-21-21), and the given pack number.
+> Parameters: (int) id
+>             (string) uniprot_id
+>             (string) space_group
+>             (int) pack_nb
+> Returns the final PDB file generated by morda_solve for the
+> job with the given ID, tested against the contaminant
+> with the given uniprot ID, in the given space_group
+> (for example P-21-21-21), and the given pack number.
 The file is available only if the result for the combination
 of contaminant, space group and pack gave a result with
 a percentage higher than 90.
-Returns an error if the file is not available.
+> Returns an error if the file is not available.
 
 ### Example Request
 > https://{domain}/api/job/final_pdb?id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
@@ -859,18 +868,18 @@ Returns an error if the file is not available.
 PDB file content
 
 ## GET job/final_mtz
-Parameters: (int) id
-            (string) uniprot_id
-            (string) space_group
-            (int) pack_nb
-Returns the final MTZ file generated by morda_solve for the
-job with the given ID, tested against the contaminant
-with the given uniprot ID, in the given space_group
-(for example P-21-21-21), and the given pack number.
+> Parameters: (int) id
+>             (string) uniprot_id
+>             (string) space_group
+>             (int) pack_nb
+> Returns the final MTZ file generated by morda_solve for the
+> job with the given ID, tested against the contaminant
+> with the given uniprot ID, in the given space_group
+> (for example P-21-21-21), and the given pack number.
 The file is available only if the result for the combination
 of contaminant, space group and pack gave a result with
 a percentage higher than 90.
-Returns an error if the file is not available.
+> Returns an error if the file is not available.
 
 ### Example Request
 > https://{domain}/api/job/final_mtz?id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
