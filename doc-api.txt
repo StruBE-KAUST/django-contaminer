@@ -7,7 +7,7 @@ A link = is unique (One to One)
 A link * is multiple (One to Many) and gives a list in JSON
 
 
-ContaBase       A database of possible contaminants which may cristallise
+ContaBase       Database of possible contaminants which may cristallise
   |             instead of a protein of interest. The contabase also contains
   |             the models prepared by morda_prep for a molecular replacement
   |
@@ -48,11 +48,10 @@ ContaBase       A database of possible contaminants which may cristallise
       | |             in the ContaBase.
       | |
       | |=structure   (string) Quaternary structure. Can be :
-      | |             * monomer for a monomer
-      | |             * domain for a single domain
-      | |             * domains for a set of domains
-      | |             * n-mer for a multimer, with n being an integer (2-mer, 
-      | |             3-mer, 4-mer, ...)
+      | |             * "monomer" for a monomer
+      | |             * "domain" for a single domain
+      | |             * "domains" for a set of domains
+      | |             * "2-mer", "3-mer", "4-mer", ...  for a multimer
       | |
       | *Model          Specific chain and domain of a template
       |   |
@@ -79,6 +78,45 @@ ContaBase       A database of possible contaminants which may cristallise
         |=name        (string) Firstname Lastname of the person who suggested
                       the protein as a contaminant
 
+
+Job             Set of tasks to run with one unique diffraction data file.
+  |             One job allows the user to know if any contaminant is in his
+  |             crystal.
+  |
+  |=id            (int) Unique identifier of the job
+  |
+  |=status        (string) Current status of the job. Can be:
+  |               * "submitted" when the file is uploaded to the cluster, and
+  |               the tasks are queued
+  |               * "running" if the tasks are running on the cluster
+  |               * "complete" when all the tasks for this job are complete
+  |               * "error" if an error has been encountered (bad file,
+  |               bad list of contaminants, cluster down, ...)
+  |
+  |*Result        Result of morda_solve for one combinaison of contaminant,
+    |             pack and space group.
+    |             The set (uniprot_id, pack_nb, space_group) is unique among
+    |             the results for one single job.
+    |
+    |=uniprot_id    (string) Uniprot ID of the contaminant tested
+    |
+    |=pack_nb       (int) Number of the pack tested. See the number attribute
+    |               of the Pack object in the ContaBase.
+    |
+    |=space_group   (string) Space group in which the pack is tested.
+    |               Indexes are seperated by dashes. Ex:
+    |               P-21-21-21
+    |
+    |=status        (string) Status of the task. Can be:
+    |               * "complete"
+    |               * "cancelled" if another task gave a positive result
+    |               * "aborted" if the cut-off time limit has been reached
+    |               * "error" if an error has been encountered
+    |=percent       (int) probability for solution to be a good solution.
+    |               See MoRDa documentation for more details
+    |
+    |=q_factor      Indicator of the solution quality. See MoRDa documentation
+                    for more details
 
 
 #################################
@@ -505,7 +543,7 @@ $_FILES['diffraction_data'] = A valid diffraction file
 Example Response
 {
     "error": false,
-    "job_id": 168,
+    "id": 168,
 }
 
 Example Request
@@ -523,7 +561,7 @@ Example Reponse
 
 ##############################################################
 GET status                                                   #
-Parameters: (int) job_id                                     #
+Parameters: (int) id                                         #
 Returns the current status of the job with the given job ID  #
 The returned status can be:                                  #
 * "submitted": when the file is uploaded to the server and   #
@@ -533,26 +571,26 @@ the tasks are queued                                         #
 * "error": when an error has been encountered                #
 
 Example Request
-GET https://{domain}/api/status?job_id=165
+GET https://{domain}/api/status?id=165
 
 Example Alternative Request
 GET https://{domain}/api/status/165
 
 Example Response
 {
-    "job_id": 165,
+    "id": 165,
     "status": "submitted"
 }
 
 ######################################################
 GET result                                           #
-Parameters: (int) job_id                             #
+Parameters: (int) id                                 #
 Returns the resuls for the job with the given ID.    #
 Returns an error if the job is not yet complete      #
 Use GET status to know the current state of the job  #
 
 Example Request
-GET https://{domain}/api/result?job_id=166
+GET https://{domain}/api/result?id=166
 
 Example Alternative Request
 GET https://{domain}/api/result/166
@@ -564,14 +602,14 @@ Example Response
 }
 
 Example Request
-GET https://{domain}/api/result?job_id=165
+GET https://{domain}/api/result?id=165
 
 Example Alternative Request
 GET https://{domain}/api/result/165
 
 Example Response
 {
-    "job_id": 164,
+    "id": 164,
     "results": [
         {
             "uniprot_id": "P0ACJ8",
@@ -596,14 +634,14 @@ Example Response
 
 ######################################################
 GET detailed_result                                  #
-Parameters: (int) job_id                             #
+Parameters: (int) id                                 #
 Returns the results for the job with the given ID,   #
 with the result for each space_group and pack pairs  #
 Returns an error if the job is not yet complete      #
 Use GET status to know the current state of the job  #
 
 Example Request
-GET https://{domain}/api/detailed_result?job_id=166
+GET https://{domain}/api/detailed_result?id=166
 
 Example Alternative Request
 GET https://{domain}/api/detailed_result/166
@@ -615,14 +653,14 @@ Example Response
 }
 
 Example Request
-GET https://{domain}/api/detailed_result?job_id=164
+GET https://{domain}/api/detailed_result?id=164
 
 Example Alternative Request
 GET https://{domain}/api/detailed_result/164
 
 Example Response
 {
-    "job_id": 164,
+    "id": 164,
     "results": [
         {
              "contaminant_id": "P0ACJ8",
@@ -655,7 +693,7 @@ Example Response
 
 ##############################################################
 GET final_pdb                                                #
-Parameters: (int) job_id                                     #
+Parameters: (int) id                                         #
             (string) uniprot_id                              #
             (string) space_group                             #
             (int) pack_nb                                    #
@@ -669,7 +707,7 @@ a percentage higher than 90.                                 #
 Returns an error if the file is not available.               #
 
 Example Request
-https://{domain}/api/final_pdb?job_id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
+https://{domain}/api/final_pdb?id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
 
 Example Response
 {
@@ -678,14 +716,14 @@ Example Response
 }
 
 Example Request
-https://{domain}/api/final_pdb?job_id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
+https://{domain}/api/final_pdb?id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
 
 Example Response
 *PDB file content*
 
 ##############################################################
 GET final_mtz                                                #
-Parameters: (int) job_id                                     #
+Parameters: (int) id                                         #
             (string) uniprot_id                              #
             (string) space_group                             #
             (int) pack_nb                                    #
@@ -699,7 +737,7 @@ a percentage higher than 90.                                 #
 Returns an error if the file is not available.               #
 
 Example Request
-https://{domain}/api/final_mtz?job_id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
+https://{domain}/api/final_mtz?id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
 
 Example Response
 {
@@ -708,7 +746,7 @@ Example Response
 }
 
 Example Request
-https://{domain}/api/final_mtz?job_id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
+https://{domain}/api/final_mtz?id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
 
 Example Response
 *MTZ file content*
