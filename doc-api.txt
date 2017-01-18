@@ -1,0 +1,714 @@
+{domain} in the Example Requests can be replaced by 
+https://strube.cbrc.kaust.edu.sa/contaminer to 
+access the service hosted in KAUST.
+
+Words starting with an uppercase are objects. Words starting with a lowercase are primary elements (int, string, ...)
+A link = is unique (One to One)
+A link * is multiple (One to Many) and gives a list in JSON
+
+
+ContaBase       A database of possible contaminants which may cristallise
+  |             instead of a protein of interest. The contabase also contains
+  |             the models prepared by morda_prep for a molecular replacement
+  |
+  |*Category      General classification of the contaminants
+    |             Based on the origin of the contaminants.
+    |             Allows the user to know if he should test this contaminant
+    |
+    |=id         (int) Unique identifier of the category
+    |
+    |=name       (string) Common designation of the category
+    |
+    |=default    (bool) Contaminants in this category are tested by
+    |             default if $default is true. Contaminants in this
+    |             category are ignored by default if $default is false. A
+    |             specific user input overwrite this default behavior.
+    |
+    |*Contaminant   Protein which may cristallise instead of a protein of
+      |             interest.
+      |
+      |=uniprot_id (string) Unique identifier used on Uniprot
+      |             to label the protein
+      |
+      |=short_name (string) Common short name of the protein
+      |
+      |=long_name  (string)(opt) Common name of the protein
+      |
+      |=sequence   (string) Amino-acid sequence of the protein
+      |
+      |=organism   (string)(opt) Origin of the contaminant
+      |
+      |
+      |*Pack          Set of models prepared by morda_prep, and used by
+      | |             morda_solve. A pack is included in a unit cell during
+      | |             the molecular replacement process.
+      | |
+      | |=number      (int) Number of the pack. This number is unique among
+      | |             other packs for the same contaminant, but not unique
+      | |             in the ContaBase.
+      | |
+      | |=structure   (string) Quaternary structure. Can be :
+      | |             * monomer for a monomer
+      | |             * domain for a single domain
+      | |             * domains for a set of domains
+      | |             * n-mer for a multimer, with n being an integer (2-mer, 
+      | |             3-mer, 4-mer, ...)
+      | |
+      | *Model          Specific chain and domain of a template
+      |   |
+      |   |=template   (string) PDB ID of the template used to create the
+      |   |             model
+      |   |
+      |   |=chain      (string)(opt) Chain of the template used to create the
+      |   |             model
+      |   |
+      |   |=domain     (string)(opt) Domain of the template used to create
+      |   |             the model
+      |   |
+      |   |=residues   (int) Number of residues in the model
+      |
+      |
+      |*Reference     Reference to a publication mentioning the protein as a 
+      | |             contaminant
+      | |
+      | |=pubmed_id   (int) Unique identifier of the publication on PubMed
+      |
+      |*Suggestion    Suggestion to add this protein as a contaminant from a
+        |             personnal communication
+        |
+        |=name        (string) Firstname Lastname of the person who suggested
+                      the protein as a contaminant
+
+
+
+#################################
+GET contabase                   #
+Parameters: none                #
+Returns the complete ContaBase  #
+
+Example Request
+GET https://{domain}/api/contabase
+
+Example Response
+{
+    "categories": [
+        {
+            "id": 1,
+            "name": "Protein in E.Coli",
+            "selected_by_default": true,
+            "contaminants": [
+                {
+                    "uniprot_id": "P0ACJ8",
+                    "short_name": "CRP_ECOLI",
+                    "long_name": "cAMP-activated global transcriptional regulator CRP",
+                    "sequence": "MVLGKPQTDPTLEWFLSHCHIHKYPSKSTLIHQGEKAETLYYIVKGSVAVLIKDEEGKEMILSYLNQGDFIGELGLFEEGQERSAWVRAKTACEVAEISYKKFRQLIQVNPDILMRLSAQMARRLQVTSEKVGNLAFLDVTGRIAQTLLNLAKQPDAMTHPDGMQIKITRQEIGQIVGCSRETVGRILKMLEDQNLISAHGKTIVVYGTR",
+                    "organism": "E. Coli",
+                    "packs": [
+                        {
+                            "number": 1,
+                            "structure": "monomer",
+                            "models": [
+                                {
+                                    "template": "3RYP",
+                                    "chain": "A",
+                                    "domain": 0,
+                                    "identity": 1.000,
+                                    "residues": 202
+                                }
+                            ]
+                        },
+                        {
+                            "number": 2,
+                            "structure": "domains",
+                            "models": [
+                                {
+                                    "template": "3RYP",
+                                    "chain": "A",
+                                    "domain": 1,
+                                    "identity": 1.000,
+                                    "residues": 112
+                                },
+                                {
+                                    "template": "3RYP",
+                                    "chain": "A",
+                                    "domain": 2,
+                                    "identity": 1.000,
+                                    "residues": 71
+                                }
+                            ]
+                        },
+                        [... Truncated output ...]
+                    ],
+                    "references": [
+                        {
+                            "pubmed_id": 26660914
+                        },
+                        {
+                            "pubmed_id": 16814929
+                        }
+                    ]
+                },
+                [... Truncated output ...]
+            ]
+        },
+        {
+            "id": 2,
+            "name": "Tag",
+            "selected_by_default": false,
+            "contaminants": [
+                [... Truncated output ...]
+                ]
+        }
+        [... Truncated output ...]
+    ]
+}
+
+
+#################################
+GET categories                  #
+Parameters: none                #
+Returns the list of categories  #
+
+Example Request
+GET https://{domain}/api/categories
+
+Example Response
+{
+    "categories": [
+        {
+            "id": 1,
+            "name": "Protein in E.Coli",
+            "selected_by_default": true
+        },
+        {
+            "id": 2,
+            "name": "Tag",
+            "selected_by_default": false
+        },
+        {
+            "id": 3,
+            "name": "Protein used during purification or crystallisation",
+            "selected_by_default": false
+        },
+        {
+            "id": 4,
+            "name": "Protein in yeast",
+            "selected_by_default": false
+        },
+        {
+            "id": 5,
+            "name": "Microbial contaminants of host cell and reagents",
+            "selected_by_default": true
+        },
+        {
+            "id": 6
+            "name": "Other expression systems",
+            "selected_by_default": true
+        }
+     ]
+}
+
+################################################################
+GET detailed_categories                                        #
+Parameters: none                                               #
+Returns the list of categories, with the included contaminants #
+The response is exactly the same as GET contabase
+
+Example Request
+GET https://{domain}/api/detailed_categories
+
+Example Response
+See GET contabase
+
+#########################################
+GET category                            #
+Parameters: (int) category_id           #
+Returns the category with the given ID  #
+
+Example Request
+GET https://{domain}/api/category/2
+
+Example Response
+{
+    "category": {
+        "id": 2,
+        "name": "Tag",
+        "selected_by_default": false
+    }
+}
+
+#########################################################################
+GET detailed_category                                                   #
+Parameters: (int) id                                                    #
+Returns the category with the given ID, with the included contaminants  #
+
+Example Request
+GET https://{domain}/api/detailed_category?id=2
+
+Example Alternative Request
+GET https://{domain}/api/detaild_category/2
+
+Example Response
+{
+    "id": 2,
+    "name": "Tag",
+    "selected_by_default": false,
+    "contaminants": [
+        {
+            "uniprot_id": "P0AA25",
+            "short_name": "THIO_ECOLI",
+            "long_name": "Thioredoxin-1",
+            "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPTLLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+            "organism": "E. Coli",
+            "packs": [
+                {
+                    "number": 1,
+                    "structure": "monomer",
+                    "models": [
+                        {
+                            "template": "3DXB",
+                            "chain": "B",
+                            "domain": 0,
+                            "identity": 1.000,
+                            "residues": 107
+                        }
+                    ]
+                },
+                {
+                    "number": 2,
+                    "structure": "4-mer",
+                    "models": [
+                        {
+                            "template": "3DXB",
+                            "chain": "ABCD",
+                            "domain": 0,
+                            "identity": 1.000,
+                            "residues": 107
+                        }
+                    ]
+                },
+                [... Truncated output ...]
+            ],
+            "references": [
+                {
+                    "pubmed_id": 26660914
+                }
+            ]
+        },
+        {
+            "uniprot_id": "P63165",
+            "short_name": "SUMO1_HUMAN",
+            "long_name": "Small ubiquitin-related modifier 1",
+            [... Truncated output ...]
+        },
+        [... Truncated output ...]
+    ]
+}
+
+##########################################################
+GET contaminants                                         #
+Parameters: none                                         #
+Returns the list of contaminants without the categories  #
+
+Example Request
+GET https://{domain}/api/contaminants
+
+Example Response
+{
+    "contaminants": [
+        {
+            "uniprot_id": "P0ACJ8",
+            "short_name": "CRP_ECOLI",
+            "long_name": "cAMP-activated global transcriptional regulator CRP",
+            "sequence": "MVLGKPQTDPTLEWFLSHCHIHKYPSKSTLIHQGEKAETLYYIVKGSVAVLIKDEEGKEMILSYLNQGDFIGELGLFE5EGQERSAWVRAKTACEVAEISYKKFRQLIQVNPDILMRLSAQMARRLQVTSEKVGNLAFLDVTGRIAQTLLNLAKQPDA5MTHPDGMQIKITRQEIGQIVGCSRETVGRILKMLEDQNLISAHGKTIVVYGTR",
+            "organism": "E.Coli"
+        },
+        {
+            "uniprot_id": "P0AA25",
+            "short_name": "THIO_ECOLI",
+            "long_name": "Thioredoxin-1",
+            "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPT3LLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+            "organism": "E. Coli"
+        },
+        {
+            "uniprot_id": "P63165",
+            "short_name": "SUMO1_HUMAN",
+            "long_name": "Small ubiquitin-related modifier 1",
+            "sequence": "MSDQEAKPSTEDLGDKKEGEYIKLKVIGQDSSEIHFKVKMTTHLKKLKESYCQRQGVPMNSLRFLFEGQRIADNHTPKELGMEEEDVIEVYQEQTGGHSTV",
+            "organism": "Homo sapiens"
+        },
+        [... Truncated output ...]
+    ]
+}
+
+##########################################################################
+GET details_contaminants                                                 #
+Parameters: none                                                         #
+Returns the list of contaminants without the categories, with the packs  #
+
+Example Request
+GET https://{domain}/api/detailed_contaminants
+
+Example Response
+{
+    "contaminants": [
+        { 
+            "uniprot_id": "P0AA25",
+            "short_name": "THIO_ECOLI",
+            "long_name": "Thioredoxin-1",
+            "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPTLLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+            "organism": "E.Coli",
+            "packs": [
+                {
+                    "number": 1,
+                    "structure": "monomer",
+                    "models": [
+                        {
+                            "template": "3DXB",
+                            "chain": "B",
+                            "domain": 0,
+                            "identity": 1.000,
+                            "residues": 107
+                        }
+                    ]
+                },
+                {
+                    "number": 1,
+                    "structure": "4-mer",
+                    "models": [
+                        {
+                            "template": "3DXB",
+                            "chain": "ABCD",
+                            "domain": 0,
+                            "identity": 1.000,
+                            "residues": 107
+                        }
+                    ]
+                },
+                [... Truncated output ...]
+            ],
+            "references": [
+                {
+                    "pubmed_id": 26660914
+                }
+            ]
+        },
+        {
+            "uniprot_id": "P63165",
+            "short_name": "SUMO1_HUMAN",
+            "long_name": "Small ubiquitin-related modifier 1",
+            [... Truncated output ...]
+        },
+        [... Truncated output ...]
+    ]
+}
+
+####################################################
+GET contaminant                                    #
+Parameters: (string) uniprot_ID                    #
+Returns the contaminant with the given uniprot ID  #
+
+Example Request
+GET https://{domain}/api/contaminant?uniprot_id=P0AA25
+
+Example Alternative Request
+GET https://{domain}/api/containant/P0AA25
+
+Example Response
+{
+    "uniprot_id": "P0AA25",
+    "short_name": "THIO_ECOLI",
+    "long_name": "Thioredoxin-1",
+    "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPT3LLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+    "organism": "E. Coli",
+}
+
+#####################################################
+GET detailed_contaminant                            #
+Parameters: (string) uniprot_id                     #
+Returns the contaminant with the given uniprot ID,  #
+with the packs and references                       #
+
+Example Request
+GET https://{domain}/contaminer/api/contaminant?uniprot_id=P0AA25
+
+Example Aternative Request
+GET https://{domain}/contaminer/api/contaminant/P0AA25
+
+Example Response
+{
+    "uniprot_id": "P0AA25",
+    "short_name": "THIO_ECOLI",
+    "long_name": "Thioredoxin-1",
+    "sequence": "MSDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPT3LLLFKNGEVAATKVGALSKGQLKEFLDANLA",
+    "organism": "E. Coli",
+    "packs": [
+        {
+            "number": 1,
+            "structure": "monomer",
+            "models": [
+                {
+                    "template": "3DXB",
+                    "chain": "B",
+                    "domain": 0,
+                    "identity": 1.000,
+                    "residues": 107
+                }
+            ]
+        },
+        {
+            "number": 1,
+            "structure": "4-mer",
+            "models": [
+                {
+                    "template": "3DXB",
+                    "chain": "ABCD",
+                    "domain": 0,
+                    "identity": 1.000,
+                    "residues": 107
+                }
+            ]
+        },
+        [... Truncated output ...]
+    ],
+    "references": [
+        {
+            "pubmed_id": 26660914
+        }
+    ]
+}
+
+##############################################################
+POST submit_job                                              #
+Parameters: (string) contaminants                            #
+            (file) diffraction_data                          #
+            (string)(opt) email_address                           #
+Returns a new job ID and submits the job to the cluster      #
+Returns an error if the submitted file is not valid          #
+This function submits a new job to the cluster. The job uses #
+the diffraction data from $diffraction_data, and tests       #
+it against the contaminants whose uniprot IDs are in         #
+$contaminants. When the job is complete, an email is sent    #
+to "mail_address".                                           #
+                                                             #
+$contaminants is a list of the uniprot IDs, separated by     #
+commas, without space.                                       #
+
+
+Example Request
+POST https://{domain}/api/submit_job
+with:
+$_POST['email_address'] = 'you@example.com'
+$_POST['contaminants'] = "P0ACJ8,P0AA25,P63165"
+$_FILES['diffraction_data'] = A valid diffraction file
+
+Example Response
+{
+    "error": false,
+    "job_id": 168,
+}
+
+Example Request
+POST https://{domain}/api/submit_job
+with:
+$_POST['email_address'] = 'you@example.com'
+$_POST['contaminants'] = "P0ACJ8,P0AA25,P63165"
+$_FILES['diffraction_data'] = An invalid diffraction file
+
+Example Reponse
+{
+    "error": true,
+    "message": "Invalid data file"
+}
+
+##############################################################
+GET status                                                   #
+Parameters: (int) job_id                                     #
+Returns the current status of the job with the given job ID  #
+The returned status can be:                                  #
+* "submitted": when the file is uploaded to the server and   #
+the tasks are queued                                         #
+* "running": when the tasks started on the cluster           #
+* "complete": when all the tasks are complete on the cluster #
+* "error": when an error has been encountered                #
+
+Example Request
+GET https://{domain}/api/status?job_id=165
+
+Example Alternative Request
+GET https://{domain}/api/status/165
+
+Example Response
+{
+    "job_id": 165,
+    "status": "submitted"
+}
+
+######################################################
+GET result                                           #
+Parameters: (int) job_id                             #
+Returns the resuls for the job with the given ID.    #
+Returns an error if the job is not yet complete      #
+Use GET status to know the current state of the job  #
+
+Example Request
+GET https://{domain}/api/result?job_id=166
+
+Example Alternative Request
+GET https://{domain}/api/result/166
+
+Example Response
+{
+    "error": true,
+    "message": "Job does not exist"
+}
+
+Example Request
+GET https://{domain}/api/result?job_id=165
+
+Example Alternative Request
+GET https://{domain}/api/result/165
+
+Example Response
+{
+    "job_id": 164,
+    "results": [
+        {
+            "uniprot_id": "P0ACJ8",
+            "status": "complete",
+            "percent": 51,
+            "q_factor": 0.469
+        },
+        {
+            "uniprot_id": "P0AA25",
+            "status": "complete",
+            "percent": 99,
+            "q_factor": 0.871
+        },
+        {
+            uniprot_id": "P63165",
+            "status": "aborted",
+            "percent": 0,
+            "q_factor": 0
+        }
+    ]
+}
+
+######################################################
+GET detailed_result                                  #
+Parameters: (int) job_id                             #
+Returns the results for the job with the given ID,   #
+with the result for each space_group and pack pairs  #
+Returns an error if the job is not yet complete      #
+Use GET status to know the current state of the job  #
+
+Example Request
+GET https://{domain}/api/detailed_result?job_id=166
+
+Example Alternative Request
+GET https://{domain}/api/detailed_result/166
+
+Example Response
+{
+    "error": true,
+    "message": "Job does not exist"
+}
+
+Example Request
+GET https://{domain}/api/detailed_result?job_id=164
+
+Example Alternative Request
+GET https://{domain}/api/detailed_result/164
+
+Example Response
+{
+    "job_id": 164,
+    "results": [
+        {
+             "contaminant_id": "P0ACJ8",
+             "pack_nb": 1,
+             "space_group": "P-1-2-1",
+             "status": "complete",
+             "percent": 40,
+             "q_factor": 0.411
+        },
+        {
+            "contaminant_id": "P0ACJ8",
+            "pack_nb": 2,
+            "space_group": "P-1-2-1",
+            "status": "complete",
+            "percent": 51,
+            "q_factor": 0.469
+        },
+        [... Truncated output ...]
+        {
+            "contaminant_id": "P0AA25",
+            "pack_nb": 1,
+            "space_group": "P-1-2-1",
+            "status": "complete",
+            "percent": 99,
+            "q_factor": 0.871
+        },
+        [... Truncated output ...]
+    ] 
+}
+
+##############################################################
+GET final_pdb                                                #
+Parameters: (int) job_id                                     #
+            (string) uniprot_id                              #
+            (string) space_group                             #
+            (int) pack_nb                                    #
+Returns the final PDB file generated by morda_solve for the  #
+job with the given ID, tested against the contaminant        #
+with the given uniprot ID, in the given space_group          #
+(for example P-21-21-21), and the given pack number.         #
+The file is available only if the result for the combination #
+of contaminant, space group and pack gave a result with      #
+a percentage higher than 90.                                 #
+Returns an error if the file is not available.               #
+
+Example Request
+https://{domain}/api/final_pdb?job_id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
+
+Example Response
+{
+    "error": true",
+    "message": "File does not exist"
+}
+
+Example Request
+https://{domain}/api/final_pdb?job_id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
+
+Example Response
+*PDB file content*
+
+##############################################################
+GET final_mtz                                                #
+Parameters: (int) job_id                                     #
+            (string) uniprot_id                              #
+            (string) space_group                             #
+            (int) pack_nb                                    #
+Returns the final MTZ file generated by morda_solve for the  #
+job with the given ID, tested against the contaminant        #
+with the given uniprot ID, in the given space_group          #
+(for example P-21-21-21), and the given pack number.         #
+The file is available only if the result for the combination #
+of contaminant, space group and pack gave a result with      #
+a percentage higher than 90.                                 #
+Returns an error if the file is not available.               #
+
+Example Request
+https://{domain}/api/final_mtz?job_id=165&uniprot_id=P0ACJ8&space_group=P-1-2-1&pack_nb=1
+
+Example Response
+{
+    "error": true",
+    "message": "File does not exist"
+}
+
+Example Request
+https://{domain}/api/final_mtz?job_id=165&uniprot_id=P00025&space_group=P-1-2-1&pack_nb=1
+
+Example Response
+*MTZ file content*
