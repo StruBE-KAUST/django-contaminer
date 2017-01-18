@@ -226,21 +226,21 @@ by
 
 
 Here is the list of available functions.
-- GET contabase
-- GET categories
-- GET detailed_categories
-- GET category
-- GET detailed_category
-- GET contaminants
-- GET detailed_contaminants
-- GET contaminant
-- GET detailed_contaminant
-- POST submit_job
-- GET job/status
-- GET job/result
-- GET job/detailed_result
-- GET job/final_pdb
-- GET job/final_mtz
+- [GET contabase](#get-contabase)
+- [GET categories](#get-categories)
+- [GET detailed_categories](#get-detailed_categories)
+- [GET category](#get-category)
+- [GET detailed_category](#get-detailed_category)
+- [GET contaminants](#get-contaminants)
+- [GET detailed_contaminants](#get-detailed_contaminants)
+- [GET contaminant](#get-contaminant)
+- [GET detailed_contaminant](#get-detailed_contaminant)
+- [POST job](#post-job)
+- [GET job/status](#get-jobstatus)
+- [GET job/result](#get-jobresult)
+- [GET job/detailed_result](#get-jobdetailed_result)
+- [GET job/final_pdb](#get-final_pdb)
+- [GET job/final_mtz](#get-final_mtz)
 
 
 ## GET contabase
