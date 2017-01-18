@@ -8,9 +8,9 @@ or remove a job or a contaminant.
 
 This documentation is divided in three sections.
 
-1. Common workflow
-2. General structure of the data
-3. Functions documentation
+1. [Common workflow](#common-workflow)
+2. [General structure of the data](#general-structure)
+3. [Functions documentation](#functions-documentation)
 
 All the requests are made over HTTP(S). Depending on the function called, you
 could have to use either GET or POST.
