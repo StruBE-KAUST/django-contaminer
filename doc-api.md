@@ -187,6 +187,8 @@ Job             Set of tasks to run with one unique diffraction data file.
   |               * "error" if an error has been encountered (bad file,
   |               bad list of contaminants, cluster down, ...)
   |
+  |=name          (string) Name of the job, as given during the submission.
+  |
   |*Result        Result of morda_solve for one combinaison of contaminant,
     |             pack and space group.
     |             The set (uniprot_id, pack_nb, space_group) is unique among
@@ -651,6 +653,7 @@ See GET contabase
 > Parameters: (string) contaminants
 >             (file) diffraction_data
 >             (string)(opt) email_address
+              (string)(opt) name
 > Returns a new job ID and submits the job to the cluster
 > Returns an error if the submitted file is not valid
 This function submits a new job to the cluster. The job uses
@@ -668,6 +671,7 @@ commas, without space.
 with:
 ```
 $_POST['email_address'] = 'you@example.com'
+$_POST['name'] = 'Is that MBP?'
 $_POST['contaminants'] = "P0ACJ8,P0AA25,P63165"
 $_FILES['diffraction_data'] = A valid diffraction file
 ```
