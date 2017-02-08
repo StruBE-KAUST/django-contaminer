@@ -21,14 +21,14 @@
 """
 
 from django.contrib import admin
-from .models import Category
-from .models import Contaminant
-from .models import Pack
-from .models import Model
-from .models import Job
-from .models import Task
-from .models import Reference
-from .models import Suggestion
+from .models.contabase import Category
+from .models.contabase import Contaminant
+from .models.contabase import Pack
+from .models.contabase import Model
+from .models.contabase import Reference
+from .models.contabase import Suggestion
+from .models.contaminer import Job
+from .models.contaminer import Task
 
 admin.site.register(Category)
 admin.site.register(Contaminant)
