@@ -144,7 +144,7 @@ class Model(models.Model):
 
         The models in this table are prepared on the cluster
     """
-    pdb_code = models.CharField(max_length = 4)
+    pdb_code = UpperCaseCharField(max_length = 4)
     chain = models.CharField(max_length = 10, null = True, blank = True)
     domain = models.IntegerField(null = True, blank = True, default = None)
     nb_residues = models.IntegerField()
