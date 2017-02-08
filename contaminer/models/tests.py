@@ -32,6 +32,13 @@ from .contabase import Model
 from .contabase import Reference
 from .contabase import Suggestion
 
+from .contaminer import Job
+
+
+# TODO: UpperCaseCharField testing
+# Difficult to test a custom field. Good behavior is tested through
+# ContaminantTestCase
+
 
 class CategoryTestCase(TestCase):
     """
@@ -102,7 +109,7 @@ class ContaminantTestCase(TestCase):
         contaminant = Contaminant.objects.get(
                 uniprot_id = "P0ACJ8",
                 )
-        self.assertEqual(contaminant.short_name, 'CAN_ECOLI')
+        self.assertEqual(contaminant.short_name, 'CRP_ECOLI')
 
 
 class PackTestCase(TestCase):
@@ -318,7 +325,7 @@ class ReferenceTestCase(TestCase):
 
 class SuggestionTestCase(TestCase):
     """
-        Test the suggestion model
+        Test the Suggestion model
     """
     def setUp(self):
         Category.objects.create(
@@ -335,3 +342,11 @@ class SuggestionTestCase(TestCase):
                 sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
                 organism = "Escherichia coli",
                 )
+
+
+class JobTestCase(TestCase):
+    """
+        Test the Job model
+    """
+    def setUp(self):
+        pass
