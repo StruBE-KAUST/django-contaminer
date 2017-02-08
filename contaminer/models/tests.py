@@ -138,7 +138,6 @@ class PackTestCase(TestCase):
                 contaminant = contaminant,
                 number = 1,
                 structure = "dimer",
-                coverage = 100,
                 )
 
     def test_Pack_is_well_displayed(self):
@@ -251,7 +250,7 @@ class ModelTestCase(TestCase):
                 )
 
     def test_Model_is_well_displayed(self):
-        model = Model.object.get(
+        model = Model.objects.get(
                 pdb_code = '1O3T',
                 )
         self.assertEqual(str(pack), 'P0ACJ8 - CRP_ECOLI - 1 (dimer) - 1O3T')
