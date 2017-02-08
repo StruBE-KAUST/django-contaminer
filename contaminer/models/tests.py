@@ -253,7 +253,7 @@ class ModelTestCase(TestCase):
         model = Model.objects.get(
                 pdb_code = '1O3T',
                 )
-        self.assertEqual(str(pack), 'P0ACJ8 - CRP_ECOLI - 1 (dimer) - 1O3T')
+        self.assertEqual(str(model), 'P0ACJ8 - CRP_ECOLI - 1 (dimer) - 1O3T')
 
     def test_Model_has_less_residues_than_contaminant(self):
         contaminant = Contaminant.objects.get(
