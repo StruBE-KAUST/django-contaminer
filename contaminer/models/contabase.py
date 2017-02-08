@@ -133,7 +133,6 @@ class Pack(models.Model):
     number = models.IntegerField()  # the number assigned by morda_prep : uniq
                                     # per contaminant
     structure = models.CharField(max_length = 15) # dimer, domain, ...
-    coverage = models.IntegerField() # in %
 
     def __str__(self):
         return (str(self.contaminant) + str(self.number))
@@ -148,6 +147,7 @@ class Model(models.Model):
     pdb_code = models.CharField(max_length = 4)
     chain = models.CharField(max_length = 10, null = True, blank = True)
     domain = models.IntegerField(null = True, blank = True, default = None)
+    nb_residues = models.IntegerField()
     identity = models.IntegerField() # in %
     pack = models.ForeignKey(Pack)
 
