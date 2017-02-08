@@ -27,8 +27,7 @@
 from django.db import models
 
 class UpperCaseCharField(models.CharField):
-#    description = _("Upper case string (up to %(max_length)s)")
-    description = "asdf"
+    description = "Upper case string"
 
     def __init__(self, *args, **kwargs):
         super(UpperCaseCharField, self).__init__(*args, **kwargs)
