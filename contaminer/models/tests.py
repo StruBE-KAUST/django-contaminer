@@ -24,6 +24,7 @@
 """
 
 from django.test import TestCase
+from django.core.exceptions import ValidationError
 
 from .contabase import Category
 from .contabase import Contaminant
@@ -137,7 +138,7 @@ class PackTestCase(TestCase):
         Pack.objects.create(
                 contaminant = contaminant,
                 number = 1,
-                structure = "dimer",
+                structure = "2-mer",
                 )
 
     def test_Pack_is_well_displayed(self):
@@ -148,24 +149,24 @@ class PackTestCase(TestCase):
                 contaminant = contaminant,
                 number = 1
                 )
-        self.assertEqual(str(pack), 'P0ACJ8 - CRP_ECOLI - 1 (dimer)')
+        self.assertEqual(str(pack), 'P0ACJ8 - CRP_ECOLI - 1 (2-mer)')
 
     def test_Pack_number_is_unique_per_contaminant(self):
         contaminant = Contaminant.objects.get(
                 uniprot_id = 'P0ACJ8',
                 )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             Pack.objects.create(
                     contaminant = contaminant,
                     number = 1,
-                    structure = "monomer",
+                    structure = "2-mer",
                     )
 
     def test_Pack_structure_is_valid_structure(self):
         contaminant = Contaminant.objects.get(
                 uniprot_id = 'P0ACJ8',
                 )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             Pack.objects.create(
                     contaminant = contaminant,
                     number = 1,
@@ -175,38 +176,38 @@ class PackTestCase(TestCase):
         try:
             Pack.objects.create(
                     contaminant = contaminant,
-                    number = 1,
+                    number = 2,
                     structure = "1-mer",
                     )
-        except ValueError:
-            self.fail("Pack creation raised ValueError.")
+        except ValidationError:
+            self.fail("Pack creation raised ValidationError.")
 
         try:
             Pack.objects.create(
                     contaminant = contaminant,
-                    number = 1,
+                    number = 3,
                     structure = "2-mer",
                     )
-        except ValueError:
-            self.fail("Pack creation raised ValueError.")
+        except ValidationError:
+            self.fail("Pack creation raised ValidationError.")
 
         try:
             Pack.objects.create(
                     contaminant = contaminant,
-                    number = 1,
+                    number = 4,
                     structure = "domain",
                     )
-        except ValueError:
-            self.fail("Pack creation raised ValueError.")
+        except ValidationError:
+            self.fail("Pack creation raised ValidationError.")
 
         try:
             Pack.objects.create(
                     contaminant = contaminant,
-                    number = 1,
+                    number = 5,
                     structure = "domains",
                     )
-        except ValueError:
-            self.fail("Pack creation raised ValueError.")
+        except ValidationError:
+            self.fail("Pack creation raised ValidationError.")
 
 
 class ModelTestCase(TestCase):
@@ -253,7 +254,7 @@ class ModelTestCase(TestCase):
         model = Model.objects.get(
                 pdb_code = '1O3T',
                 )
-        self.assertEqual(str(model), 'P0ACJ8 - CRP_ECOLI - 1 (dimer) - 1O3T')
+        self.assertEqual(str(model), 'P0ACJ8 - CRP_ECOLI - 1 (2-mer) - 1O3T')
 
     def test_Model_has_less_residues_than_contaminant(self):
         contaminant = Contaminant.objects.get(
@@ -263,7 +264,7 @@ class ModelTestCase(TestCase):
                 contaminant = contaminant,
                 number = 1,
                 )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             Model.objects.create(
                     pdb_code = '1o3t',
                     chain = 'B',
@@ -281,7 +282,7 @@ class ModelTestCase(TestCase):
                 contaminant = contaminant,
                 number = 1,
                 )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             Model.objects.create(
                     pdb_code = '1o3t',
                     chain = 'B',
@@ -290,13 +291,13 @@ class ModelTestCase(TestCase):
                     identity = 101,
                     pack = pack,
                     )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             Model.objects.create(
                     pdb_code = '1o3t',
                     chain = 'B',
                     domain = 1,
                     nb_residues = 20,
-                    identity = 99,
+                    identity = -1,
                     pack = pack,
                     )
 

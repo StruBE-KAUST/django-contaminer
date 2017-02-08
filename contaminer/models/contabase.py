@@ -31,6 +31,7 @@ import os
 import datetime
 import paramiko
 import logging
+import re
 
 from django.db import models
 from django.conf import settings
@@ -39,6 +40,7 @@ from django.template.loader import render_to_string
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError
 
 from .tools import UpperCaseCharField
 
@@ -103,6 +105,84 @@ class Contaminant(models.Model):
         return grouped_contaminants
 
 
+class Pack(models.Model):
+    """
+        A pack of models prepared by morda_prep
+
+        The packs in this table are prepared on the cluster, and are the result
+        of morda_prep on the contaminants list.
+    """
+    contaminant = models.ForeignKey(Contaminant)
+    number = models.IntegerField()  # the number assigned by morda_prep : uniq
+                                    # per contaminant
+    structure = models.CharField(max_length = 15) # dimer, domain, ...
+
+    def __str__(self):
+        contaminant = str(self.contaminant)
+        number = str(self.number)
+        structure = str(self.structure)
+        return (contaminant + ' - ' + number + ' (' + structure + ')')
+
+    def clean(self, *args, **kwargs):
+        # Structure can be domain, domains, or n-mer with n integer
+        if not re.match("^([1-9][0-9]*-mer|domains?)$", self.structure):
+            raise ValidationError("structure is not valid")
+
+        # (contaminant, number) pair must be unique
+        pack = Pack.objects.filter(
+                contaminant = self.contaminant,
+                number = self.number,
+                )
+        if len(pack) != 0 or (len(pack) == 1 and pack[0].pk != self.pk):
+            raise ValidationError("Pack already registered in database")
+
+        super(Pack, self).clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super(Pack, self).save(*args, **kwargs)
+
+
+class Model(models.Model):
+    """
+        A model prepared by morda_prep
+
+        The models in this table are prepared on the cluster
+    """
+    pdb_code = UpperCaseCharField(max_length = 4)
+    chain = models.CharField(max_length = 10, null = True, blank = True)
+    domain = models.IntegerField(null = True, blank = True, default = None)
+    nb_residues = models.IntegerField()
+    identity = models.IntegerField() # in %
+    pack = models.ForeignKey(Pack)
+
+    def __str__(self):
+        pack = str(self.pack)
+        pdb_code = str(self.pdb_code)
+        return (pack + ' - ' + pdb_code)
+
+    def clean(self, *args, **kwargs):
+        # Number of residues should be lower than the sequence length of
+        # the contaminant
+        if self.nb_residues > len(self.pack.contaminant.sequence):
+            raise ValidationError(
+                    "nb_residues is too large for this contaminant"
+                    )
+
+        # Identity is a percentage and should be between 0 and 100
+        if self.identity < 0 or self.identity > 100:
+            raise ValidationError(
+                    "A percentage should be between 0 and 100"
+                    )
+
+        super(Model, self).clean(*args, **kwargs)
+
+    def save(self,  *args, **kwargs):
+        self.full_clean()
+        super(Model, self).save(*args, **kwargs)
+
+
+
 class Reference(models.Model):
     """
         A publication which mentions the protein as a contaminant
@@ -120,36 +200,3 @@ class Suggestion(models.Model):
     """
     name = models.CharField(max_length=200)
     contaminant = models.ForeignKey(Contaminant)
-
-
-class Pack(models.Model):
-    """
-        A pack of models prepared by morda_prep
-
-        The packs in this table are prepared on the cluster, and are the result
-        of morda_prep on the contaminants list.
-    """
-    contaminant = models.ForeignKey(Contaminant)
-    number = models.IntegerField()  # the number assigned by morda_prep : uniq
-                                    # per contaminant
-    structure = models.CharField(max_length = 15) # dimer, domain, ...
-
-    def __str__(self):
-        return (str(self.contaminant) + str(self.number))
-
-
-class Model(models.Model):
-    """
-        A model prepared by morda_prep
-
-        The models in this table are prepared on the cluster
-    """
-    pdb_code = UpperCaseCharField(max_length = 4)
-    chain = models.CharField(max_length = 10, null = True, blank = True)
-    domain = models.IntegerField(null = True, blank = True, default = None)
-    nb_residues = models.IntegerField()
-    identity = models.IntegerField() # in %
-    pack = models.ForeignKey(Pack)
-
-    def __str__(self):
-        return (str(self.pdb_code) + self.chain + str(self.domain))
