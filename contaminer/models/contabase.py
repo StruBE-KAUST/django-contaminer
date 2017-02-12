@@ -88,7 +88,8 @@ class Category(models.Model):
     selected_by_default = models.BooleanField(default = False)
 
     def __str__(self):
-        return self.name + " - " + str(self.selected_by_default)
+        obsolete_str = (" (obsolete)" if self.contabase.obsolete else "")
+        return self.name + " - " + str(self.selected_by_default) + obsolete_str
 
     def clean(self, *args, **kwargs):
         category = Category.objects.filter(
