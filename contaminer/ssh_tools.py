@@ -96,7 +96,7 @@ class SSHChannel(paramiko.SSHClient):
         log.debug("Entering function")
 
         command = "sh " + os.path.join(
-                ContaminerConfig().remote_contaminer_location,
+                ContaminerConfig().ssh_contaminer_location,
                 "contaminer") \
                 + " display"
         with self as sshChannel:

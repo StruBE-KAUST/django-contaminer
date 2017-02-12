@@ -144,7 +144,7 @@ class SSHChannelTestCase(TestCase):
             mock_command, mock_config):
         sshChannel = SSHChannel()
         config = mock.MagicMock()
-        config.remote_contaminer_location = "/home/user/ContaMiner"
+        config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
         mock_command.return_value = (1, 2, "")
         sshChannel.get_contabase()
@@ -158,7 +158,7 @@ class SSHChannelTestCase(TestCase):
             mock_close, mock_connect, mock_command, mock_config):
         sshChannel = SSHChannel()
         config = mock.MagicMock()
-        config.remote_contaminer_location = "/home/user/ContaMiner"
+        config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
         mock_command.return_value = (1, 2, "3")
         try:
@@ -175,7 +175,7 @@ class SSHChannelTestCase(TestCase):
             mock_command, mock_config):
         sshChannel = SSHChannel()
         config = mock.MagicMock()
-        config.remote_contaminer_location = "/home/user/ContaMiner"
+        config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
         mock_command.return_value = (1, 2, "")
         sshChannel.get_contabase()
@@ -190,7 +190,7 @@ class SSHChannelTestCase(TestCase):
             mock_command, mock_config):
         sshChannel = SSHChannel()
         config = mock.MagicMock()
-        config.remote_contaminer_location = "/home/user/ContaMiner"
+        config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
         mock_command.return_value = (1, 2, "")
         answer = sshChannel.get_contabase()
@@ -204,7 +204,7 @@ class SSHChannelTestCase(TestCase):
             mock_close, mock_connect, mock_command, mock_config):
         sshChannel = SSHChannel()
         config = mock.MagicMock()
-        config.remote_contaminer_location = "/home/user/ContaMiner"
+        config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
         mock_command.return_value = (1, 2, "3")
         with self.assertRaisesMessage(RuntimeError, "3"):
