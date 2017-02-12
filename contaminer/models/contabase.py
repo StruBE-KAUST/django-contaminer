@@ -237,7 +237,8 @@ class Reference(models.Model):
     contaminant = models.ForeignKey(Contaminant)
 
     def __str__(self):
-        return contaminant.uniprot_id + " -> " + str(pubmed_id)
+        return contaminant.uniprot_id + " -> " + str(self.pubmed_id)
+
 
 
 class Suggestion(models.Model):
@@ -246,3 +247,6 @@ class Suggestion(models.Model):
     """
     name = models.CharField(max_length=200)
     contaminant = models.ForeignKey(Contaminant)
+
+    def __str__(self):
+        return contaminant.uniprot_id + " -> " + self.name
