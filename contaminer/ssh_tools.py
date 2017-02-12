@@ -1,6 +1,6 @@
 # -*- coding : utf-8 -*-
 
-##    Copyright (C) 2016 Hungler Arnaud
+##    Copyright (C) 2017 King Abdullah University of Science and Technology
 ##
 ##    This program is free software; you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
@@ -17,11 +17,12 @@
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-    Communication with the cluster through a SSH connection
-    =======================================================
+    Communication with the cluster or supercomputer through a SSH connection
+    ========================================================================
 
     This module provides a layer to allow an easy communication between Django
-    and the cluster where ContaMiner is. Configuration is done in apps.py
+    and the cluster or supercomputer where ContaMiner is.
+    Configuration is done in apps.py
 """
 
 import os
@@ -35,85 +36,78 @@ from django.conf import settings
 
 from .apps import ContaminerConfig
 
-class SSHChannel():
-    """ A connection to the cluster or supercomputer """
-
-    def __init__(self):
-        self.sshclient = paramiko.SSHClient()
-        self.sshconfig = {}
-        self.sftpclient = None
-        self.is_configured = False
-
-
-    def is_ssh_connected(self):
-        """ Test if SSH connection is open and active """
+class SSHChannel(paramiko.SSHClient):
+    """
+        A connection to the cluster or supercomputer
+        This class should always be used with 'with' statement
+    """
+    def __enter__(self):
+        """ Implements with statement """
         log = logging.getLogger(__name__)
         log.debug("Entering function")
-
-        try:
-            self.sshclient.exec_command('ls')
-        except SSHException:
-            log.warning("SSH connection is closed")
-            return False
-        except AttributeError:
-            log.debug("SSH connection is not initialized")
-            return False
-
+        self.__connect__()
         log.debug("Exiting function")
-        return True
+        return self
 
-
-    def is_sftp_connected(self):
-        """ Test if SFTP connection is open and active """
+    def __exit__(self, *args):
+        """ Implements with statement """
         log = logging.getLogger(__name__)
         log.debug("Entering function")
-
-        try:
-            self.sftpclient.listdir('.')
-        except socket.error as e:
-            if e.message == 'Socket is closed':
-                log.warning("SFTP connection is closed")
-                return False
-        except AttributeError:
-            log.debug("Connection is not initialized")
-            return False
-
+        self.close()
         log.debug("Exiting function")
-        return True
 
-
-    def configure(self):
+    def __get_config__(self):
         """ Configure SSH parameters """
         log = logging.getLogger(__name__)
         log.debug("Entering function")
 
-        self.sshclient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.sshconfig = {
-                'hostname': ContaminerConfig().ssh_hostname,
-                'port': ContaminerConfig().ssh_port,
-                'username': ContaminerConfig().ssh_username,
-                'password': ContaminerConfig().ssh_password,
-                'key_filename': ContaminerConfig().ssh_identityfile,
-                }
+        if not hasattr(self, 'sshconfig') or self.sshconfig == {}:
+            log.debug("Configuring SSH connection")
+            self.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            contaminer_config = ContaminerConfig()
+            self.sshconfig = {
+                    'hostname': contaminer_config.ssh_hostname,
+                    'port': contaminer_config.ssh_port,
+                    'username': contaminer_config.ssh_username,
+                    'password': contaminer_config.ssh_password,
+                    'key_filename': contaminer_config.ssh_identityfile,
+                    }
 
-        self.is_configured = True
+        return self.sshconfig
 
         log.debug("Exiting function")
 
-
-    def connectSSH(self):
+    def __connect__(self):
         """ Open SSH connection to host """
         log = logging.getLogger(__name__)
         log.debug("Entering function")
 
-        if not self.is_configured:
-            log.debug("Configure channel")
-            self.configure()
+        ssh_config = self.__get_config__()
 
         log.debug("Open SSH connection")
-        self.sshclient.connect(**self.sshconfig)
+        super(SSHChannel, self).connect(**ssh_config)
 
         log.debug("Exiting function")
+
+
+    def get_contabase(self):
+        """ Get the full ContaBase from the cluster """
+        log = logging.getLogger(__name__)
+        log.debug("Entering function")
+
+        command = "sh " + os.path.join(
+                ContaminerConfig().remote_contaminer_location,
+                "contaminer") \
+                + " display"
+        with self as sshChannel:
+            (_, stdout, stderr) = sshChannel.exec_command(command)
+
+        if stderr is not "":
+            raise RuntimeError(stderr)
+
+        return stdout
+
+
 
 
     def connectSFTP(self):
@@ -166,20 +160,6 @@ class SSHChannel():
         log.debug("Exiting function")
 
 
-    def command(self, command):
-        """ Execute command on remote host """
-        log = logging.getLogger(__name__)
-        log.debug("Entering function")
-
-        if not self.is_ssh_connected():
-            log.debug("Open SSH connection")
-            self.connectSSH()
-
-        log.debug("Execute " + str(command))
-        _, stdout, stderr = self.sshclient.exec_command(command)
-
-        log.debug("Exiting function")
-        return (stdout.readlines(), stderr.readlines())
 
 
     def launch_contaminer(self, filename, listname):
