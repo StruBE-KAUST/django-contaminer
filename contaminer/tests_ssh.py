@@ -154,7 +154,7 @@ class SSHChannelTestCase(TestCase):
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.exec_command')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.connect')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.close')
-    def test_get_contabase_closes_channel_in_exception(self,
+    def test_get_contabase_closes_channel_on_exception(self,
             mock_close, mock_connect, mock_command, mock_config):
         sshChannel = SSHChannel()
         config = mock.MagicMock()
