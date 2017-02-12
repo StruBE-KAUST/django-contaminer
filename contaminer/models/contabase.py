@@ -43,6 +43,37 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError
 
 from .tools import UpperCaseCharField
+class ContaBase(models.Model):
+    """
+        A version of the ContaBase
+
+        When updated, the current ContaBase is marked as obsolete, and a new
+        one is created with the new contaminants and packs.
+        Having different ContaBase at the same time allows us to keep the old
+        jobs in the database, while being able to update it for the new jobs.
+    """
+    id = models.IntegerField(unique = True, primary_key = True)
+    obsolete = models.BooleanField(default = False)
+
+    def __str__(self):
+        obsolete_txt = "obsolete" if self.obsolete else "current"
+        return str(self.id) + " - " + obsolete_txt
+
+    @classmethod
+    def get_current(cls):
+        current_list = cls.objects.get(obsolete = False)
+        return current_list
+
+    def make_obsolete(self):
+        self.obsolete = True
+        self.save()
+
+    @classmethod
+    def make_all_obsolete(cls):
+        all_objects = cls.objects.all()
+        map(lambda x: x.make_obsolete(), all_objects)
+
+
 
 class Category(models.Model):
     """
@@ -51,12 +82,28 @@ class Category(models.Model):
         selected_by_default is used to know if ContaMiner should test the
         contaminants in this category by default
     """
-    id = models.IntegerField(unique = True, primary_key = True)
+    contabase = models.ForeignKey(ContaBase)
+    number = models.IntegerField() # Unique per contabase
     name = models.CharField(max_length = 60)
     selected_by_default = models.BooleanField(default = False)
 
     def __str__(self):
         return self.name + " - " + str(self.selected_by_default)
+
+    def clean(self, *args, **kwargs):
+        category = Category.objects.filter(
+                contabase = self.contabase,
+                number = self.number,
+                )
+        if len(category) != 0 or (len(category) == 1 and category[0].pk != self.pk):
+            raise ValidationError("Category already registered in ContaBase")
+
+        super(Category, self).clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super(Category, self).save(*args, **kwargs)
+
 
 
 class Contaminant(models.Model):
@@ -180,7 +227,6 @@ class Model(models.Model):
     def save(self,  *args, **kwargs):
         self.full_clean()
         super(Model, self).save(*args, **kwargs)
-
 
 
 class Reference(models.Model):
