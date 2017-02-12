@@ -25,7 +25,10 @@
 
 from django.test import TestCase
 from django.core.exceptions import ValidationError
+from django.core.exceptions import MultipleObjectsReturned
+import mock
 
+from .contabase import ContaBase
 from .contabase import Category
 from .contabase import Contaminant
 from .contabase import Pack
@@ -41,17 +44,71 @@ from .contaminer import Job
 # ContaminantTestCase
 
 
+class ContaBaseTestCase(TestCase):
+    """
+        Test the ContaBase model
+    """
+    def test_ContaBase_is_well_displayed(self):
+        contabase = ContaBase.objects.create()
+        id = contabase.id
+        self.assertEqual(str(contabase), str(id) + ' - current')
+
+    def test_ContaBase_get_current_gives_result(self):
+        contabase = ContaBase.objects.create()
+        id_current = ContaBase.objects.all()[0].id
+        ContaBase.objects.create(obsolete = True)
+        id_result = ContaBase.get_current().id
+        self.assertEqual(id_current, id_result)
+
+    def test_ContaBase_get_current_raises_exception_if_two_current(self):
+        ContaBase.objects.create()
+        ContaBase.objects.create()
+        with self.assertRaises(MultipleObjectsReturned):
+            ContaBase.get_current()
+
+    def test_make_obsolete(self):
+        contabase = ContaBase.objects.create()
+        contabase.make_obsolete()
+        self.assertTrue(contabase.obsolete)
+
+    def test_make_all_obsolete(self):
+        contabase_list = [ContaBase.objects.create() for i in range(3)]
+        ContaBase.make_all_obsolete()
+        map(lambda x: self.assertFalse(x.obsolete), contabase_list)
+
+    def test_make_all_obsolete_raise_nothing_on_empty_db(self):
+        try:
+            ContaBase.make_all_obsolete()
+        except Exception as e:
+            self.fail(e)
+
+
 class CategoryTestCase(TestCase):
     """
         Test the Category model
     """
     def setUp(self):
+        ContaBase.objects.create()
+        self.contabase = ContaBase.objects.all()[0]
+        ContaBase.objects.create(obsolete = True)
+        self.contabase_obsolete = ContaBase.objects.filter(
+                obsolete = True,
+                )[0]
         Category.objects.create(
+                number = 1,
                 name = "Protein in E.Coli",
+                contabase = self.contabase,
                 )
         Category.objects.create(
+                number = 2,
                 name = "Protein in yeast",
+                contabase = self.contabase,
                 selected_by_default = True,
+                )
+        Category.objects.create(
+                number = 3,
+                name = "Obsolete protein",
+                contabase = self.contabase_obsolete,
                 )
 
     def test_Category_is_well_displayed(self):
@@ -61,17 +118,33 @@ class CategoryTestCase(TestCase):
         category2 = Category.objects.get(
                 name = "Protein in yeast",
                 )
+        category3 = Category.objects.get(
+                name = "Obsolete protein",
+                )
         self.assertEqual(str(category1), 'Protein in E.Coli - False')
         self.assertEqual(str(category2), 'Protein in yeast - True')
+        self.assertEqual(str(category3), 'Obsolete protein - False (obsolete)')
 
-    def test_Category_id_is_different(self):
+    def test_Category_number_is_unique_per_contabase(self):
         category1 = Category.objects.get(
                 name = "Protein in E.Coli",
                 )
-        category2 = Category.objects.get(
-                name = "Protein in yeast",
-                )
-        self.assertNotEqual(category1.id, category2.id)
+        with self.assertRaises(ValidationError):
+            Category.objects.create(
+                    number = 1,
+                    name = "Another name",
+                    contabase = self.contabase,
+                    )
+
+    def test_Category_can_be_same_in_different_contabase(self):
+        try:
+            Category.objects.create(
+                    number = 1,
+                    name = "Protein in E.Coli",
+                    contabase = self.contabase_obsolete,
+                    )
+        except ValidationError:
+            self.fail("Same number should be possible in different contabases")
 
 
 class ContaminantTestCase(TestCase):
@@ -79,8 +152,12 @@ class ContaminantTestCase(TestCase):
         Test the Contaminant model
     """
     def setUp(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.objects.all()[0]
         Category.objects.create(
+                number = 1,
                 name = "Protein in E.Coli",
+                contabase = contabase,
                 )
         category = Category.objects.get(
                 name = "Protein in E.Coli",
@@ -118,8 +195,12 @@ class PackTestCase(TestCase):
         Test the Pack model
     """
     def setUp(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.objects.all()[0]
         Category.objects.create(
+                number = 1,
                 name="Protein in E.Coli",
+                contabase = contabase,
                 )
         category = Category.objects.get(
                 name="Protein in E.Coli",
@@ -215,8 +296,12 @@ class ModelTestCase(TestCase):
         Test the Model model
     """
     def setUp(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.objects.all()[0]
         Category.objects.create(
+                number = 1,
                 name="Protein in E.Coli",
+                contabase = contabase,
                 )
         category = Category.objects.get(
                 name="Protein in E.Coli",
