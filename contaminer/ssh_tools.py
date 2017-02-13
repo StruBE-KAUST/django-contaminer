@@ -101,12 +101,13 @@ class SSHChannel(paramiko.SSHClient):
                 + " display"
         with self as sshChannel:
             (_, stdout, stderr) = sshChannel.exec_command(command)
+            stdout = stdout.read()
+            stderr = stderr.read()
 
-        err = stderr.read()
-        if err is not '':
-            raise RuntimeError(err[0])
+        if stderr is not '':
+            raise RuntimeError(stderr)
 
-        return stdout.read()
+        return stdout
 
 
 
