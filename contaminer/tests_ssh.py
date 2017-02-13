@@ -146,7 +146,11 @@ class SSHChannelTestCase(TestCase):
         config = mock.MagicMock()
         config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
-        mock_command.return_value = (1, 2, "")
+        stdout = mock.MagicMock()
+        stdout.read.return_value = "2"
+        stderr = mock.MagicMock()
+        stderr.read.return_value = ""
+        mock_command.return_value = (0, stdout, stderr)
         sshChannel.get_contabase()
         self.assertTrue(mock_close.called)
 
@@ -160,7 +164,11 @@ class SSHChannelTestCase(TestCase):
         config = mock.MagicMock()
         config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
-        mock_command.return_value = (1, 2, "3")
+        stdout = mock.MagicMock()
+        stdout.read.return_value = "2"
+        stderr = mock.MagicMock()
+        stderr.read.return_value = "3"
+        mock_command.return_value = (0, stdout, stderr)
         try:
             sshChannel.get_contabase()
         except RuntimeError:
@@ -177,7 +185,11 @@ class SSHChannelTestCase(TestCase):
         config = mock.MagicMock()
         config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
-        mock_command.return_value = (1, 2, "")
+        stdout = mock.MagicMock()
+        stdout.read.return_value = "2"
+        stderr = mock.MagicMock()
+        stderr.read.return_value = ""
+        mock_command.return_value = (0, stdout, stderr)
         sshChannel.get_contabase()
         mock_command.assert_called_once_with(
             "sh /home/user/ContaMiner/contaminer display")
@@ -192,9 +204,13 @@ class SSHChannelTestCase(TestCase):
         config = mock.MagicMock()
         config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
-        mock_command.return_value = (1, 2, "")
+        stdout = mock.MagicMock()
+        stdout.read.return_value = "2"
+        stderr = mock.MagicMock()
+        stderr.read.return_value = ""
+        mock_command.return_value = (0, stdout, stderr)
         answer = sshChannel.get_contabase()
-        self.assertEqual(answer, 2)
+        self.assertEqual(answer, "2")
 
     @mock.patch('contaminer.ssh_tools.ContaminerConfig')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.exec_command')
@@ -206,6 +222,10 @@ class SSHChannelTestCase(TestCase):
         config = mock.MagicMock()
         config.ssh_contaminer_location = "/home/user/ContaMiner"
         mock_config.return_value = config
-        mock_command.return_value = (1, 2, "3")
+        stdout = mock.MagicMock()
+        stdout.read.return_value = "2"
+        stderr = mock.MagicMock()
+        stderr.read.return_value = "3"
+        mock_command.return_value = (0, stdout, stderr)
         with self.assertRaisesMessage(RuntimeError, "3"):
             answer = sshChannel.get_contabase()
