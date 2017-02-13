@@ -297,13 +297,6 @@ class Model(models.Model):
         new_model.save()
 
     def clean(self, *args, **kwargs):
-        # Number of residues should be lower than the sequence length of
-        # the contaminant
-        if self.nb_residues > len(self.pack.contaminant.sequence):
-            raise ValidationError(
-                    "nb_residues is too large for this contaminant"
-                    )
-
         # Identity is a percentage and should be between 0 and 100
         if self.identity < 0 or self.identity > 100:
             raise ValidationError(

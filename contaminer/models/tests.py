@@ -767,24 +767,6 @@ class ModelTestCase(TestCase):
                 )
         self.assertEqual(str(model), 'P0ACJ8 - CRP_ECOLI - 1 (2-mer) - 1O3T')
 
-    def test_Model_has_less_residues_than_contaminant(self):
-        contaminant = Contaminant.objects.get(
-                uniprot_id = 'P0ACJ8',
-                )
-        pack = Pack.objects.get(
-                contaminant = contaminant,
-                number = 1,
-                )
-        with self.assertRaises(ValidationError):
-            Model.objects.create(
-                    pdb_code = '1o3t',
-                    chain = 'B',
-                    domain = 1,
-                    nb_residues = 200,
-                    identity = 100,
-                    pack = pack,
-                    )
-
     def test_Model_identity_is_valid_percentage(self):
         contaminant = Contaminant.objects.get(
                 uniprot_id = 'P0ACJ8',
