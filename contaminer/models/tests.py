@@ -28,6 +28,8 @@ from django.core.exceptions import ValidationError
 from django.core.exceptions import MultipleObjectsReturned
 import mock
 
+import lxml.etree as ET
+
 from .contabase import ContaBase
 from .contabase import Category
 from .contabase import Contaminant
@@ -81,6 +83,63 @@ class ContaBaseTestCase(TestCase):
             ContaBase.make_all_obsolete()
         except Exception as e:
             self.fail(e)
+
+    @mock.patch('contaminer.models.contabase.Category')
+    @mock.patch('contaminer.models.contabase.SSHChannel.get_contabase')
+    def test_update_makes_only_one_none_obsolete(self, mock_get_contabase,
+            mock_category):
+        mock_get_contabase.return_value = "<contabase></contabase>"
+        new_contabase = ContaBase.update()
+        try:
+            ContaBase.objects.get(obsolete = False)
+        except Exception as e:
+            self.fail(e)
+
+    @mock.patch('contaminer.models.contabase.Category')
+    @mock.patch('contaminer.models.contabase.SSHChannel.get_contabase')
+    def test_update_creates_new_contabase(self, mock_get_contabase,
+            mock_category):
+        old_contabase_count = len(ContaBase.objects.all())
+        mock_get_contabase.return_value = "<contabase></contabase>"
+        new_contabase = ContaBase.update()
+        new_contabase_count = len(ContaBase.objects.all())
+        self.assertEqual(new_contabase_count, old_contabase_count + 1)
+
+    @mock.patch('contaminer.models.contabase.Category.update')
+    @mock.patch('contaminer.models.contabase.SSHChannel.get_contabase')
+    def test_update_updates_good_parameters_category(self, mock_get_contabase,
+            mock_category_update):
+        xml_example = "" \
+            + "<contabase>\n" \
+            + "    <category>\n" \
+            + "        <id>1</id>\n" \
+            + "    </category>\n" \
+            + "</contabase>"
+        mock_get_contabase.return_value = xml_example
+        ContaBase.update()
+        contabase = ContaBase.get_current()
+        _, args, _ = mock_category_update.mock_calls[0]
+        self.assertEqual(contabase, args[0])
+
+        category_dict = ET.Element('category')
+        category_id = ET.SubElement(category_dict, 'id')
+        category_id.text = '1'
+        self.assertEqual(ET.tostring(category_dict), ET.tostring(args[1]))
+
+    @mock.patch('contaminer.models.contabase.Category.update')
+    @mock.patch('contaminer.models.contabase.SSHChannel.get_contabase')
+    def test_update_updates_good_number_categories(self, mock_get_contabase,
+            mock_category_update):
+        xml_example = "" \
+            + "<contabase>\n" \
+            + "    <category>\n" \
+            + "    </category>\n" \
+            + "    <category>\n" \
+            + "    </category>\n" \
+            + "</contabase>"
+        mock_get_contabase.return_value = xml_example
+        ContaBase.update()
+        self.assertEqual(len(mock_category_update.mock_calls), 2)
 
 
 class CategoryTestCase(TestCase):
@@ -146,6 +205,107 @@ class CategoryTestCase(TestCase):
         except ValidationError:
             self.fail("Same number should be possible in different contabases")
 
+    @mock.patch('contaminer.models.contabase.Contaminant.update')
+    def test_update_updates_good_parameters_contaminant(self,
+            mock_contaminant_update):
+        contabase = ContaBase.get_current()
+        xml_example = "" \
+            + "<category>\n" \
+            + "    <id>5</id>\n" \
+            + "    <name>Protein test good params</name>\n" \
+            + "    <default>true</default>\n" \
+            + "    <contaminant>\n" \
+            + "        <uniprot_id>P0ACJ8</uniprot_id>\n" \
+            + "    </contaminant>\n" \
+            + "</category>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        category_dict = ET.XML(xml_example, parser)
+
+        Category.update(contabase, category_dict)
+
+        category = Category.objects.get(
+                number = 5,
+                contabase = contabase,
+                )
+        _, args, _ = mock_contaminant_update.mock_calls[0]
+        self.assertEqual(category, args[0])
+
+        contaminant_dict = ET.Element('contaminant')
+        contaminant_id = ET.SubElement(contaminant_dict, 'uniprot_id')
+        contaminant_id.text = 'P0ACJ8'
+        self.assertEqual(ET.tostring(contaminant_dict), ET.tostring(args[1]))
+
+    @mock.patch('contaminer.models.contabase.Contaminant.update')
+    def test_update_updates_good_number_contaminant(self,
+            mock_contaminant_update):
+        contabase = ContaBase.get_current()
+        xml_example = "" \
+            + "<category>\n" \
+            + "    <id>6</id>\n" \
+            + "    <name>Protein test good nb calls</name>\n" \
+            + "    <default>true</default>\n" \
+            + "    <contaminant>\n" \
+            + "    </contaminant>\n" \
+            + "    <contaminant>\n" \
+            + "    </contaminant>\n" \
+            + "</category>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        category_dict = ET.XML(xml_example, parser)
+
+        Category.update(contabase, category_dict)
+
+        self.assertEqual(len(mock_contaminant_update.mock_calls), 2)
+
+    @mock.patch('contaminer.models.contabase.Contaminant.update')
+    def test_update_creates_good_category(self,
+            mock_contaminant_update):
+        contabase = ContaBase.get_current()
+        xml_example = "" \
+            + "<category>\n" \
+            + "    <id>7</id>\n" \
+            + "    <name>Protein test good category</name>\n" \
+            + "    <default>true</default>\n" \
+            + "    <contaminant>\n" \
+            + "        <uniprot_id>P0ACJ8</uniprot_id>\n" \
+            + "    </contaminant>\n" \
+            + "</category>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        category_dict = ET.XML(xml_example, parser)
+
+        Category.update(contabase, category_dict)
+
+        category = Category.objects.get(
+                number = 7,
+                contabase = contabase,
+                )
+        self.assertEqual(category.contabase, contabase)
+        self.assertEqual(category.number, 7)
+        self.assertEqual(category.name, "Protein test good category")
+        self.assertTrue(category.selected_by_default)
+
+    @mock.patch('contaminer.models.contabase.Contaminant.update')
+    def test_update_creates_good_category_default_false(self,
+            mock_contaminant_update):
+        contabase = ContaBase.get_current()
+        xml_example = "" \
+            + "<category>\n" \
+            + "    <id>8</id>\n" \
+            + "    <name>Protein test false default</name>\n" \
+            + "    <default>false</default>\n" \
+            + "    <contaminant>\n" \
+            + "        <uniprot_id>P0ACJ8</uniprot_id>\n" \
+            + "    </contaminant>\n" \
+            + "</category>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        category_dict = ET.XML(xml_example, parser)
+
+        Category.update(contabase, category_dict)
+
+        category = Category.objects.get(
+                number = 8,
+                contabase = contabase,
+                )
+        self.assertFalse(category.selected_by_default)
 
 class ContaminantTestCase(TestCase):
     """
@@ -188,6 +348,151 @@ class ContaminantTestCase(TestCase):
                 uniprot_id = "P0ACJ8",
                 )
         self.assertEqual(contaminant.short_name, 'CRP_ECOLI')
+
+    @mock.patch('contaminer.models.contabase.Reference.update')
+    @mock.patch('contaminer.models.contabase.Suggestion.update')
+    @mock.patch('contaminer.models.contabase.Pack.update')
+    def test_update_updates_good_parameters_pack_ref_sugg(self,
+            mock_pack_update, mock_suggestion_update,
+            mock_reference_update):
+        category = Category.objects.all()[0]
+        xml_example = "" \
+            + "<contaminant>\n" \
+            + "    <uniprot_id>P61517</uniprot_id>\n" \
+            + "    <short_name>CAN_ECOLI</short_name>\n" \
+            + "    <long_name>Carbonic anhydrase</long_name>\n" \
+            + "    <sequence>ABCDEFGHIJKLMNOPQRSTUVWXYZ</sequence>\n" \
+            + "    <organism>Escherichia coli</organism>\n" \
+            + "    <exact_model>true</exact_model>\n" \
+            + "    <reference>\n" \
+            + "        <id>3</id>\n" \
+            + "    </reference>\n" \
+            + "    <suggestion>\n" \
+            + "        <id>2</id>\n" \
+            + "    </suggestion>\n" \
+            + "    <pack>\n" \
+            + "        <id>1</id>\n" \
+            + "    </pack>\n" \
+            + "</contaminant>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        contaminant_dict = ET.XML(xml_example, parser)
+
+        Contaminant.update(category, contaminant_dict)
+
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P61517',
+                )
+        _, args, _ = mock_pack_update.mock_calls[0]
+        self.assertEqual(contaminant, args[0])
+        pack_dict = ET.Element('pack')
+        pack_id = ET.SubElement(pack_dict, 'id')
+        pack_id.text = '1'
+        self.assertEqual(ET.tostring(pack_dict), ET.tostring(args[1]))
+
+        _, args, _ = mock_suggestion_update.mock_calls[0]
+        self.assertEqual(contaminant, args[0])
+        suggestion_dict = ET.Element('suggestion')
+        suggestion_id = ET.SubElement(suggestion_dict, 'id')
+        suggestion_id.text = '2'
+        self.assertEqual(ET.tostring(suggestion_dict), ET.tostring(args[1]))
+
+        _, args, _ = mock_reference_update.mock_calls[0]
+        self.assertEqual(contaminant, args[0])
+        reference_dict = ET.Element('reference')
+        reference_id = ET.SubElement(reference_dict, 'id')
+        reference_id.text = '3'
+        self.assertEqual(ET.tostring(reference_dict), ET.tostring(args[1]))
+
+    @mock.patch('contaminer.models.contabase.Reference.update')
+    @mock.patch('contaminer.models.contabase.Suggestion.update')
+    @mock.patch('contaminer.models.contabase.Pack.update')
+    def test_update_updates_good_number_pack_ref_sugg(self,
+            mock_pack_update, mock_suggestion_update,
+            mock_reference_update):
+        category = Category.objects.all()[0]
+        xml_example = "" \
+            + "<contaminant>\n" \
+            + "    <uniprot_id>P61517</uniprot_id>\n" \
+            + "    <short_name>CAN_ECOLI</short_name>\n" \
+            + "    <long_name>Carbonic anhydrase</long_name>\n" \
+            + "    <sequence>ABCDEFGHIJKLMNOPQRSTUVWXYZ</sequence>\n" \
+            + "    <organism>Escherichia coli</organism>\n" \
+            + "    <exact_model>true</exact_model>\n" \
+            + "    <reference>\n" \
+            + "        <id>1</id>\n" \
+            + "    </reference>\n" \
+            + "    <reference>\n" \
+            + "        <id>2</id>\n" \
+            + "    </reference>\n" \
+            + "    <reference>\n" \
+            + "        <id>3</id>\n" \
+            + "    </reference>\n" \
+            + "    <reference>\n" \
+            + "        <id>4</id>\n" \
+            + "    </reference>\n" \
+            + "    <suggestion>\n" \
+            + "        <id>1</id>\n" \
+            + "    </suggestion>\n" \
+            + "    <suggestion>\n" \
+            + "        <id>2</id>\n" \
+            + "    </suggestion>\n" \
+            + "    <suggestion>\n" \
+            + "        <id>3</id>\n" \
+            + "    </suggestion>\n" \
+            + "    <pack>\n" \
+            + "        <id>1</id>\n" \
+            + "    </pack>\n" \
+            + "    <pack>\n" \
+            + "        <id>2</id>\n" \
+            + "    </pack>\n" \
+            + "</contaminant>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        contaminant_dict = ET.XML(xml_example, parser)
+
+        Contaminant.update(category, contaminant_dict)
+
+        self.assertEqual(len(mock_pack_update.mock_calls), 2)
+        self.assertEqual(len(mock_suggestion_update.mock_calls), 3)
+        self.assertEqual(len(mock_reference_update.mock_calls), 4)
+
+    @mock.patch('contaminer.models.contabase.Reference.update')
+    @mock.patch('contaminer.models.contabase.Suggestion.update')
+    @mock.patch('contaminer.models.contabase.Pack.update')
+    def test_update_creates_good_contaminant(self,
+            mock_pack_update, mock_suggestion_update,
+            mock_reference_update):
+        category = Category.objects.all()[0]
+        xml_example = "" \
+            + "<contaminant>\n" \
+            + "    <uniprot_id>P61517</uniprot_id>\n" \
+            + "    <short_name>CAN_ECOLI</short_name>\n" \
+            + "    <long_name>Carbonic anhydrase</long_name>\n" \
+            + "    <sequence>ABCDEFGHIJKLMNOPQRSTUVWXYZ</sequence>\n" \
+            + "    <organism>Escherichia coli</organism>\n" \
+            + "    <exact_model>true</exact_model>\n" \
+            + "    <reference>\n" \
+            + "        <id>3</id>\n" \
+            + "    </reference>\n" \
+            + "    <suggestion>\n" \
+            + "        <id>2</id>\n" \
+            + "    </suggestion>\n" \
+            + "    <pack>\n" \
+            + "        <id>1</id>\n" \
+            + "    </pack>\n" \
+            + "</contaminant>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        contaminant_dict = ET.XML(xml_example, parser)
+
+        Contaminant.update(category, contaminant_dict)
+
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P61517',
+                )
+        self.assertEqual(contaminant.category, category)
+        self.assertEqual(contaminant.short_name, "CAN_ECOLI")
+        self.assertEqual(contaminant.long_name, "Carbonic anhydrase")
+        self.assertEqual(contaminant.sequence, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        self.assertEqual(contaminant.organism, "Escherichia coli")
 
 
 class PackTestCase(TestCase):
@@ -290,6 +595,127 @@ class PackTestCase(TestCase):
         except ValidationError:
             self.fail("Pack creation raised ValidationError.")
 
+    @mock.patch('contaminer.models.contabase.Model.update')
+    def test_update_updates_good_parameters_model(self,
+            mock_model_update):
+        contaminant = Contaminant.objects.all()[0]
+        xml_example = "" \
+            + "<pack>\n" \
+            + "    <quat_structure>8-mer</quat_structure>\n" \
+            + "    <model>\n" \
+            + "        <id>1</id>\n" \
+            + "    </model>\n" \
+            + "</pack>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        pack_dict = ET.XML(xml_example, parser)
+
+        Pack.update(contaminant, pack_dict)
+
+        pack = Pack.objects.get(
+                structure = "8-mer",
+                )
+
+        _, args, _ = mock_model_update.mock_calls[0]
+        self.assertEqual(pack, args[0])
+        model_dict = ET.Element('model')
+        model_id = ET.SubElement(model_dict, 'id')
+        model_id.text = '1'
+        self.assertEqual(ET.tostring(model_dict), ET.tostring(args[1]))
+
+    @mock.patch('contaminer.models.contabase.Model.update')
+    def test_update_updates_good_number_model(self,
+            mock_model_update):
+        contaminant = Contaminant.objects.all()[0]
+        xml_example = "" \
+            + "<pack>\n" \
+            + "    <quat_structure>2-mer</quat_structure>\n" \
+            + "    <model>\n" \
+            + "        <id>1</id>\n" \
+            + "    </model>\n" \
+            + "    <model>\n" \
+            + "        <id>2</id>\n" \
+            + "    </model>\n" \
+            + "</pack>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        pack_dict = ET.XML(xml_example, parser)
+
+        Pack.update(contaminant, pack_dict)
+
+        self.assertEqual(len(mock_model_update.mock_calls), 2)
+
+    @mock.patch('contaminer.models.contabase.Model.update')
+    def test_update_creates_good_Pack(self,
+            mock_model_update):
+        contaminant = Contaminant.objects.all()[0]
+        xml_example = "" \
+            + "<pack>\n" \
+            + "    <quat_structure>16-mer</quat_structure>\n" \
+            + "    <model>\n" \
+            + "        <id>1</id>\n" \
+            + "    </model>\n" \
+            + "    <model>\n" \
+            + "        <id>2</id>\n" \
+            + "    </model>\n" \
+            + "</pack>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        pack_dict = ET.XML(xml_example, parser)
+
+        Pack.update(contaminant, pack_dict)
+
+        pack = Pack.objects.get(
+                structure = '16-mer',
+                )
+        self.assertEqual(pack.contaminant, contaminant)
+        self.assertEqual(pack.structure, "16-mer")
+
+    @mock.patch('contaminer.models.contabase.Model.update')
+    def test_update_creates_incremental_pack_number(self, mock_model_update):
+        category = Category.objects.get(
+                name="Protein in E.Coli",
+                )
+        Contaminant.objects.create(
+                uniprot_id = "P0A8N5",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0A8N5',
+                )
+        xml1 = "" \
+            + "<pack>\n" \
+            + "    <quat_structure>1-mer</quat_structure>\n" \
+            + "    <model>\n" \
+            + "        <id>1</id>\n" \
+            + "    </model>\n" \
+            + "</pack>\n"
+        xml2 = "" \
+            + "<pack>\n" \
+            + "    <quat_structure>2-mer</quat_structure>\n" \
+            + "    <model>\n" \
+            + "        <id>1</id>\n" \
+            + "    </model>\n" \
+            + "</pack>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        pack1_dict = ET.XML(xml1, parser)
+        pack2_dict = ET.XML(xml2, parser)
+
+        Pack.update(contaminant, pack1_dict)
+        Pack.update(contaminant, pack2_dict)
+
+        pack1 = Pack.objects.get(
+                contaminant = contaminant,
+                structure = "1-mer",
+                )
+        pack2 = Pack.objects.get(
+                contaminant = contaminant,
+                structure = "2-mer",
+                )
+        self.assertEqual(pack1.number, 1)
+        self.assertEqual(pack2.number, 2)
+
 
 class ModelTestCase(TestCase):
     """
@@ -386,13 +812,41 @@ class ModelTestCase(TestCase):
                     pack = pack,
                     )
 
+    def test_update_creates_good_model(self):
+        pack = Pack.objects.all()[0]
+        xml_example = "" \
+            + "<model>\n" \
+            + "    <template>3qy1</template>\n" \
+            + "    <chain>B</chain>\n" \
+            + "    <domain>1</domain>\n" \
+            + "    <n_res>10</n_res>\n" \
+            + "    <identity>1.000</identity>\n" \
+            + "</model>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        model_dict = ET.XML(xml_example, parser)
+
+        Model.update(pack, model_dict)
+
+        model = Model.objects.get(
+                pdb_code = '3QY1',
+                )
+        self.assertEqual(model.pack, pack)
+        self.assertEqual(model.pdb_code, "3QY1")
+        self.assertEqual(model.chain, "B")
+        self.assertEqual(model.domain, 1)
+        self.assertEqual(model.identity, 100)
+
 
 class ReferenceTestCase(TestCase):
     """
         Test the Reference model
     """
     def setUp(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.objects.all()[0]
         Category.objects.create(
+                contabase = contabase,
+                number = 1,
                 name = "Protein in E.Coli",
                 )
         category = Category.objects.get(
@@ -406,6 +860,22 @@ class ReferenceTestCase(TestCase):
                 sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
                 organism = "Escherichia coli",
                 )
+
+
+    def test_update_creates_good_reference(self):
+        contaminant = Contaminant.objects.all()[0]
+        xml_example = "" \
+            + "<reference>\n" \
+            + "    <pubmed_id>11111111</pubmed_id>\n" \
+            + "</reference>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        reference_dict = ET.XML(xml_example, parser)
+
+        Reference.update(contaminant, reference_dict)
+
+        reference = Reference.objects.all()[0]
+        self.assertEqual(reference.contaminant, contaminant)
+        self.assertEqual(reference.pubmed_id, 11111111)
 
 
 class SuggestionTestCase(TestCase):
@@ -413,7 +883,11 @@ class SuggestionTestCase(TestCase):
         Test the Suggestion model
     """
     def setUp(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.objects.all()[0]
         Category.objects.create(
+                contabase = contabase,
+                number = 1,
                 name = "Protein in E.Coli",
                 )
         category = Category.objects.get(
@@ -427,6 +901,22 @@ class SuggestionTestCase(TestCase):
                 sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
                 organism = "Escherichia coli",
                 )
+
+
+    def test_update_creates_good_Suggestion(self):
+        contaminant = Contaminant.objects.all()[0]
+        xml_example = "" \
+            + "<suggestion>\n" \
+            + "    <name>Mohamed Bin Abdulaziz</name>\n" \
+            + "</suggestion>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        suggestion_dict = ET.XML(xml_example, parser)
+
+        Suggestion.update(contaminant, suggestion_dict)
+
+        suggestion = Suggestion.objects.all()[0]
+        self.assertEqual(suggestion.contaminant, contaminant)
+        self.assertEqual(suggestion.name, "Mohamed Bin Abdulaziz")
 
 
 class JobTestCase(TestCase):
