@@ -59,26 +59,41 @@ class ContaBase(models.Model):
     obsolete = models.BooleanField(default = False)
 
     def __str__(self):
+        """ Write id and (obsolete) if needed """
         obsolete_txt = "obsolete" if self.obsolete else "current"
         return str(self.id) + " - " + obsolete_txt
 
     @classmethod
     def get_current(cls):
+        """ Return the only not obsolete contabase """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
         current_list = cls.objects.get(obsolete = False)
+        log.debug("Exit")
         return current_list
 
     def make_obsolete(self):
+        """ Mark self as obsolete """
         self.obsolete = True
         self.save()
 
     @classmethod
     def make_all_obsolete(cls):
+        """ Mark all the contabases as obsolete """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
         all_objects = cls.objects.all()
         map(lambda x: x.make_obsolete(), all_objects)
+        log.debug("Exit")
 
     @classmethod
     def update(cls):
+        """ Update the ContaBase based on the data on the remote cluster """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         cls.make_all_obsolete()
+
         new_contabase = ContaBase()
         new_contabase.obsolete = False
         new_contabase.save()
@@ -86,8 +101,13 @@ class ContaBase(models.Model):
 
         parser = ET.XMLParser(remove_blank_text = True)
         contabase = ET.XML(SSHChannel().get_contabase(), parser)
+
         for category in contabase.iter('category'):
+            log.debug("Category found")
             Category.update(new_contabase, category)
+
+        log.info("ContaBase updated")
+        log.debug("Exit")
 
 
 class Category(models.Model):
@@ -103,10 +123,15 @@ class Category(models.Model):
     selected_by_default = models.BooleanField(default = False)
 
     def __str__(self):
+        """ Write name, selected by default, and (obsolete) if needed """
         obsolete_str = (" (obsolete)" if self.contabase.obsolete else "")
         return self.name + " - " + str(self.selected_by_default) + obsolete_str
 
     def clean(self, *args, **kwargs):
+        """ Clean the fields before saving in the database """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         category = Category.objects.filter(
                 contabase = self.contabase,
                 number = self.number,
@@ -115,13 +140,24 @@ class Category(models.Model):
             raise ValidationError("Category already registered in ContaBase")
 
         super(Category, self).clean(*args, **kwargs)
+        log.debug("Exit")
 
     def save(self, *args, **kwargs):
+        """ Save object in DB """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         self.full_clean()
         super(Category, self).save(*args, **kwargs)
 
+        log.debug("Exit")
+
     @classmethod
     def update(cls, parent_contabase, category_dict):
+        """ Create the category based on category_dict """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         number = int(category_dict.find('id').text)
         new_category = Category()
         new_category.contabase = parent_contabase
@@ -137,7 +173,10 @@ class Category(models.Model):
                 )
 
         for contaminant in category_dict.iter('contaminant'):
+            log.debug("Contaminant found")
             Contaminant.update(new_category, contaminant)
+
+        log.debug("Exit")
 
 
 class Contaminant(models.Model):
@@ -155,10 +194,15 @@ class Contaminant(models.Model):
     organism = models.CharField(max_length = 50, null = True, blank = True)
 
     def __str__(self):
+        """ Write uniprot_id + short_name """
         return self.uniprot_id + ' - ' + self.short_name
 
     @classmethod
     def update(cls, parent_category, contaminant_dict):
+        """ Create the contaminant based on contaminant_dict """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         uniprot_id = contaminant_dict.find('uniprot_id').text
         new_contaminant = Contaminant()
         new_contaminant.uniprot_id = uniprot_id
@@ -175,13 +219,18 @@ class Contaminant(models.Model):
                 )
 
         for pack in contaminant_dict.iter('pack'):
+            log.debug("Pack found")
             Pack.update(new_contaminant, pack)
 
         for reference in contaminant_dict.iter('reference'):
+            log.debug("Reference found")
             Reference.update(new_contaminant, reference)
 
         for suggestion in contaminant_dict.iter('suggestion'):
+            log.debug("Suggestion found")
             Suggestion.update(new_contaminant, suggestion)
+
+        log.debug("Exit")
 
     @staticmethod
     def get_all():
@@ -225,6 +274,7 @@ class Pack(models.Model):
     structure = models.CharField(max_length = 15) # dimer, domain, ...
 
     def __str__(self):
+        """ Write uniprot_id, short_name, number, and quaternary structure """
         contaminant = str(self.contaminant)
         number = str(self.number)
         structure = str(self.structure)
@@ -232,6 +282,10 @@ class Pack(models.Model):
 
     @classmethod
     def update(cls, parent_contaminant, pack_dict):
+        """ Create Pack based on pack_dict """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         number = len(Pack.objects.filter(contaminant = parent_contaminant)) + 1
         new_pack = Pack()
         new_pack.contaminant = parent_contaminant
@@ -245,11 +299,19 @@ class Pack(models.Model):
                 )
 
         for model in pack_dict.iter('model'):
+            log.debug("Model found")
             Model.update(new_pack, model)
 
+        log.debug("Exit")
+
     def clean(self, *args, **kwargs):
+        """ Clean the fields before saving in DB """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
         # Structure can be domain, domains, or n-mer with n integer
         if not re.match("^([1-9][0-9]*-mer|domains?)$", self.structure):
+            log.error("self.structure does not match the valid values "\
+                    + "(domain, domains, or X-mer with X a number)")
             raise ValidationError("structure is not valid")
 
         # (contaminant, number) pair must be unique
@@ -258,11 +320,15 @@ class Pack(models.Model):
                 number = self.number,
                 )
         if len(pack) != 0 or (len(pack) == 1 and pack[0].pk != self.pk):
+            log.error("This pack number already exists for this contaminant")
             raise ValidationError("Pack already registered in database")
 
         super(Pack, self).clean(*args, **kwargs)
 
+        log.debug("Exit")
+
     def save(self, *args, **kwargs):
+        """ Save the object in DB """
         self.full_clean()
         super(Pack, self).save(*args, **kwargs)
 
@@ -281,12 +347,17 @@ class Model(models.Model):
     pack = models.ForeignKey(Pack)
 
     def __str__(self):
+        """ Write pack and PDB code of the template """
         pack = str(self.pack)
         pdb_code = str(self.pdb_code)
         return (pack + ' - ' + pdb_code)
 
     @classmethod
     def update(cls, parent_pack, model_dict):
+        """ Create Model based on model_dict """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         new_model = Model()
         new_model.pdb_code = model_dict.find('template').text
         new_model.chain = model_dict.find('chain').text
@@ -296,16 +367,24 @@ class Model(models.Model):
         new_model.pack = parent_pack
         new_model.save()
 
+        log.debug("Exit")
+
     def clean(self, *args, **kwargs):
+        """ Clean the fields before saving in DB """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
         # Identity is a percentage and should be between 0 and 100
         if self.identity < 0 or self.identity > 100:
+            log.error("The percentage is not valid: " + str(self.identity))
             raise ValidationError(
                     "A percentage should be between 0 and 100"
                     )
 
         super(Model, self).clean(*args, **kwargs)
+        log.debug("Exit")
 
     def save(self,  *args, **kwargs):
+        """ Save object in DB """
         self.full_clean()
         super(Model, self).save(*args, **kwargs)
 
@@ -318,14 +397,21 @@ class Reference(models.Model):
     contaminant = models.ForeignKey(Contaminant)
 
     def __str__(self):
+        """ Write uniprot_id and pubmed_id """
         return contaminant.uniprot_id + " -> " + str(self.pubmed_id)
 
     @classmethod
     def update(cls, parent_contaminant, reference_dict):
+        """ Create Reference based on reference_dict """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         new_reference = Reference()
         new_reference.pubmed_id = reference_dict.find('pubmed_id').text
         new_reference.contaminant = parent_contaminant
         new_reference.save()
+
+        log.debug("Exit")
 
 
 class Suggestion(models.Model):
@@ -336,11 +422,18 @@ class Suggestion(models.Model):
     contaminant = models.ForeignKey(Contaminant)
 
     def __str__(self):
+        """ Write uniprot_id and name of the person """
         return contaminant.uniprot_id + " -> " + self.name
 
     @classmethod
     def update(cls, parent_contaminant, suggestion_dict):
+        """ Create a Suggestion based on suggestion_dict """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         new_suggestion = Suggestion()
         new_suggestion.name = suggestion_dict.find('name').text
         new_suggestion.contaminant = parent_contaminant
         new_suggestion.save()
+
+        log.debug("Exit")
