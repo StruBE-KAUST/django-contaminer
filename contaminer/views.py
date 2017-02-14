@@ -32,9 +32,9 @@ from django.contrib import messages
 from django.conf import settings
 
 from .forms import UploadStructure
-from .models import Contaminant
-from .models import Job
-from .models import Task
+from .models.contabase import Contaminant
+from .models.contaminer import Job
+from .models.contaminer import Task
 
 
 def newjob(request):

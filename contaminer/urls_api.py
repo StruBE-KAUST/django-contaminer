@@ -21,9 +21,9 @@
 """
 
 from django.conf.urls import url
-from . import api_views
+from . import views_api
 
 urlpatterns = [
         url(r'^contaminant/(?P<uniprot_id>.*)$',
-            api_views.ContaminantView.as_view(), name='contaminant'),
+            views_api.ContaminantView.as_view(), name='contaminant'),
 ]

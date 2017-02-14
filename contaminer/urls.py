@@ -29,5 +29,5 @@ urlpatterns = [
         url(r'^(?P<jobid>\d+)$', views.result, name='result'),
         url(r'^contaminants$', views.list_contaminants, name='contaminants'),
         url(r'^download$', views.download, name='download'),
-        url(r'^api/', include('contaminer.api_urls', namespace="API")),
+        url(r'^api/', include('contaminer.urls_api', namespace="API")),
 ]
