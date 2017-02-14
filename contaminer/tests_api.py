@@ -31,6 +31,7 @@ import mock
 
 from .views_api import ContaminantView
 from .views_api import ContaminantsView
+from .views_api import CategoryView
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
@@ -267,5 +268,75 @@ class ContaminantsViewTestCase(TestCase):
                                 'organism': 'Mario',
                             }
                         ]
+                    }
+                )
+
+
+class CategoryViewTestCase(TestCase):
+    """
+        Test the CategoryView views
+    """
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_get_returns_404_on_wrong_id(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:category', args = [25])
+                )
+        with self.assertRaises(Http404):
+            response = CategoryView.as_view()(request, 25)
+
+    def test_get_valid_category(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.objects.all()[0]
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase,
+                )
+        request = self.factory.get(
+                reverse('ContaMiner:API:category', args = [1])
+                )
+        response = CategoryView.as_view()(request, 1)
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.content
+        self.assertJSONEqual(response_data,
+                    {
+                        'id': 1,
+                        'name': 'Test views',
+                        'selected_by_default': False,
+                    }
+                )
+
+    def test_get_gives_category_from_current_contabase(self):
+        ContaBase.objects.create(obsolete = True)
+        ContaBase.objects.create()
+        contabase_obsolete = ContaBase.objects.filter(obsolete = True)[0]
+        contabase = ContaBase.get_current()
+
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase,
+                )
+        Category.objects.create(
+                number = 1,
+                name = "Test views obsolete",
+                contabase = contabase_obsolete,
+                )
+
+        request = self.factory.get(
+                reverse('ContaMiner:API:category', args = [1])
+                )
+        response = CategoryView.as_view()(request, 1)
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.content
+        self.assertJSONEqual(response_data,
+                    {
+                        'id': 1,
+                        'name': 'Test views',
+                        'selected_by_default': False,
                     }
                 )

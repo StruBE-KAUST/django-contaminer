@@ -28,8 +28,9 @@ from django.http import Http404
 from django.views.generic import TemplateView
 from django.core.exceptions import ObjectDoesNotExist
 
-from .models.contabase import Contaminant
 from .models.contabase import ContaBase
+from .models.contabase import Category
+from .models.contabase import Contaminant
 
 class ContaminantView(TemplateView):
     """
@@ -77,3 +78,24 @@ class ContaminantsView(TemplateView):
         log.debug("Exit")
         return JsonResponse(response_data)
 
+class CategoryView(TemplateView):
+    """
+        Views accessible thourhg api/contaminants
+    """
+    def get(self, request, id):
+        """ Return the fileds of the category with the given id """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            category = Category.objects.get(
+                    number = id,
+                    contabase = ContaBase.get_current()
+                    )
+        except ObjectDoesNotExist:
+            raise Http404()
+
+        response_data = category.to_simple_dict()
+
+        log.debug("Exit")
+        return JsonResponse(response_data)

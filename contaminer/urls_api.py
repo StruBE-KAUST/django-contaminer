@@ -28,4 +28,6 @@ urlpatterns = [
             views_api.ContaminantView.as_view(), name='contaminant'),
         url(r'^contaminants',
             views_api.ContaminantsView.as_view(), name='contaminants'),
+        url(r'^category/(?P<category_id>.*)$',
+            views_api.CategoryView.as_view(), name='category'),
 ]
