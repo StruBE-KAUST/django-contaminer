@@ -1,6 +1,6 @@
 # -*- coding : utf-8 -*-
 
-##    Copyright (C) 2016 Hungler Arnaud
+##    Copyright (C) 2017 King Abdullah University of Science and Technology
 ##
 ##    This program is free software; you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
@@ -21,13 +21,9 @@
 """
 
 from django.conf.urls import url
-from django.conf.urls import include
-from . import views
+from . import api_views
 
 urlpatterns = [
-        url(r'^$', views.newjob, name='home'),
-        url(r'^(?P<jobid>\d+)$', views.result, name='result'),
-        url(r'^contaminants$', views.list_contaminants, name='contaminants'),
-        url(r'^download$', views.download, name='download'),
-        url(r'^api/', include('contaminer.api_urls', namespace="API")),
+        url(r'^contaminant/(?P<uniprot_id>.*)$',
+            api_views.ContaminantView.as_view(), name='contaminant'),
 ]
