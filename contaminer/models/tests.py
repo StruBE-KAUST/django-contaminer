@@ -29,6 +29,7 @@ from django.core.exceptions import MultipleObjectsReturned
 import mock
 
 import lxml.etree as ET
+import json
 
 from .contabase import ContaBase
 from .contabase import Category
@@ -494,6 +495,20 @@ class ContaminantTestCase(TestCase):
         self.assertEqual(contaminant.sequence, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
         self.assertEqual(contaminant.organism, "Escherichia coli")
 
+    def test_to_simple_dict_gives_correct_result(self):
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                )
+        response_dict = contaminant.to_simple_dict()
+        response_expected = {
+                'uniprot_id': "P0ACJ8",
+                'short_name': "CRP_ECOLI",
+                'long_name': "cAMP-activated global transcriptional regulator",
+                'sequence': "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                'organism': "Escherichia coli",
+            }
+
+        self.assertEqual(response_dict, response_expected)
 
 class PackTestCase(TestCase):
     """

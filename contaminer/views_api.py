@@ -48,12 +48,7 @@ class ContaminantView(TemplateView):
         except ObjectDoesNotExist:
             raise Http404()
 
-        response_data = {}
-        response_data['uniprot_id'] = uniprot_id
-        response_data['short_name'] = contaminant.short_name
-        response_data['long_name'] = contaminant.long_name
-        response_data['sequence'] = contaminant.sequence
-        response_data['organism'] = contaminant.organism
+        response_data = contaminant.to_simple_dict()
 
         log.debug("Exit")
         return JsonResponse(response_data)
