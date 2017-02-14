@@ -26,4 +26,6 @@ from . import views_api
 urlpatterns = [
         url(r'^contaminant/(?P<uniprot_id>.*)$',
             views_api.ContaminantView.as_view(), name='contaminant'),
+        url(r'^contaminants',
+            views_api.ContaminantsView.as_view(), name='contaminants'),
 ]
