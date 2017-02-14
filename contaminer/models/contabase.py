@@ -178,6 +178,15 @@ class Category(models.Model):
 
         log.debug("Exit")
 
+    def to_simple_dict(self):
+        """ Return a dictionary of the fields """
+        response_data = {}
+        response_data['id'] = self.number
+        response_data['name'] = self.name
+        response_data['selected_by_default'] = self.selected_by_default
+
+        return response_data
+
 
 class Contaminant(models.Model):
     """

@@ -308,6 +308,19 @@ class CategoryTestCase(TestCase):
                 )
         self.assertFalse(category.selected_by_default)
 
+    def test_to_simple_dict_gives_correct_result(self):
+        category = Category.objects.get(
+                name = "Protein in E.Coli",
+                )
+        response_dict = category.to_simple_dict()
+        response_expected = {
+                'id': 1,
+                'name': "Protein in E.Coli",
+                'selected_by_default': False,
+            }
+
+        self.assertEqual(response_dict, response_expected)
+
 class ContaminantTestCase(TestCase):
     """
         Test the Contaminant model
