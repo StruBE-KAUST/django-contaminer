@@ -32,27 +32,53 @@ from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
 
-class ContaminantView(TemplateView):
+class CategoriesView(TemplateView):
     """
-        Views accessible through api/contaminant
+        Views accessible through api/categories
     """
-    def get(self, request, uniprot_id):
-        """ Return the fields of the contaminant with the given uniprot)id """
+    def get(self, request):
+        """ Return the list of all contaminants in current contabase """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
-            contaminant = Contaminant.objects.get(
-                    uniprot_id = uniprot_id,
-                    category__contabase = ContaBase.get_current(),
+            categories = Category.objects.filter(
+                    contabase = ContaBase.get_current()
+                    )
+        except ObjectDoesNotExist: #happens if no ContaBase is available
+            raise Http404()
+
+        categories_data = [cat.to_simple_dict() for cat in categories]
+
+        response_data = {}
+        response_data['categories'] = categories_data
+
+        log.debug("Exit")
+        return JsonResponse(response_data)
+
+
+class CategoryView(TemplateView):
+    """
+        Views accessible thourgh api/category
+    """
+    def get(self, request, id):
+        """ Return the fileds of the category with the given id """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            category = Category.objects.get(
+                    number = id,
+                    contabase = ContaBase.get_current()
                     )
         except ObjectDoesNotExist:
             raise Http404()
 
-        response_data = contaminant.to_simple_dict()
+        response_data = category.to_simple_dict()
 
         log.debug("Exit")
         return JsonResponse(response_data)
+
 
 class ContaminantsView(TemplateView):
     """
@@ -78,48 +104,25 @@ class ContaminantsView(TemplateView):
         log.debug("Exit")
         return JsonResponse(response_data)
 
-class CategoryView(TemplateView):
+
+class ContaminantView(TemplateView):
     """
-        Views accessible thourgh api/category
+        Views accessible through api/contaminant
     """
-    def get(self, request, id):
-        """ Return the fileds of the category with the given id """
+    def get(self, request, uniprot_id):
+        """ Return the fields of the contaminant with the given uniprot)id """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
-            category = Category.objects.get(
-                    number = id,
-                    contabase = ContaBase.get_current()
+            contaminant = Contaminant.objects.get(
+                    uniprot_id = uniprot_id,
+                    category__contabase = ContaBase.get_current(),
                     )
         except ObjectDoesNotExist:
             raise Http404()
 
-        response_data = category.to_simple_dict()
-
-        log.debug("Exit")
-        return JsonResponse(response_data)
-
-class CategoriesView(TemplateView):
-    """
-        Views accessible through api/categories
-    """
-    def get(self, request):
-        """ Return the list of all contaminants in current contabase """
-        log = logging.getLogger(__name__)
-        log.debug("Enter")
-
-        try:
-            categories = Category.objects.filter(
-                    contabase = ContaBase.get_current()
-                    )
-        except ObjectDoesNotExist: #happens if no ContaBase is available
-            raise Http404()
-
-        categories_data = [cat.to_simple_dict() for cat in categories]
-
-        response_data = {}
-        response_data['categories'] = categories_data
+        response_data = contaminant.to_simple_dict()
 
         log.debug("Exit")
         return JsonResponse(response_data)

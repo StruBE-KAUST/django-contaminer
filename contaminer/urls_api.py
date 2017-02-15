@@ -24,12 +24,12 @@ from django.conf.urls import url
 from . import views_api
 
 urlpatterns = [
-        url(r'^contaminant/(?P<uniprot_id>.*)$',
-            views_api.ContaminantView.as_view(), name='contaminant'),
-        url(r'^contaminants',
-            views_api.ContaminantsView.as_view(), name='contaminants'),
-        url(r'^category/(?P<category_id>.*)$',
-            views_api.CategoryView.as_view(), name='category'),
         url(r'^categories',
             views_api.CategoriesView.as_view(), name='categories'),
+        url(r'^category/(?P<category_id>.*)$',
+            views_api.CategoryView.as_view(), name='category'),
+        url(r'^contaminants',
+            views_api.ContaminantsView.as_view(), name='contaminants'),
+        url(r'^contaminant/(?P<uniprot_id>.*)$',
+            views_api.ContaminantView.as_view(), name='contaminant'),
 ]
