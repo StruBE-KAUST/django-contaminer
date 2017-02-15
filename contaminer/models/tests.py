@@ -142,6 +142,86 @@ class ContaBaseTestCase(TestCase):
         ContaBase.update()
         self.assertEqual(len(mock_category_update.mock_calls), 2)
 
+    def test_to_detailed_dict_gives_correct_result(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.get_current()
+
+        Category.objects.create(
+                number = 1,
+                name = 'Test category',
+                contabase = contabase,
+                )
+        category = Category.objects.get(
+                number = 1,
+                contabase = contabase,
+                )
+        Contaminant.objects.create(
+                category = category,
+                uniprot_id = 'P0ACJ8',
+                short_name = 'CRP_ECOLI',
+                long_name = 'regulator',
+                sequence = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                organism= 'Mario',
+                )
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                category = category,
+                )
+        Pack.objects.create(
+                contaminant = contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+        pack = Pack.objects.get(
+                contaminant = contaminant,
+                number = 5,
+                )
+        Model.objects.create(
+                pack = pack,
+                pdb_code = '3RYP',
+                chain = 'A',
+                domain = 1,
+                identity = 100,
+                nb_residues = 112,
+                )
+
+        response_dict = contabase.to_detailed_dict()
+        response_expected = {
+                'categories': [
+                    {
+                        'id': 1,
+                        'name': 'Test category',
+                        'selected_by_default': False,
+                        'contaminants': [
+                            {
+                                'uniprot_id': 'P0ACJ8',
+                                'short_name': 'CRP_ECOLI',
+                                'long_name': 'regulator',
+                                'sequence': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                                'organism': 'Mario',
+                                'packs': [
+                                    {
+                                        'number': 5,
+                                        'structure': '5-mer',
+                                        'models': [
+                                            {
+                                                'template': '3RYP',
+                                                'chain': 'A',
+                                                'domain': 1,
+                                                'identity': 100,
+                                                'residues': 112,
+                                            },
+                                        ]
+                                    },
+                                ]
+                            },
+                        ]
+                    },
+                ]
+            }
+
+        self.assertEqual(response_dict, response_expected)
+
 
 class CategoryTestCase(TestCase):
     """
@@ -320,6 +400,124 @@ class CategoryTestCase(TestCase):
             }
 
         self.assertEqual(response_dict, response_expected)
+
+    def test_to_detailed_dict_gives_correct_result(self):
+        category = Category.objects.get(
+                number = 1,
+                )
+        Contaminant.objects.create(
+                category = category,
+                uniprot_id = 'P0ACJ8',
+                short_name = 'CRP_ECOLI',
+                long_name = 'regulator',
+                sequence = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                organism= 'Mario',
+                )
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                category = category,
+                )
+        Pack.objects.create(
+                contaminant = contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+        pack = Pack.objects.get(
+                contaminant = contaminant,
+                number = 5,
+                )
+        Model.objects.create(
+                pack = pack,
+                pdb_code = '3RYP',
+                chain = 'A',
+                domain = 1,
+                identity = 100,
+                nb_residues = 112,
+                )
+        Contaminant.objects.create(
+                category = category,
+                uniprot_id = 'P0ACJ9',
+                short_name = 'CAN_ECOLI',
+                long_name = 'regulator',
+                sequence = 'ABCDEF',
+                organism= 'Luigi',
+                )
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ9',
+                category = category,
+                )
+        Pack.objects.create(
+                contaminant = contaminant,
+                number = 6,
+                structure= '6-mer',
+                )
+        pack = Pack.objects.get(
+                contaminant = contaminant,
+                number = 6,
+                )
+        Model.objects.create(
+                pack = pack,
+                pdb_code = '3RYP',
+                chain = 'A',
+                domain = 2,
+                identity = 100,
+                nb_residues = 71,
+                )
+        response_dict = category.to_detailed_dict()
+        response_expected = {
+                'id': 1,
+                'name': 'Protein in E.Coli',
+                'selected_by_default': False,
+                'contaminants': [
+                    {
+                        'uniprot_id': 'P0ACJ8',
+                        'short_name': 'CRP_ECOLI',
+                        'long_name': 'regulator',
+                        'sequence': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                        'organism': 'Mario',
+                        'packs': [
+                            {
+                                'number': 5,
+                                'structure': '5-mer',
+                                'models': [
+                                    {
+                                        'template': '3RYP',
+                                        'chain': 'A',
+                                        'domain': 1,
+                                        'identity': 100,
+                                        'residues': 112,
+                                    },
+                                ]
+                            },
+                        ]
+                    },
+                    {
+                        'uniprot_id': 'P0ACJ9',
+                        'short_name': 'CAN_ECOLI',
+                        'long_name': 'regulator',
+                        'sequence': 'ABCDEF',
+                        'organism': 'Luigi',
+                        'packs' : [
+                            {
+                                'number': 6,
+                                'structure': '6-mer',
+                                'models': [
+                                    {
+                                        'template': '3RYP',
+                                        'chain': 'A',
+                                        'domain': 2,
+                                        'identity': 100,
+                                        'residues': 71,
+                                    },
+                                ]
+                            },
+                        ]
+                    }
+                ]
+            }
+
+        self.assertEqual(response_dict, response_expected)
+
 
 class ContaminantTestCase(TestCase):
     """
@@ -522,6 +720,83 @@ class ContaminantTestCase(TestCase):
             }
 
         self.assertEqual(response_dict, response_expected)
+
+    def test_to_detailed_dict_gives_correct_result(self):
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                )
+        Pack.objects.create(
+                contaminant = contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+        pack = Pack.objects.get(
+                contaminant = contaminant,
+                number = 5,
+                )
+        Model.objects.create(
+                pack = pack,
+                pdb_code = '3RYP',
+                chain = 'A',
+                domain = 1,
+                identity = 100,
+                nb_residues = 112,
+                )
+        Pack.objects.create(
+                contaminant = contaminant,
+                number = 6,
+                structure= '6-mer',
+                )
+        pack = Pack.objects.get(
+                contaminant = contaminant,
+                number = 6,
+                )
+        Model.objects.create(
+                pack = pack,
+                pdb_code = '3RYP',
+                chain = 'A',
+                domain = 2,
+                identity = 100,
+                nb_residues = 71,
+                )
+        response_dict = contaminant.to_detailed_dict()
+        response_expected = {
+                'uniprot_id': 'P0ACJ8',
+                'short_name': 'CRP_ECOLI',
+                'long_name': 'cAMP-activated global transcriptional regulator',
+                'sequence': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                'organism': 'Escherichia coli',
+                'packs': [
+                    {
+                        'number': 5,
+                        'structure': '5-mer',
+                        'models': [
+                            {
+                                'template': '3RYP',
+                                'chain': 'A',
+                                'domain': 1,
+                                'identity': 100,
+                                'residues': 112,
+                            },
+                        ]
+                    }, {
+                        'number': 6,
+                        'structure': '6-mer',
+                        'models': [
+                            {
+                                'template': '3RYP',
+                                'chain': 'A',
+                                'domain': 2,
+                                'identity': 100,
+                                'residues': 71,
+                            },
+                        ]
+                    }
+                ]
+            }
+
+        self.assertEqual(response_dict, response_expected)
+
 
 class PackTestCase(TestCase):
     """
@@ -744,6 +1019,58 @@ class PackTestCase(TestCase):
         self.assertEqual(pack1.number, 1)
         self.assertEqual(pack2.number, 2)
 
+    def test_to_dict_gives_correct_result(self):
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                )
+        Pack.objects.create(
+                contaminant = contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+        pack = Pack.objects.get(
+                contaminant = contaminant,
+                number = 5,
+                )
+        Model.objects.create(
+                pack = pack,
+                pdb_code = '3RYP',
+                chain = 'A',
+                domain = 1,
+                identity = 100,
+                nb_residues = 112,
+                )
+        Model.objects.create(
+                pack = pack,
+                pdb_code = '3RYP',
+                chain = 'A',
+                domain = 2,
+                identity = 100,
+                nb_residues = 71,
+                )
+        response_dict = pack.to_dict()
+        response_expected = {
+                'number': 5,
+                'structure': '5-mer',
+                'models': [
+                    {
+                        'template': '3RYP',
+                        'chain': 'A',
+                        'domain': 1,
+                        'identity': 100,
+                        'residues': 112,
+                    }, {
+                        'template': '3RYP',
+                        'chain': 'A',
+                        'domain': 2,
+                        'identity': 100,
+                        'residues': 71,
+                    }
+                ]
+            }
+
+        self.assertEqual(response_dict, response_expected)
+
 
 class ModelTestCase(TestCase):
     """
@@ -846,6 +1173,21 @@ class ModelTestCase(TestCase):
         self.assertEqual(model.domain, 1)
         self.assertEqual(model.identity, 100)
 
+    def test_to_dict_gives_correct_result(self):
+        model = Model.objects.get(
+                pdb_code = '1O3T',
+                )
+        response_dict = model.to_dict()
+        response_expected = {
+                'template': '1O3T',
+                'chain': 'B',
+                'domain': 1,
+                'identity': 100,
+                'residues': 20,
+            }
+
+        self.assertEqual(response_dict, response_expected)
+
 
 class ReferenceTestCase(TestCase):
     """
@@ -887,6 +1229,23 @@ class ReferenceTestCase(TestCase):
         self.assertEqual(reference.contaminant, contaminant)
         self.assertEqual(reference.pubmed_id, 11111111)
 
+    def test_to_dict_gives_correct_result(self):
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                )
+        Reference.objects.create(
+                contaminant = contaminant,
+                pubmed_id = 123456789,
+                )
+
+        reference = Reference.objects.all()[0]
+        response_dict = reference.to_dict()
+        response_expected = {
+                'pubmed_id': 123456789,
+            }
+
+        self.assertEqual(response_dict, response_expected)
+
 
 class SuggestionTestCase(TestCase):
     """
@@ -912,7 +1271,6 @@ class SuggestionTestCase(TestCase):
                 organism = "Escherichia coli",
                 )
 
-
     def test_update_creates_good_Suggestion(self):
         contaminant = Contaminant.objects.all()[0]
         xml_example = "" \
@@ -927,6 +1285,23 @@ class SuggestionTestCase(TestCase):
         suggestion = Suggestion.objects.all()[0]
         self.assertEqual(suggestion.contaminant, contaminant)
         self.assertEqual(suggestion.name, "Mohamed Bin Abdulaziz")
+
+    def test_to_dict_gives_correct_result(self):
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                )
+        Suggestion.objects.create(
+                contaminant = contaminant,
+                name = 'Mario Luigi',
+                )
+
+        suggestion = Suggestion.objects.all()[0]
+        response_dict = suggestion.to_dict()
+        response_expected = {
+                'name': "Mario Luigi",
+            }
+
+        self.assertEqual(response_dict, response_expected)
 
 
 class JobTestCase(TestCase):

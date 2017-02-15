@@ -109,6 +109,16 @@ class ContaBase(models.Model):
         log.info("ContaBase updated")
         log.debug("Exit")
 
+    def to_detailed_dict(self):
+        """ Return a dictionary of the fields and Categories """
+        response_data = {}
+
+        categories = Category.objects.filter(contabase = self)
+        categories_dict = [cat.to_detailed_dict() for cat in categories]
+        response_data['categories'] = categories_dict
+
+        return response_data
+
 
 class Category(models.Model):
     """
@@ -184,6 +194,16 @@ class Category(models.Model):
         response_data['id'] = self.number
         response_data['name'] = self.name
         response_data['selected_by_default'] = self.selected_by_default
+
+        return response_data
+
+    def to_detailed_dict(self):
+        """ Return a dictionary of the fields and contaminants """
+        response_data = self.to_simple_dict()
+
+        contaminants = Contaminant.objects.filter(category = self)
+        contaminants_dict = [cont.to_detailed_dict() for cont in contaminants]
+        response_data['contaminants'] = contaminants_dict
 
         return response_data
 
@@ -280,6 +300,16 @@ class Contaminant(models.Model):
 
         return response_data
 
+    def to_detailed_dict(self):
+        """ Return a dictionary of the fields and packs """
+        response_data = self.to_simple_dict()
+
+        packs = Pack.objects.filter(contaminant = self)
+        packs_dict = [pack.to_dict() for pack in packs]
+        response_data['packs'] = packs_dict
+
+        return response_data
+
 
 class Pack(models.Model):
     """
@@ -352,6 +382,18 @@ class Pack(models.Model):
         self.full_clean()
         super(Pack, self).save(*args, **kwargs)
 
+    def to_dict(self):
+        """ Return a dictionary of the fields and models """
+        response_data = {}
+        response_data['number'] = self.number
+        response_data['structure'] = self.structure
+
+        models = Model.objects.filter(pack = self)
+        models_dict = [model.to_dict() for model in models]
+        response_data['models'] = models_dict
+
+        return response_data
+
 
 class Model(models.Model):
     """
@@ -408,6 +450,17 @@ class Model(models.Model):
         self.full_clean()
         super(Model, self).save(*args, **kwargs)
 
+    def to_dict(self):
+        """ Return a dictionary of the field """
+        response_data = {}
+        response_data['template'] = self.pdb_code
+        response_data['chain'] = self.chain
+        response_data['domain'] = self.domain
+        response_data['residues'] = self.nb_residues
+        response_data['identity'] = self.identity
+
+        return response_data
+
 
 class Reference(models.Model):
     """
@@ -433,6 +486,13 @@ class Reference(models.Model):
 
         log.debug("Exit")
 
+    def to_dict(self):
+        """ Return a dictionary of the field """
+        response_data = {}
+        response_data['pubmed_id'] = self.pubmed_id
+
+        return response_data
+
 
 class Suggestion(models.Model):
     """
@@ -457,3 +517,10 @@ class Suggestion(models.Model):
         new_suggestion.save()
 
         log.debug("Exit")
+
+    def to_dict(self):
+        """ Return a dictionary of the field """
+        response_data = {}
+        response_data['name'] = self.name
+
+        return response_data
