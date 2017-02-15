@@ -25,11 +25,18 @@ from . import views_api
 
 urlpatterns = [
         url(r'^categories',
-            views_api.CategoriesView.as_view(), name='categories'),
+            views_api.CategoriesView.as_view(),
+            name='categories'),
         url(r'^category/(?P<category_id>.*)$',
-            views_api.CategoryView.as_view(), name='category'),
+            views_api.CategoryView.as_view(),
+            name='category'),
         url(r'^contaminants',
-            views_api.ContaminantsView.as_view(), name='contaminants'),
+            views_api.ContaminantsView.as_view(),
+            name='contaminants'),
         url(r'^contaminant/(?P<uniprot_id>.*)$',
-            views_api.ContaminantView.as_view(), name='contaminant'),
+            views_api.ContaminantView.as_view(),
+            name='contaminant'),
+        url(r'^detailed_contaminant/(?P<uniprot_id>.*)$',
+            views_api.DetailedContaminantView.as_view(),
+            name='detailed_contaminant'),
 ]

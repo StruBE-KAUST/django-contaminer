@@ -29,13 +29,18 @@ from django.urls import reverse
 from django.http import Http404
 import mock
 
-from .views_api import ContaminantView
-from .views_api import ContaminantsView
-from .views_api import CategoryView
 from .views_api import CategoriesView
+from .views_api import CategoryView
+from .views_api import ContaminantsView
+from .views_api import ContaminantView
+from .views_api import DetailedContaminantView
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
+from .models.contabase import Pack
+from .models.contabase import Model
+from .models.contabase import Reference
+from .models.contabase import Suggestion
 
 import json
 
@@ -371,6 +376,167 @@ class ContaminantViewTestCase(TestCase):
                         'long_name': 'View testing',
                         'sequence': 'ABCDEF',
                         'organism': 'Mario',
+                    }
+                )
+
+    def test_get_gives_contaminant_from_current_contabase(self):
+        ContaBase.objects.create(obsolete = True)
+        ContaBase.objects.create()
+        contabase_obsolete = ContaBase.objects.filter(obsolete = True)[0]
+        contabase = ContaBase.get_current()
+
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase,
+                )
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase_obsolete,
+                )
+        category = Category.objects.filter(
+                contabase = contabase)[0]
+        category_obsolete = Category.objects.filter(
+                contabase = contabase_obsolete)[0]
+
+        Contaminant.objects.create(
+                uniprot_id = "TESTVIEW",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        Contaminant.objects.create(
+                uniprot_id = "TESTVIEW",
+                category = category_obsolete,
+                short_name = "TESTOBS",
+                long_name = "View testing obs",
+                sequence = "ABCDEFOBS",
+                organism = "Mario obs",
+                )
+
+        request = self.factory.get(
+                reverse('ContaMiner:API:contaminant', args = ["TESTVIEW"])
+                )
+        response = ContaminantView.as_view()(request, "TESTVIEW")
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.content
+        self.assertJSONEqual(response_data,
+                    {
+                        'uniprot_id': 'TESTVIEW',
+                        'short_name': 'TEST',
+                        'long_name': 'View testing',
+                        'sequence': 'ABCDEF',
+                        'organism': 'Mario',
+                    }
+                )
+
+
+class DetailedContaminantViewTestCase(TestCase):
+    """
+        Test the DetailedContaminantView views
+    """
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_get_returns_404_on_wrong_uniprot_id(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:contaminant', args = [25])
+                )
+        with self.assertRaises(Http404):
+            response = ContaminantView.as_view()(request, 25)
+
+    def test_get_valid_contaminant(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.objects.all()[0]
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase,
+                )
+        category = Category.objects.get(
+                name = "Test views",
+                )
+        Contaminant.objects.create(
+                uniprot_id = "TESTVIEW",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        contaminant = Contaminant.objects.get(
+                uniprot_id = "TESTVIEW",
+                )
+        Pack.objects.create(
+                number = 1,
+                contaminant = contaminant,
+                structure = '1-mer',
+                )
+        pack = Pack.objects.get(
+                number = 1,
+                contaminant = contaminant,
+                )
+        Model.objects.create(
+                pack = pack,
+                pdb_code = "3RYT",
+                chain = 'A',
+                domain = 1,
+                identity = 95,
+                nb_residues = 56,
+                )
+        Suggestion.objects.create(
+                name = "Gros chat",
+                contaminant = contaminant,
+                )
+        Reference.objects.create(
+                pubmed_id = "12345",
+                contaminant = contaminant,
+                )
+
+        request = self.factory.get(
+                reverse('ContaMiner:API:detailed_contaminant',
+                    args = ["TESTVIEW"])
+                )
+        response = DetailedContaminantView.as_view()(request, "TESTVIEW")
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.content
+        self.assertJSONEqual(response_data,
+                    {
+                        'uniprot_id': 'TESTVIEW',
+                        'short_name': 'TEST',
+                        'long_name': 'View testing',
+                        'sequence': 'ABCDEF',
+                        'organism': 'Mario',
+                        'packs': [
+                            {
+                                'number': 1,
+                                'structure': '1-mer',
+                                'models': [
+                                    {
+                                        'template': '3RYT',
+                                        'chain': 'A',
+                                        'domain': 1,
+                                        'identity': 95,
+                                        'residues': 56,
+                                    },
+                                ]
+                            },
+                        ],
+                        'references': [
+                            {
+                                'pubmed_id': 12345,
+                            },
+                        ],
+                        'suggestions': [
+                            {
+                                'name': 'Gros chat',
+                            },
+                        ],
                     }
                 )
 

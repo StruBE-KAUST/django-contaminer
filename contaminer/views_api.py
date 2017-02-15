@@ -110,7 +110,7 @@ class ContaminantView(TemplateView):
         Views accessible through api/contaminant
     """
     def get(self, request, uniprot_id):
-        """ Return the fields of the contaminant with the given uniprot)id """
+        """ Return the fields of the contaminant with the given uniprot_id """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
@@ -123,6 +123,29 @@ class ContaminantView(TemplateView):
             raise Http404()
 
         response_data = contaminant.to_simple_dict()
+
+        log.debug("Exit")
+        return JsonResponse(response_data)
+
+
+class DetailedContaminantView(TemplateView):
+    """
+        Views accessible through api/detailed_contaminant
+    """
+    def get(self, request, uniprot_id):
+        """ Return the fields and packs of the given contaminant """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            contaminant = Contaminant.objects.get(
+                    uniprot_id = uniprot_id,
+                    category__contabase = ContaBase.get_current(),
+                    )
+        except ObjectDoesNotExist:
+            raise Http404()
+
+        response_data = contaminant.to_detailed_dict()
 
         log.debug("Exit")
         return JsonResponse(response_data)
