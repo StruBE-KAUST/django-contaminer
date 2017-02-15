@@ -80,6 +80,29 @@ class CategoryView(TemplateView):
         return JsonResponse(response_data)
 
 
+class DetailedCategoryView(TemplateView):
+    """
+        Views accessible thourgh api/category
+    """
+    def get(self, request, id):
+        """ Return the fileds of the category with the given id """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            category = Category.objects.get(
+                    number = id,
+                    contabase = ContaBase.get_current()
+                    )
+        except ObjectDoesNotExist:
+            raise Http404()
+
+        response_data = category.to_detailed_dict()
+
+        log.debug("Exit")
+        return JsonResponse(response_data)
+
+
 class ContaminantsView(TemplateView):
     """
         Views accessible through api/contaminants
