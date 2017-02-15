@@ -57,6 +57,31 @@ class CategoriesView(TemplateView):
         return JsonResponse(response_data)
 
 
+class DetailedCategoriesView(TemplateView):
+    """
+        Views accessible through api/categories
+    """
+    def get(self, request):
+        """ Return the list of all contaminants in current contabase """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            categories = Category.objects.filter(
+                    contabase = ContaBase.get_current()
+                    )
+        except ObjectDoesNotExist: #happens if no ContaBase is available
+            raise Http404()
+
+        categories_data = [cat.to_detailed_dict() for cat in categories]
+
+        response_data = {}
+        response_data['categories'] = categories_data
+
+        log.debug("Exit")
+        return JsonResponse(response_data)
+
+
 class CategoryView(TemplateView):
     """
         Views accessible thourgh api/category

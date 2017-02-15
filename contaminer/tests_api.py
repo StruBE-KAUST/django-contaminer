@@ -30,6 +30,7 @@ from django.http import Http404
 import mock
 
 from .views_api import CategoriesView
+from .views_api import DetailedCategoriesView
 from .views_api import CategoryView
 from .views_api import DetailedCategoryView
 from .views_api import ContaminantsView
@@ -133,6 +134,150 @@ class CategoriesViewTestCase(TestCase):
                 )
 
 
+class DetailedContaminantsViewTestCase(TestCase):
+    """
+        Test the DetailedContaminantsView views
+    """
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_get_returns_404_on_empty_contabase(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:detailed_categories')
+                )
+        with self.assertRaises(Http404):
+            response = DetailedCategoriesView.as_view()(request)
+
+    def test_get_valid_contaminants_list(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.get_current()
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase,
+                )
+        category = Category.objects.get(
+                name = "Test views",
+                )
+        Contaminant.objects.create(
+                uniprot_id = "TESTVIEW",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        Contaminant.objects.create(
+                uniprot_id = "TESTVIEW2",
+                category = category,
+                short_name = "TEST2",
+                long_name = "View testing 2",
+                sequence = "ABCDEFG",
+                organism = "Luigi",
+                )
+        request = self.factory.get(
+                reverse('ContaMiner:API:detailed_categories')
+                )
+        response = DetailedCategoriesView.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.content
+        self.assertJSONEqual(response_data,
+                    {
+                        'categories': [
+                            {
+                                'id': 1,
+                                'name': 'Test views',
+                                'selected_by_default': False,
+                                'contaminants': [
+                                    {
+                                        'uniprot_id': 'TESTVIEW',
+                                        'short_name': 'TEST',
+                                        'long_name': 'View testing',
+                                        'sequence': 'ABCDEF',
+                                        'organism': 'Mario',
+                                        'packs': [],
+                                    }, {
+                                        'uniprot_id': 'TESTVIEW2',
+                                        'short_name': 'TEST2',
+                                        'long_name': 'View testing 2',
+                                        'sequence': 'ABCDEFG',
+                                        'organism': 'Luigi',
+                                        'packs': [],
+                                    }
+                                ]
+                            },
+                        ]
+                    }
+                )
+
+    def test_get_gives_contaminant_from_current_contabase(self):
+        ContaBase.objects.create(obsolete = True)
+        ContaBase.objects.create()
+        contabase_obsolete = ContaBase.objects.filter(obsolete = True)[0]
+        contabase = ContaBase.get_current()
+
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase,
+                )
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase_obsolete,
+                )
+        category = Category.objects.filter(
+                contabase = contabase)[0]
+        category_obsolete = Category.objects.filter(
+                contabase = contabase_obsolete)[0]
+
+        Contaminant.objects.create(
+                uniprot_id = "TESTVIEW",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        Contaminant.objects.create(
+                uniprot_id = "TESTVIEW",
+                category = category_obsolete,
+                short_name = "TESTOBS",
+                long_name = "View testing obs",
+                sequence = "ABCDEFOBS",
+                organism = "Mario obs",
+                )
+
+        request = self.factory.get(
+                reverse('ContaMiner:API:contaminants')
+                )
+        response = ContaminantsView.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.content
+        self.assertJSONEqual(response_data,
+                    {
+                        'categories': [
+                            {
+                                'id': 1,
+                                'name': 'Test views',
+                                'selected_by_default': False,
+                                'contaminants': [
+                                    {
+                                        'uniprot_id': 'TESTVIEW',
+                                        'short_name': 'TEST',
+                                        'long_name': 'View testing',
+                                        'sequence': 'ABCDEF',
+                                        'organism': 'Mario',
+                                    },
+                                ]
+                            },
+                        ]
+                    }
+                )
+
+
 class CategoryViewTestCase(TestCase):
     """
         Test the CategoryView views
@@ -205,7 +350,7 @@ class CategoryViewTestCase(TestCase):
 
 class DetailedCategoryViewTestCase(TestCase):
     """
-        Test the DetailedContaminantView views
+        Test the DetailedCategoryView views
     """
     def setUp(self):
         self.factory = RequestFactory()
