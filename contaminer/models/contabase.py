@@ -308,6 +308,16 @@ class Contaminant(models.Model):
         packs_dict = [pack.to_dict() for pack in packs]
         response_data['packs'] = packs_dict
 
+        suggestions = Suggestion.objects.filter(contaminant = self)
+        suggestions_dict = [sugg.to_dict() for sugg in suggestions]
+        if suggestions_dict:
+            response_data['suggestions'] = suggestions_dict
+
+        references = Reference.objects.filter(contaminant = self)
+        references_dict = [ref.to_dict() for ref in references]
+        if references_dict:
+            response_data['references'] = references_dict
+
         return response_data
 
 

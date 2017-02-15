@@ -797,6 +797,85 @@ class ContaminantTestCase(TestCase):
 
         self.assertEqual(response_dict, response_expected)
 
+    def test_to_detailed_dict_gives_suggestion_reference(self):
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                )
+        Pack.objects.create(
+                contaminant = contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+        pack = Pack.objects.get(
+                contaminant = contaminant,
+                number = 5,
+                )
+        Model.objects.create(
+                pack = pack,
+                pdb_code = '3RYP',
+                chain = 'A',
+                domain = 1,
+                identity = 100,
+                nb_residues = 112,
+                )
+        Reference.objects.create(
+                pubmed_id = 123456789,
+                contaminant = contaminant
+                )
+        Reference.objects.create(
+                pubmed_id = 987654321,
+                contaminant = contaminant
+                )
+        Suggestion.objects.create(
+                name = "Jean Dupont",
+                contaminant = contaminant,
+                )
+        Suggestion.objects.create(
+                name = "Jean Dupond",
+                contaminant = contaminant,
+                )
+        response_dict = contaminant.to_detailed_dict()
+        response_expected = {
+                'uniprot_id': 'P0ACJ8',
+                'short_name': 'CRP_ECOLI',
+                'long_name': 'cAMP-activated global transcriptional regulator',
+                'sequence': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                'organism': 'Escherichia coli',
+                'packs': [
+                    {
+                        'number': 5,
+                        'structure': '5-mer',
+                        'models': [
+                            {
+                                'template': '3RYP',
+                                'chain': 'A',
+                                'domain': 1,
+                                'identity': 100,
+                                'residues': 112,
+                            },
+                        ]
+                    }
+                ],
+                'references': [
+                    {
+                        'pubmed_id': 123456789
+                    },
+                    {
+                        'pubmed_id': 987654321
+                    },
+                ],
+                'suggestions': [
+                    {
+                        'name': 'Jean Dupont'
+                    },
+                    {
+                        'name': 'Jean Dupond'
+                    },
+                ],
+            }
+
+        self.assertEqual(response_dict, response_expected)
+
 
 class PackTestCase(TestCase):
     """
