@@ -32,6 +32,16 @@ from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
 
+class ContaBaseView(TemplateView):
+    """
+        Views accessible through api/contabase
+    """
+    def get(self, request):
+        """ Return the full ContaBase """
+
+        return DetailedCategoriesView().get(request)
+
+
 class CategoriesView(TemplateView):
     """
         Views accessible through api/categories

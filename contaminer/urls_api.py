@@ -24,6 +24,9 @@ from django.conf.urls import url
 from . import views_api
 
 urlpatterns = [
+        url(r'^contabase',
+            views_api.ContaBaseView.as_view(),
+            name='contabase'),
         url(r'^categories',
             views_api.CategoriesView.as_view(),
             name='categories'),
