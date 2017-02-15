@@ -105,6 +105,31 @@ class ContaminantsView(TemplateView):
         return JsonResponse(response_data)
 
 
+class DetailedContaminantsView(TemplateView):
+    """
+        Views accessible through api/contaminants
+    """
+    def get(self, request):
+        """ Return the list of all contaminants in current contabase """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            contaminants = Contaminant.objects.filter(
+                    category__contabase = ContaBase.get_current()
+                    )
+        except ObjectDoesNotExist: #happens if no ContaBase is available
+            raise Http404()
+
+        contaminants_data = [cont.to_detailed_dict() for cont in contaminants]
+
+        response_data = {}
+        response_data['contaminants'] = contaminants_data
+
+        log.debug("Exit")
+        return JsonResponse(response_data)
+
+
 class ContaminantView(TemplateView):
     """
         Views accessible through api/contaminant
