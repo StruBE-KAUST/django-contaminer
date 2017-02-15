@@ -32,6 +32,7 @@ import mock
 from .views_api import ContaminantView
 from .views_api import ContaminantsView
 from .views_api import CategoryView
+from .views_api import CategoriesView
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
@@ -338,5 +339,91 @@ class CategoryViewTestCase(TestCase):
                         'id': 1,
                         'name': 'Test views',
                         'selected_by_default': False,
+                    }
+                )
+
+class CategoriesViewTestCase(TestCase):
+    """
+        Test the ContaminantsView views
+    """
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_get_returns_404_on_empty_contabase(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:categories')
+                )
+        with self.assertRaises(Http404):
+            response = CategoriesView.as_view()(request)
+
+    def test_get_valid_contaminants_list(self):
+        ContaBase.objects.create()
+        contabase = ContaBase.get_current()
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase,
+                )
+        Category.objects.create(
+                number = 2,
+                name = "Test views 2",
+                contabase = contabase,
+                selected_by_default = True,
+                )
+        request = self.factory.get(
+                reverse('ContaMiner:API:categories')
+                )
+        response = CategoriesView.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.content
+        self.assertJSONEqual(response_data,
+                    {
+                        'categories': [
+                            {
+                                'id': 1,
+                                'name': 'Test views',
+                                'selected_by_default': False,
+                            }, {
+                                'id': 2,
+                                'name': 'Test views 2',
+                                'selected_by_default': True,
+                            }
+                        ]
+                    }
+                )
+
+    def test_get_gives_contaminant_from_current_contabase(self):
+        ContaBase.objects.create(obsolete = True)
+        ContaBase.objects.create()
+        contabase_obsolete = ContaBase.objects.filter(obsolete = True)[0]
+        contabase = ContaBase.get_current()
+
+        Category.objects.create(
+                number = 1,
+                name = "Test views",
+                contabase = contabase,
+                )
+        Category.objects.create(
+                number = 1,
+                name = "Test views obsolete",
+                contabase = contabase_obsolete,
+                )
+        request = self.factory.get(
+                reverse('ContaMiner:API:categories')
+                )
+        response = CategoriesView.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.content
+        self.assertJSONEqual(response_data,
+                    {
+                        'categories': [
+                            {
+                                'id': 1,
+                                'name': 'Test views',
+                                'selected_by_default': False,
+                            }
+                        ]
                     }
                 )

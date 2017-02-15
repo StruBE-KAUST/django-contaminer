@@ -17,7 +17,7 @@
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-    URL configuration for contaminer
+    URL configuration for contaminer API
 """
 
 from django.conf.urls import url
@@ -30,4 +30,6 @@ urlpatterns = [
             views_api.ContaminantsView.as_view(), name='contaminants'),
         url(r'^category/(?P<category_id>.*)$',
             views_api.CategoryView.as_view(), name='category'),
+        url(r'^categories',
+            views_api.CategoriesView.as_view(), name='categories'),
 ]

@@ -80,7 +80,7 @@ class ContaminantsView(TemplateView):
 
 class CategoryView(TemplateView):
     """
-        Views accessible thourhg api/contaminants
+        Views accessible thourgh api/category
     """
     def get(self, request, id):
         """ Return the fileds of the category with the given id """
@@ -96,6 +96,30 @@ class CategoryView(TemplateView):
             raise Http404()
 
         response_data = category.to_simple_dict()
+
+        log.debug("Exit")
+        return JsonResponse(response_data)
+
+class CategoriesView(TemplateView):
+    """
+        Views accessible through api/categories
+    """
+    def get(self, request):
+        """ Return the list of all contaminants in current contabase """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            categories = Category.objects.filter(
+                    contabase = ContaBase.get_current()
+                    )
+        except ObjectDoesNotExist: #happens if no ContaBase is available
+            raise Http404()
+
+        categories_data = [cat.to_simple_dict() for cat in categories]
+
+        response_data = {}
+        response_data['categories'] = categories_data
 
         log.debug("Exit")
         return JsonResponse(response_data)
