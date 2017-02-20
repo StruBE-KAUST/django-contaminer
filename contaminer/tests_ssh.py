@@ -299,7 +299,7 @@ class SFTPChannelTestCase(TestCase):
     def test_write_file_connects(self, mock_exit,
             mock_open_sftp, mock_connect):
         sftpChannel = SFTPChannel()
-        sftpChannel.write_file("foo.txt", "/remote/dir", "bar\n")
+        sftpChannel.write_file("/remote/dir/foo.txt", "bar\n")
         mock_connect.called_once()
         mock_open_sftp.called_once()
 
@@ -310,7 +310,7 @@ class SFTPChannelTestCase(TestCase):
     def test_write_file_closes_connections(self, mock_ssh_close,
             mock_open_sftp, mock_sftp_close, mock_connect):
         sftpChannel = SFTPChannel()
-        sftpChannel.write_file("foo.txt", "/remote/dir", "bar\n")
+        sftpChannel.write_file("/remote/dir/foo.txt", "bar\n")
         mock_ssh_close.called_once()
         mock_sftp_close.called_once()
 
@@ -322,6 +322,6 @@ class SFTPChannelTestCase(TestCase):
         mock_client.open.return_value = mock_file
         mock_enter.return_value = mock_client
         sftpChannel = SFTPChannel()
-        sftpChannel.write_file("foo.txt", "/remote/dir", "bar\n")
+        sftpChannel.write_file("/remote/dir/foo.txt", "bar\n")
         mock_client.open.called_once_with("/remote/dir/foo.txt", 'w')
         mock_file.write.called_once_with("bar\n")

@@ -174,15 +174,10 @@ class SFTPChannel(SSHChannel):
 
         log.debug("Exit")
 
-    def write_file(self, filename, remote_directory, content):
+    def write_file(self, remote_filename, content):
         """ Write content in filename in remote_directory """
         log = logging.getLogger(__name__)
         log.debug("Enter")
-
-        remote_filename = os.path.join(
-                remote_directory,
-                os.path.basename(filename)
-                )
 
         with self as sftpClient:
             log.info("Write in remote file: " + str(remote_filename))
