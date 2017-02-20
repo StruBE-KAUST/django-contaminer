@@ -110,41 +110,86 @@ class SSHChannel(paramiko.SSHClient):
         return stdout
 
 
+class SFTPChannel(SSHChannel):
+    """
+        An SFTP connection to the cluster or superconputer
+    """
+    def __init__(self):
+        self.sftpclient = None
 
+    def __enter__(self):
+        """ Implements with statement """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+        self.__connect__()
+        log.debug("Exit")
+        return self.sftpclient
 
-    def connectSFTP(self):
+    def __exit__(self, *args):
+        """ Implements with statement """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+        self.sftpclient.close()
+        super(SFTPChannel, self).__exit__(args)
+        self.sftpclient = None
+        log.debug("Exit")
+
+    def __connect__(self):
         """ Open SFTP connection to host """
         log = logging.getLogger(__name__)
         log.debug("Entering function")
 
-        if not self.is_ssh_connected():
-            log.debug("Open SSH connection")
-            self.connectSSH()
+        log.debug("Open SSH connection")
+        super(SFTPChannel, self).__connect__()
 
         log.debug("Open SFTP connection")
-        self.sftpclient = self.sshclient.open_sftp()
+        self.sftpclient = self.open_sftp()
 
         log.debug("Exiting function")
 
-
-    def send_file(self, filename):
-        """ Send filename to host through SFTP """
+    def send_file(self, filename, remote_directory):
+        """ Send filename to host through SFTP on the remote_directory """
         log = logging.getLogger(__name__)
-        log.debug("Entering function")
-
-        if not self.is_sftp_connected():
-            log.debug("Open SFTP connection")
-            self.connectSFTP()
+        log.debug("Enter")
 
         remote_filename = os.path.join(
-                ContaminerConfig().ssh_work_directory,
+                remote_directory,
                 os.path.basename(filename)
                 )
 
-        log.debug("Send " + str(filename) + " to " + str(remote_filename))
-        self.sftpclient.put(filename, remote_filename)
+        with self as sftpClient:
+            log.info("Send " + str(filename) + " to " + str(remote_filename))
+            sftpClient.put(filename, remote_filename, confirm = True)
 
         log.debug("Exiting function")
+
+    def upload_to_contaminer(self, filename):
+        """ Send filename to host and put it in ContaMiner work dir """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        remote_directory = ContaminerConfig().ssh_work_directory
+
+        self.send_file(filename, remote_directory)
+
+        log.debug("Exit")
+
+    def write_file(self, filename, remote_directory, content):
+        """ Write content in filename in remote_directory """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        remote_filename = os.path.join(
+                remote_directory,
+                os.path.basename(filename)
+                )
+
+        with self as sftpClient:
+            log.info("Write in remote file: " + str(remote_filename))
+            with sftpClient.open(remote_filename, 'w') as remote_file:
+                remote_file.write(content)
+
+        log.debug("Exit")
 
 
     def get_file(self, remote_filename, local_filename):

@@ -28,18 +28,13 @@ from django.test import TestCase
 import mock
 
 from .ssh_tools import SSHChannel
+from .ssh_tools import SFTPChannel
 
 
 class SSHChannelTestCase(TestCase):
     """
         Test the correct communication with the cluster
     """
-
-#    @mock.patch('contaminer.ssh_tools.paramiko.SSHClient')
-#    def simple_test_mock_example(self, mock_paramiko):
-#        sshChannel = SSHChannel()
-#        mock_paramiko.assert_called_once_with()
-
     @mock.patch('contaminer.ssh_tools.ContaminerConfig')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.' \
             + 'set_missing_host_key_policy')
@@ -229,3 +224,104 @@ class SSHChannelTestCase(TestCase):
         mock_command.return_value = (0, stdout, stderr)
         with self.assertRaisesMessage(RuntimeError, "3"):
             answer = sshChannel.get_contabase()
+
+
+class SFTPChannelTestCase(TestCase):
+    """
+        Test the correct file sending/retrieveing with the remote server
+    """
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.SSHChannel.open_sftp')
+    def test_connect_connects_to_ssh(self, mock_sftp, mock_connect):
+        sftpChannel = SFTPChannel()
+        sftpChannel.__connect__()
+        self.assertTrue(mock_connect.called)
+
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.SSHChannel.open_sftp')
+    def test_connect_connects_to_sftp(self, mock_sftp, mock_connect):
+        sftpChannel = SFTPChannel()
+        sftpChannel.__connect__()
+        self.assertTrue(mock_sftp.called)
+
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.SSHChannel.open_sftp')
+    def test_connect_changes_sftpclient_attribute(self, mock_sftp, mock_connect):
+        mock_sftp.return_value = "sftp_client"
+        sftpChannel = SFTPChannel()
+        sftpChannel.__connect__()
+        self.assertEqual(sftpChannel.sftpclient, "sftp_client")
+
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.open_sftp')
+    @mock.patch('contaminer.ssh_tools.paramiko.SFTPClient.close')
+    @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.close')
+    def test_send_file_closes_connections(self, mock_ssh_close,
+            mock_open_sftp, mock_sftp_close, mock_connect):
+        sftpChannel = SFTPChannel()
+        sftpChannel.send_file("foo.txt", "/remote/dir")
+        self.assertTrue(mock_ssh_close.called)
+        self.assertTrue(mock_sftp_close.called)
+
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.open_sftp')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.__exit__')
+    def test_send_file_connects(self, mock_exit,
+            mock_open_sftp, mock_connect):
+        sftpChannel = SFTPChannel()
+        sftpChannel.send_file("foo.txt", "/remote/dir")
+        self.assertTrue(mock_connect.called)
+        self.assertTrue(mock_open_sftp.called)
+
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.open_sftp')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.__exit__')
+    def test_send_file_sends_to_correct_location(self, mock_ssh_close,
+            mock_open_sftp, mock_connect):
+        client = mock.MagicMock()
+        mock_open_sftp.return_value = client
+        sftpChannel = SFTPChannel()
+        sftpChannel.send_file("foo.txt", "/remote/dir")
+        client.put.called_once_with("foo.txt", "/remote/dir/foo.txt")
+
+    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.send_file')
+    def test_upload_calls_send_with_good_params(self, mock_send, mock_config):
+        config = mock.MagicMock()
+        config.ssh_work_directory = "/work/dir"
+        mock_config.return_value = config
+        SFTPChannel().upload_to_contaminer("foo.txt")
+        mock_send.assert_called_once_with("foo.txt", "/work/dir")
+
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.open_sftp')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.__exit__')
+    def test_write_file_connects(self, mock_exit,
+            mock_open_sftp, mock_connect):
+        sftpChannel = SFTPChannel()
+        sftpChannel.write_file("foo.txt", "/remote/dir", "bar\n")
+        mock_connect.called_once()
+        mock_open_sftp.called_once()
+
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.open_sftp')
+    @mock.patch('contaminer.ssh_tools.paramiko.SFTPClient.close')
+    @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.close')
+    def test_write_file_closes_connections(self, mock_ssh_close,
+            mock_open_sftp, mock_sftp_close, mock_connect):
+        sftpChannel = SFTPChannel()
+        sftpChannel.write_file("foo.txt", "/remote/dir", "bar\n")
+        mock_ssh_close.called_once()
+        mock_sftp_close.called_once()
+
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.__enter__')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.__exit__')
+    def test_write_file_calls_correct_write(self, mock_exit, mock_enter):
+        mock_file = mock.MagicMock()
+        mock_client = mock.MagicMock()
+        mock_client.open.return_value = mock_file
+        mock_enter.return_value = mock_client
+        sftpChannel = SFTPChannel()
+        sftpChannel.write_file("foo.txt", "/remote/dir", "bar\n")
+        mock_client.open.called_once_with("/remote/dir/foo.txt", 'w')
+        mock_file.write.called_once_with("bar\n")
