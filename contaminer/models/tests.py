@@ -1479,3 +1479,21 @@ class TaskTestCase(TestCase):
         self.assertEqual(str(task), str(self.job.id) \
                 + " (me@example.com) New / P0ACJ8 - CRP_ECOLI - 5 (5-mer)"\
                 + " / P 2 2 2 / New")
+
+    def test_Task_percent_is_valid_percentage(self):
+        with self.assertRaises(ValidationError):
+            task = Task.objects.create(
+                    job = self.job,
+                    pack = self.pack,
+                    space_group = "P 2 2 2",
+                    percent = 101,
+                    q_factor = 0.9,
+                    )
+        with self.assertRaises(ValidationError):
+            task = Task.objects.create(
+                    job = self.job,
+                    pack = self.pack,
+                    space_group = "P 2 2 2",
+                    percent = -1,
+                    q_factor = 0.9,
+                    )
