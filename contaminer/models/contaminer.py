@@ -84,6 +84,8 @@ class Job(models.Model):
             return "Submitted"
         return "New"
 
+
+
     def create(self, name, author, email, confidential):
         """ Populate the fields of a job """
         log = logging.getLogger(__name__)
@@ -250,8 +252,8 @@ class Task(models.Model):
     status_error = models.BooleanField(default = False)
 
     # Result
-    percent = PercentageField(default = None)
-    q_factor = models.FloatField(default = None)
+    percent = PercentageField(null = True, default = None)
+    q_factor = models.FloatField(null = True, default = None)
     exec_time = models.DurationField(default = datetime.timedelta(0))
 
     def __str__(self):

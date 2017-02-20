@@ -45,6 +45,6 @@ class PercentageField(models.IntegerField):
 
     def pre_save(self, model_instance, add):
         value = super(PercentageField, self).pre_save(model_instance, add)
-        if value < 0 or value > 100:
+        if (value < 0 or value > 100) and value is not None:
             raise ValidationError("Invalid percentage: " + str(value))
         return value

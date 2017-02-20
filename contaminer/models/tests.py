@@ -26,6 +26,7 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.core.exceptions import MultipleObjectsReturned
+from django.db import IntegrityError
 import mock
 
 import lxml.etree as ET
@@ -1229,6 +1230,23 @@ class ModelTestCase(TestCase):
                     pack = pack,
                     )
 
+    def test_Model_identity_cannot_be_none(self):
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                )
+        pack = Pack.objects.get(
+                contaminant = contaminant,
+                number = 1,
+                )
+        with self.assertRaises(IntegrityError):
+            Model.objects.create(
+                    pdb_code = '1o3t',
+                    chain = 'B',
+                    domain = 1,
+                    nb_residues = 20,
+                    pack = pack,
+                    )
+
     def test_update_creates_good_model(self):
         pack = Pack.objects.all()[0]
         xml_example = "" \
@@ -1497,3 +1515,10 @@ class TaskTestCase(TestCase):
                     percent = -1,
                     q_factor = 0.9,
                     )
+
+    def test_Task_percent_qfactor_can_be_emtpy(self):
+        task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P 2 2 2",
+                )
