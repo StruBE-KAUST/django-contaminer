@@ -42,6 +42,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from ..ssh_tools import SSHChannel
 from ..ssh_tools import SFTPChannel
 from .contabase import Pack
+from .tools import PercentageField
 
 
 class Job(models.Model):
@@ -249,7 +250,7 @@ class Task(models.Model):
     status_error = models.BooleanField(default = False)
 
     # Result
-    percent = models.IntegerField(default = None)
+    percent = PercentageField(default = None)
     q_factor = models.FloatField(default = None)
     exec_time = models.DurationField(default = datetime.timedelta(0))
 
@@ -259,7 +260,6 @@ class Task(models.Model):
                 + " / " + str(self.pack)\
                 + " / " + str(self.space_group)\
                 + " / " + self.get_status())
-
 
     def get_status(self):
         """ Return the status as a string """

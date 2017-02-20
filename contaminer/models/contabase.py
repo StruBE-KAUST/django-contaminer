@@ -44,6 +44,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError
 
 from .tools import UpperCaseCharField
+from .tools import PercentageField
 from ..ssh_tools import SSHChannel
 
 class ContaBase(models.Model):
@@ -415,7 +416,7 @@ class Model(models.Model):
     chain = models.CharField(max_length = 10, null = True, blank = True)
     domain = models.IntegerField(null = True, blank = True, default = None)
     nb_residues = models.IntegerField()
-    identity = models.IntegerField() # in %
+    identity = PercentageField() # in %
     pack = models.ForeignKey(Pack)
 
     def __str__(self):
@@ -440,25 +441,6 @@ class Model(models.Model):
         new_model.save()
 
         log.debug("Exit")
-
-    def clean(self, *args, **kwargs):
-        """ Clean the fields before saving in DB """
-        log = logging.getLogger(__name__)
-        log.debug("Enter")
-        # Identity is a percentage and should be between 0 and 100
-        if self.identity < 0 or self.identity > 100:
-            log.error("The percentage is not valid: " + str(self.identity))
-            raise ValidationError(
-                    "A percentage should be between 0 and 100"
-                    )
-
-        super(Model, self).clean(*args, **kwargs)
-        log.debug("Exit")
-
-    def save(self,  *args, **kwargs):
-        """ Save object in DB """
-        self.full_clean()
-        super(Model, self).save(*args, **kwargs)
 
     def to_dict(self):
         """ Return a dictionary of the field """

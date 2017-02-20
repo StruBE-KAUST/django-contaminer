@@ -25,6 +25,7 @@
 """
 
 from django.db import models
+from django.core.exceptions import ValidationError
 
 class UpperCaseCharField(models.CharField):
     description = "Upper case string"
@@ -35,3 +36,15 @@ class UpperCaseCharField(models.CharField):
     def pre_save(self, model_instance, add):
         value = super(UpperCaseCharField, self).pre_save(model_instance, add)
         return value.upper()
+
+class PercentageField(models.IntegerField):
+    description = "An integer between 0 and 100"
+
+    def __init__(self, *args, **kwargs):
+        super(PercentageField, self).__init__(*args, **kwargs)
+
+    def pre_save(self, model_instance, add):
+        value = super(PercentageField, self).pre_save(model_instance, add)
+        if value < 0 or value > 100:
+            raise ValidationError("Invalid percentage: " + str(value))
+        return value
