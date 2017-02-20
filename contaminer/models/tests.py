@@ -40,6 +40,7 @@ from .contabase import Reference
 from .contabase import Suggestion
 
 from .contaminer import Job
+from .contaminer import Task
 
 
 # TODO: UpperCaseCharField testing
@@ -1387,5 +1388,78 @@ class JobTestCase(TestCase):
     """
         Test the Job model
     """
+    def test_Job_is_well_displayed(self):
+        job = Job.objects.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        id = job.id
+        self.assertEqual(str(job), str(id) + ' (me@example.com) New')
+
+    def test_status_gives_good_result(self):
+        job = Job.objects.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        self.assertEqual(job.get_status(), "New")
+        job.status_submitted = True
+        self.assertEqual(job.get_status(), "Submitted")
+        job.status_running = True
+        self.assertEqual(job.get_status(), "Running")
+        job.status_complete = True
+        self.assertEqual(job.get_status(), "Complete")
+        job.status_error = True
+        self.assertEqual(job.get_status(), "Error")
+
+
+class TaskTestCase(TestCase):
+    """
+        Test the Task model
+    """
     def setUp(self):
-        pass
+        Job.objects.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        self.job = Job.objects.get(name = "test")
+        ContaBase.objects.create()
+        self.contabase = ContaBase.objects.all()[0]
+        Category.objects.create(
+                contabase = self.contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        self.category = Category.objects.get(
+                name = "Protein in E.Coli",
+                )
+        Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = self.category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        self.contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                category = self.category,
+                )
+        Pack.objects.create(
+                contaminant = self.contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+        self.pack = Pack.objects.get(
+                contaminant = self.contaminant,
+                number = 5,
+                )
+
+    def test_Task_is_well_displayed(self):
+        task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P 2 2 2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        self.assertEqual(str(task), str(self.job.id) + "P0ACJ8")

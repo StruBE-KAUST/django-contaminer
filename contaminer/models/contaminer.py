@@ -39,7 +39,8 @@ from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 
-from ..cluster import SSHChannel
+from ..ssh_tools import SSHChannel
+from ..ssh_tools import SFTPChannel
 from .contabase import Pack
 
 
@@ -64,11 +65,23 @@ class Job(models.Model):
     confidential = models.BooleanField(default = False)
 
     def __str__(self):
-        res = str(self.name) + " - " + \
-                str(self.id) + " (" + \
-                str(self.finished) + ")"
+        """ Write id (email) """
+        res = str(self.id) + " (" \
+                + str(self.email) + ")" \
+                + " " + self.get_status()
         return res
 
+    def get_status(self):
+        """ Gives the status of the job as a string """
+        if self.status_error:
+            return "Error"
+        if self.status_complete:
+            return "Complete"
+        if self.status_running:
+            return "Running"
+        if self.status_submitted:
+            return "Submitted"
+        return "New"
 
     def create(self, name, author, email, confidential):
         """ Populate the fields of a job """
