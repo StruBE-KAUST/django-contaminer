@@ -1454,6 +1454,20 @@ class TaskTestCase(TestCase):
                 number = 5,
                 )
 
+    def test_get_status_gives_good_result(self):
+        task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P 2 2 2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        self.assertEqual(task.get_status(), "New")
+        task.status_complete = True
+        self.assertEqual(task.get_status(), "Complete")
+        task.status_error = True
+        self.assertEqual(task.get_status(), "Error")
+
     def test_Task_is_well_displayed(self):
         task = Task.objects.create(
                 job = self.job,
@@ -1462,4 +1476,6 @@ class TaskTestCase(TestCase):
                 percent = 99,
                 q_factor = 0.9,
                 )
-        self.assertEqual(str(task), str(self.job.id) + "P0ACJ8")
+        self.assertEqual(str(task), str(self.job.id) \
+                + " (me@example.com) New / P0ACJ8 - CRP_ECOLI - 5 (5-mer)"\
+                + " / P 2 2 2 / New")

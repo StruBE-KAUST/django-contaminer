@@ -245,8 +245,8 @@ class Task(models.Model):
     space_group = models.CharField(max_length = 15)
 
     # State
-    error = models.BooleanField(default = False)
-    finished = models.BooleanField(default = False)
+    status_complete = models.BooleanField(default = False)
+    status_error = models.BooleanField(default = False)
 
     # Result
     percent = models.IntegerField(default = None)
@@ -254,7 +254,20 @@ class Task(models.Model):
     exec_time = models.DurationField(default = datetime.timedelta(0))
 
     def __str__(self):
-        return (str(self.job) + str(self.pack) + str(self.space_group))
+        """ Write job - pack - space group """
+        return (str(self.job) \
+                + " / " + str(self.pack)\
+                + " / " + str(self.space_group)\
+                + " / " + self.get_status())
+
+
+    def get_status(self):
+        """ Return the status as a string """
+        if self.status_error:
+            return "Error"
+        if self.status_complete:
+            return "Complete"
+        return "New"
 
     def name(self):
         space_group = self.space_group.replace(' ', '-')
