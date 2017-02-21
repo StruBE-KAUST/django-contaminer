@@ -115,6 +115,8 @@ class Job(models.Model):
         if not suffix:
             result = "web_task_" + str(self.id)
         else:
+            if suffix[0] == '.':
+                suffix = suffix[1:]
             result = "web_task_" + str(self.id) + "." + suffix
 
         return result
@@ -129,11 +131,12 @@ class Job(models.Model):
 
         # Send files to cluster
         remote_work_directory = ContaminerConfig().ssh_work_directory
+        input_file_ext = os.path.splitext(filepath)[1]
         remote_filepath = os.path.join(
                 remote_work_directory,
-                os.path.basename(filepath)
+                self.get_filename(suffix = input_file_ext)
                 )
-        remote_contaminants = os.path.splitext(remote_filepath)[0] + '.txt'
+        remote_contaminants = self.get_filename(suffix = 'txt')
         client = SFTPChannel()
         client.send_file(filepath, remote_filepath)
         client.write_file(remote_contaminants, contaminants)

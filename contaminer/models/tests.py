@@ -1500,7 +1500,7 @@ class JobTestCase(TestCase):
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         mock_client.send_file.assert_called_with(
             "/local/dir/file.mtz",
-            "/remote/dir/file.mtz")
+            "/remote/dir/web_task_" + str(job.id) + ".mtz")
 
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.os.remove')
@@ -1521,7 +1521,7 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "test")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
-        mock_client.write_file("/remote/dir/file.txt",
+        mock_client.write_file("/remote/dir/web_task_" + str(job.id) + ".txt",
             "cont1\ncont2\n")
 
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
@@ -1545,7 +1545,8 @@ class JobTestCase(TestCase):
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         mock_client.command.assert_called_with(
                 'cd "/remote/dir" && /remote/CM/contaminer solve ' \
-                + '"file.mtz" "file.txt"')
+                + '"web_task_' + str(job.id) + '.mtz" ' \
+                + '"web_task_' + str(job.id) + '.txt"')
 
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.os.remove')
