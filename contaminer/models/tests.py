@@ -26,6 +26,7 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.core.exceptions import MultipleObjectsReturned
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 import mock
 
@@ -1428,6 +1429,186 @@ class JobTestCase(TestCase):
         self.assertEqual(job.get_status(), "Complete")
         job.status_error = True
         self.assertEqual(job.get_status(), "Error")
+
+    def test_create_Job_saves_in_DB(self):
+        Job.objects.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        try:
+            job = Job.objects.get(name = "test")
+        except ObjectDoesNotExist:
+            self.fail("Job has not been saved in DB")
+
+    def test_custom_create_Job_saves_in_DB(self):
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        try:
+            job = Job.objects.get(name = "test")
+        except ObjectDoesNotExist:
+            self.fail("Job has not been saved in DB")
+
+    def test_custom_create_Job_needs_email(self):
+        with self.assertRaises(ValidationError):
+            Job.create(
+                    name = "test",
+                    )
+
+    def test_get_filename_gives_good_output(self):
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        self.assertEqual(
+                job.get_filename(suffix = "txt"),
+                "web_task_" + str(job.id) + ".txt")
+
+    def test_get_filename_gives_mtz_default(self):
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        self.assertEqual(
+                job.get_filename(),
+                "web_task_" + str(job.id) + ".mtz")
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.os.remove')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_submit_send_input_file(self, mock_sftpchannel, mock_remove,
+            mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_client.command.return_value = ("", "")
+        mock_sftpchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
+        mock_client.send_file.assert_called_with(
+            "/local/dir/file.mtz",
+            "/remote/dir/file.mtz")
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.os.remove')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_submit_write_contaminants_list(self, mock_sftpchannel,
+            mock_remove, mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_client.command.return_value = ("", "")
+        mock_sftpchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
+        mock_client.write_file("/remote/dir/file.txt",
+            "cont1\ncont2\n")
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.os.remove')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_submit_runs_contaminer(self, mock_sftpchannel, mock_remove,
+            mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_client.command.return_value = ("", "")
+        mock_sftpchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
+        mock_client.command.assert_called_with(
+                'cd "/remote/dir" && /remote/CM/contaminer solve ' \
+                + '"file.mtz" "file.txt"')
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.os.remove')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_submit_remove_local_file(self, mock_sftpchannel, mock_remove,
+            mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_client.command.return_value = ("", "")
+        mock_sftpchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
+        mock_remove.assert_called_with("/local/dir/file.mtz")
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.os.remove')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_submit_raises_excep_if_notempty_stderr(self, mock_sftpchannel,
+            mock_remove, mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_client.command.return_value = ("", "error")
+        mock_sftpchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        with self.assertRaises(RuntimeError):
+            job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.os.remove')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_submit_change_status_to_submitted(self, mock_sftpchannel,
+            mock_remove, mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_client.command.return_value = ("", "")
+        mock_sftpchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
+        self.assertEqual(job.submitted, True)
 
 
 class TaskTestCase(TestCase):

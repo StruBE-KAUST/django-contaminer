@@ -187,6 +187,8 @@ class SFTPChannel(SSHChannel):
         log.debug("Exit")
 
 
+
+
     def get_file(self, remote_filename, local_filename):
         """ Get remote_filename from host through SFTP """
         log = logging.getLogger(__name__)
@@ -201,38 +203,6 @@ class SFTPChannel(SSHChannel):
 
         log.debug("Exiting function")
 
-
-
-
-    def launch_contaminer(self, filename, listname):
-        """ Execute ContaMiner on the remote host """
-        log = logging.getLogger(__name__)
-        log.debug("Entering function with args : \n\
-                filename : " + str(filename) + "\n\
-                listname : " + str(listname))
-
-        cm_bin_path = ContaminerConfig().ssh_contaminer_location + "/contaminer"
-        remote_filename = os.path.basename(filename)
-        remote_listname = os.path.basename(listname)
-
-        cm_cd = "cd " + ContaminerConfig().ssh_work_directory
-
-        command = cm_cd + " && "\
-            + cm_bin_path + " "\
-            + str(remote_filename) + " "\
-            + str(remote_listname)
-
-        log.debug("Execute command on remote host : \n" + command)
-        stdout, stderr = self.command(command)
-
-        log.debug("stdout : " + str(stdout))
-        log.debug("stderr : " + str(stderr))
-
-        if stderr is not "":
-            log.warning("Standard error is not empty : \n" + str(stderr))
-
-
-        log.debug("Exiting function")
 
 
     def get_final(self, job_id, contaminant, pack_nb, space_group):

@@ -38,11 +38,14 @@ from django.template.loader import render_to_string
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError
 
 from ..ssh_tools import SSHChannel
 from ..ssh_tools import SFTPChannel
 from .contabase import Pack
 from .tools import PercentageField
+
+from ..apps import ContaminerConfig
 
 
 class Job(models.Model):
@@ -84,60 +87,82 @@ class Job(models.Model):
             return "Submitted"
         return "New"
 
-
-
-    def create(self, name, author, email, confidential):
+    @classmethod
+    def create(cls, name, author = None, email = None, confidential = False):
         """ Populate the fields of a job """
         log = logging.getLogger(__name__)
         log.debug("Entering function with args :\n\
                 name : " + str(name) + "\n\
                 author : " + str(author) + "\n\
                 email : " + str(email))
-        self.name = name
-        self.author = author
-        self.confidential = confidential
-        self.submitted = False
-        self.finished = False
+        job = cls(name = name)
+        job.author = author
+        job.confidential = confidential
+        job.submitted = False
+        job.finished = False
         if author:
-            self.email = author.email
+            job.email = author.email
         if email:
-            self.email = email
+            job.email = email
+        if job.email is None:
+            raise ValidationError("Email is missing")
 
-        self.save()
+        job.save()
         log.debug("Exiting function")
-
 
     def get_filename(self, suffix = "mtz"):
         """ Return the name of the file associated to the job """
         if not suffix:
-            result = "contaminer_" + str(self.id)
+            result = "web_task_" + str(self.id)
         else:
-            result = "contaminer_" + str(self.id) + "." + suffix
+            result = "web_task_" + str(self.id) + "." + suffix
 
         return result
 
-
-    def submit(self, filepath, listpath):
+    def submit(self, filepath, contaminants):
         """ Send the files to the cluster, then launch ContaMiner """
         log = logging.getLogger(__name__)
         log.debug("Entering function with args : \n\
-                self : " + str(self) + "\n\
-                filepath : " + str(filepath) + "\n\
-                listpath : " + str(listpath))
+                self: " + str(self) + "\n\
+                filepath: " + str(filepath) + "\n\
+                contaminants: " + str(contaminants))
 
-        cluster_comm = SSHChannel()
-        cluster_comm.send_file(filepath)
-        cluster_comm.send_file(listpath)
-        log.debug("Files sent")
-        os.remove(filepath)
-        os.remove(listpath)
-        log.debug("Files deleted from MEDIA_ROOT")
-
-        cluster_comm.launch_contaminer(
-                os.path.basename(filepath),
-                os.path.basename(listpath)
+        # Send files to cluster
+        remote_work_directory = ContaminerConfig().ssh_work_directory
+        remote_filepath = os.path.join(
+                remote_work_directory,
+                os.path.basename(filepath)
                 )
+        remote_contaminants = os.path.splitext(remote_filepath)[0] + '.txt'
+        client = SFTPChannel()
+        client.send_file(filepath, remote_filepath)
+        client.write_file(remote_contaminants, contaminants)
 
+        # Remove local file
+        os.remove(filepath)
+        log.debug("Files deleted from MEDIA_ROOT: " + filepath)
+
+        # Run contaminer command
+        contaminer_solve_command = ContaminerConfig().ssh_contaminer_location \
+                + "/contaminer solve"
+        cd_command = 'cd "' + remote_work_directory + '"'
+
+        command = cd_command + " && "\
+            + contaminer_solve_command + " "\
+            + '"' + str(os.path.basename(remote_filepath)) + '" "'\
+            + str(os.path.basename(remote_contaminants)) + '"'
+
+        log.debug("Execute command on remote host : \n" + command)
+        stdout, stderr = client.command(command)
+
+        log.debug("stdout : " + str(stdout))
+        log.debug("stderr : " + str(stderr))
+
+        if stderr is not "":
+            log.warning("Standard error is not empty : \n" + str(stderr))
+            raise RuntimeError(str(stderr))
+
+        # Change state
         self.submitted = True
         self.save()
 
