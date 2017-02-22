@@ -1477,7 +1477,7 @@ class JobTestCase(TestCase):
         job = Job.objects.get(name = "test")
         self.assertEqual(
                 job.get_filename(),
-                "web_task_" + str(job.id) + ".mtz")
+                "web_task_" + str(job.id))
 
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.os.remove')

@@ -110,7 +110,7 @@ class Job(models.Model):
         job.save()
         log.debug("Exiting function")
 
-    def get_filename(self, suffix = "mtz"):
+    def get_filename(self, suffix = ''):
         """ Return the name of the file associated to the job """
         if not suffix:
             result = "web_task_" + str(self.id)
