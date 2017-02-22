@@ -146,8 +146,9 @@ class Job(models.Model):
         log.debug("Files deleted from MEDIA_ROOT: " + filepath)
 
         # Run contaminer command
-        contaminer_solve_command = ContaminerConfig().ssh_contaminer_location \
-                + "/contaminer solve"
+        contaminer_solve_command = os.path.join(
+                ContaminerConfig().ssh_contaminer_location,
+                "contaminer") + " solve"
         cd_command = 'cd "' + remote_work_directory + '"'
 
         command = cd_command + " && "\
@@ -155,11 +156,11 @@ class Job(models.Model):
             + '"' + str(os.path.basename(remote_filepath)) + '" "'\
             + str(os.path.basename(remote_contaminants)) + '"'
 
-        log.debug("Execute command on remote host : \n" + command)
-        stdout, stderr = client.command(command)
+        log.debug("Execute command on remote host:\n" + command)
+        stdout, stderr = client.exec_command(command)
 
-        log.debug("stdout : " + str(stdout))
-        log.debug("stderr : " + str(stderr))
+        log.debug("stdout: " + str(stdout))
+        log.debug("stderr: " + str(stderr))
 
         if stderr is not "":
             log.warning("Standard error is not empty : \n" + str(stderr))

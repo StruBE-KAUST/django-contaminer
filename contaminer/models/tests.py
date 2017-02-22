@@ -1489,7 +1489,7 @@ class JobTestCase(TestCase):
         mock_config.ssh_contaminer_location = "/remote/CM"
         mock_CMConfig.return_value = mock_config
         mock_client = mock.MagicMock()
-        mock_client.command.return_value = ("", "")
+        mock_client.exec_command.return_value = ("", "")
         mock_sftpchannel.return_value = mock_client
         job = Job()
         job.create(
@@ -1512,7 +1512,7 @@ class JobTestCase(TestCase):
         mock_config.ssh_contaminer_location = "/remote/CM"
         mock_CMConfig.return_value = mock_config
         mock_client = mock.MagicMock()
-        mock_client.command.return_value = ("", "")
+        mock_client.exec_command.return_value = ("", "")
         mock_sftpchannel.return_value = mock_client
         job = Job()
         job.create(
@@ -1534,7 +1534,7 @@ class JobTestCase(TestCase):
         mock_config.ssh_contaminer_location = "/remote/CM"
         mock_CMConfig.return_value = mock_config
         mock_client = mock.MagicMock()
-        mock_client.command.return_value = ("", "")
+        mock_client.exec_command.return_value = ("", "")
         mock_sftpchannel.return_value = mock_client
         job = Job()
         job.create(
@@ -1543,7 +1543,7 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "test")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
-        mock_client.command.assert_called_with(
+        mock_client.exec_command.assert_called_with(
                 'cd "/remote/dir" && /remote/CM/contaminer solve ' \
                 + '"web_task_' + str(job.id) + '.mtz" ' \
                 + '"web_task_' + str(job.id) + '.txt"')
@@ -1558,7 +1558,7 @@ class JobTestCase(TestCase):
         mock_config.ssh_contaminer_location = "/remote/CM"
         mock_CMConfig.return_value = mock_config
         mock_client = mock.MagicMock()
-        mock_client.command.return_value = ("", "")
+        mock_client.exec_command.return_value = ("", "")
         mock_sftpchannel.return_value = mock_client
         job = Job()
         job.create(
@@ -1579,7 +1579,7 @@ class JobTestCase(TestCase):
         mock_config.ssh_contaminer_location = "/remote/CM"
         mock_CMConfig.return_value = mock_config
         mock_client = mock.MagicMock()
-        mock_client.command.return_value = ("", "error")
+        mock_client.exec_command.return_value = ("", "error")
         mock_sftpchannel.return_value = mock_client
         job = Job()
         job.create(
@@ -1600,7 +1600,7 @@ class JobTestCase(TestCase):
         mock_config.ssh_contaminer_location = "/remote/CM"
         mock_CMConfig.return_value = mock_config
         mock_client = mock.MagicMock()
-        mock_client.command.return_value = ("", "")
+        mock_client.exec_command.return_value = ("", "")
         mock_sftpchannel.return_value = mock_client
         job = Job()
         job.create(
