@@ -173,6 +173,56 @@ class Job(models.Model):
         log.debug("Job " + str(self.id) + " submitted")
         log.debug("Exiting function")
 
+    def update_status(self):
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        remote_work_directory = ContaminerConfig().ssh_work_directory
+        remote_contaminer_command = os.path.join(
+                ContaminerConfig().ssh_contaminer_location,
+                "contaminer") + " job_status"
+        remote_filename = os.path.join(
+                remote_work_directory,
+                self.get_filename(suffix = '')
+                )
+
+        command = remote_contaminer_command + " " + remote_filename
+
+        client = SSHChannel()
+        log.debug("Execute command on remote host:\n" + command)
+        stdout, stderr = client.exec_command(command)
+
+        log.debug("stdout: " + str(stdout))
+        log.debug("stderr: " + str(stderr))
+
+        if stderr is not "":
+            log.warning("Standard error is not empty : \n" + str(stderr))
+            raise RuntimeError(str(stderr))
+
+        # Change state
+        if "submitted" in stdout:
+            self.status_submitted = True
+            self.status_error = False
+            if self.status_complete or self.status_running:
+                log.warning("Job states are not coherent.")
+        elif "running" in stdout:
+            self.status_submitted = True
+            self.status_running = True
+            self.status_error = False
+            if self.status_complete:
+                log.warning("Job states are not coherent.")
+        elif "complete" in stdout:
+            self.status_submitted = True
+            self.status_running = False
+            self.status_complete = True
+        elif "error" in stdout:
+            self.status_error = True
+            log.warning("Job is in error with id: " + str(self.id))
+
+        self.save()
+
+        log.debug("Exit")
+
 
     def terminate(self):
         """ Retrieve the job from the cluster, then clean-up """

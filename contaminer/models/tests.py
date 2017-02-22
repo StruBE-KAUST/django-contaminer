@@ -1611,6 +1611,90 @@ class JobTestCase(TestCase):
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         self.assertEqual(job.status_submitted, True)
 
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.SSHChannel')
+    def test_update_status_call_good_command(self, mock_sshchannel,
+            mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_client.exec_command.return_value = ("submitted", "")
+        mock_sshchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        job.update_status()
+        mock_client.exec_command.assert_called_with(
+                '/remote/CM/contaminer job_status /remote/dir/web_task_' \
+                        + str(job.id))
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.SSHChannel')
+    def test_update_status_change_status(self, mock_sshchannel,
+            mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_sshchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+
+        mock_client.exec_command.return_value = ("Job does not exist\n", "")
+        job.update_status()
+        self.assertEqual(job.status_submitted, False)
+        self.assertEqual(job.get_status(), "New")
+
+        mock_client.exec_command.return_value = ("Job is submitted\n", "")
+        job.update_status()
+        self.assertEqual(job.status_submitted, True)
+        self.assertEqual(job.get_status(), "Submitted")
+
+        mock_client.exec_command.return_value = ("Job is running\n", "")
+        job.update_status()
+        self.assertEqual(job.status_running, True)
+        self.assertEqual(job.get_status(), "Running")
+
+        mock_client.exec_command.return_value = ("Job is complete\n", "")
+        job.update_status()
+        self.assertEqual(job.status_complete, True)
+        self.assertEqual(job.get_status(), "Complete")
+
+        mock_client.exec_command.return_value = ("Job ecountered an error\n", "")
+        job.update_status()
+        self.assertEqual(job.status_error, True)
+        self.assertEqual(job.get_status(), "Error")
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.SSHChannel')
+    def test_update_status_raise_exception_on_stderr(self, mock_sshchannel,
+            mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_client.exec_command.return_value = ("", "error")
+        mock_sshchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        with self.assertRaises(RuntimeError):
+            job.update_status()
+
 
 class TaskTestCase(TestCase):
     """
