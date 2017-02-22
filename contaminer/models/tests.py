@@ -1609,7 +1609,7 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "test")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
-        self.assertEqual(job.submitted, True)
+        self.assertEqual(job.status_submitted, True)
 
 
 class TaskTestCase(TestCase):

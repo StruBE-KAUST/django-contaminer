@@ -167,7 +167,7 @@ class Job(models.Model):
             raise RuntimeError(str(stderr))
 
         # Change state
-        self.submitted = True
+        self.status_submitted = True
         self.save()
 
         log.debug("Job " + str(self.id) + " submitted")
