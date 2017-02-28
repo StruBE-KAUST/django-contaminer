@@ -1440,6 +1440,13 @@ class JobTestCase(TestCase):
         except ObjectDoesNotExist:
             self.fail("Job has not been saved in DB")
 
+    def test_create_Job_returns_job(self):
+        job = Job.objects.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        self.assertTrue(job is not None)
+
     def test_custom_create_Job_saves_in_DB(self):
         job = Job()
         job.create(

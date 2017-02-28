@@ -108,6 +108,8 @@ class Job(models.Model):
         job.save()
         log.debug("Exiting function")
 
+        return job
+
     def get_filename(self, suffix = ''):
         """ Return the name of the file associated to the job """
         if not suffix:
