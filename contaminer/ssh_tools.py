@@ -89,7 +89,6 @@ class SSHChannel(paramiko.SSHClient):
 
         log.debug("Exiting function")
 
-
     def get_contabase(self):
         """ Get the full ContaBase from the cluster """
         log = logging.getLogger(__name__)
