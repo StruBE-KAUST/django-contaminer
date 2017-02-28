@@ -317,3 +317,26 @@ class JobView(TemplateView):
         return JsonResponse(response_data)
 
         log.debug("Exit")
+
+
+class JobStatusView(TemplateView):
+    """
+        Views accessbiel through api/job/status
+    """
+    def get(self, request, job_id):
+        """ Return the status of the job with the given job ID """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            job = Job.objects.get(id = job_id)
+        except ObjectDoesNotExist:
+            raise Http404()
+
+        response_data = {
+                'id': job.id,
+                'status': job.get_status(),
+                }
+
+        log.debug("Exit")
+        return JsonResponse(response_data)

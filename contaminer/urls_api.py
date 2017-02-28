@@ -54,4 +54,7 @@ urlpatterns = [
         url(r'^job',
             views_api.JobView.as_view(),
             name='job'),
+        url(r'^job/status/(?P<job_id>[0-9]*)$',
+            views_api.JobStatusView.as_view(),
+            name='job_status'),
 ]

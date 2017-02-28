@@ -39,6 +39,7 @@ from .views_api import DetailedContaminantsView
 from .views_api import ContaminantView
 from .views_api import DetailedContaminantView
 from .views_api import JobView
+from .views_api import JobStatusView
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
@@ -46,6 +47,7 @@ from .models.contabase import Pack
 from .models.contabase import Model
 from .models.contabase import Reference
 from .models.contabase import Suggestion
+from .models.contaminer import Job
 
 import json
 import tempfile
@@ -1323,3 +1325,66 @@ class JobViewTestCase(TestCase):
                     'id': 666,
                 }
                 )
+
+
+class JobStatusTestCase(TestCase):
+    """
+        Test the JobStatusView views
+    """
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.job = Job.objects.create(name = "Test")
+
+    def test_jobstatus_returns_404_on_wrong_id(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:job_status', args = [25])
+                )
+        with self.assertRaises(Http404):
+            response = JobStatusView.as_view()(request, 25)
+
+    def test_job_status_returns_good_status(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:job_status', args = [self.job.id])
+                )
+        response = JobStatusView.as_view()(request, self.job.id)
+        self.assertJSONEqual(response.content,
+                {
+                    'id': self.job.id,
+                    'status': 'New',
+                })
+
+        self.job.status_submitted = True
+        self.job.save()
+        response = JobStatusView.as_view()(request, self.job.id)
+        self.assertJSONEqual(response.content,
+                {
+                    'id': self.job.id,
+                    'status': 'Submitted',
+                })
+
+        self.job.status_running = True
+        self.job.save()
+        response = JobStatusView.as_view()(request, self.job.id)
+        self.assertJSONEqual(response.content,
+                {
+                    'id': self.job.id,
+                    'status': 'Running',
+                })
+
+        self.job.status_complete = True
+        self.job.save()
+        response = JobStatusView.as_view()(request, self.job.id)
+        self.assertJSONEqual(response.content,
+                {
+                    'id': self.job.id,
+                    'status': 'Complete',
+                })
+
+        self.job.status_error = True
+        self.job.save()
+        response = JobStatusView.as_view()(request, self.job.id)
+        self.assertJSONEqual(response.content,
+                {
+                    'id': self.job.id,
+                    'status': 'Error',
+                })
