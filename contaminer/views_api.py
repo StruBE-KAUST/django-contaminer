@@ -21,7 +21,10 @@
 """
 
 import logging
+import os
 import json
+import tempfile
+import threading
 
 from django.http import JsonResponse
 from django.http import Http404
@@ -31,6 +34,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
+from .models.contaminer import Job
+
 
 class ContaBaseView(TemplateView):
     """
@@ -232,3 +237,83 @@ class DetailedContaminantView(TemplateView):
 
         log.debug("Exit")
         return JsonResponse(response_data)
+
+
+class JobView(TemplateView):
+    """
+        Views accessible through api/job
+    """
+    def post(self, request):
+        """ Create new job, submit it to the cluster and return job.id """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        # Check if a file is uploaded
+        if not request.FILES.has_key('diffraction_data'):
+            response_data = {
+                    'error': True,
+                    'message': 'Missing diffraction data file',
+                    }
+            return JsonResponse(response_data, status = 400)
+
+        # Check the file extension (and save it)
+        extension = os.path.splitext(request.FILES['diffraction_data'].name)[1]
+        if extension not in ['.mtz', '.cif', '.MTZ', '.CIF']:
+            response_data = {
+                    'error': True,
+                    'message': 'File format is not CIF or MTZ',
+                    }
+            return JsonResponse(response_data, status = 400)
+
+        # Create Job
+        if request.POST.has_key('name'):
+            name = request.POST['name']
+        else:
+            name = request.FILES['diffraction_data'].name
+
+        if request.POST.has_key('email_address'):
+            email = request.POST['email_address']
+        else:
+            email = None
+
+        job = Job.create(
+                name = name,
+                email = email,
+                )
+
+        # Locally save file
+        filename = job.get_filename(suffix = extension)
+        tmp_diff_data_file = os.path.join(tempfile.mkdtemp(), filename)
+
+        with open(tmp_diff_data_file, 'wb') as destination:
+            for chunk in request.FILES['diffraction_data']:
+                destination.write(chunk)
+
+        # Define list of contaminants
+        try:
+            contaminants = request.POST['contaminants']
+        except KeyError:
+            response_data = {
+                    'error': True,
+                    'message': 'Missing list of contaminants',
+                    }
+
+        contaminants = contaminants.replace(',', '\n')
+
+        # Submit job
+        threading.Thread(
+                target = job.submit,
+                args=(tmp_diff_data_file, contaminants)
+                ).start()
+        job.status_submitted = True
+        job.save()
+        log.info("New job submitted")
+
+        response_data = {
+                'error': False,
+                'id': job.id,
+                }
+        print "asdfasdfasdf" + str(job.id)
+        return JsonResponse(response_data)
+
+        log.debug("Exit")

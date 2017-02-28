@@ -38,6 +38,7 @@ from .views_api import ContaminantsView
 from .views_api import DetailedContaminantsView
 from .views_api import ContaminantView
 from .views_api import DetailedContaminantView
+from .views_api import JobView
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
@@ -47,6 +48,8 @@ from .models.contabase import Reference
 from .models.contabase import Suggestion
 
 import json
+import tempfile
+import time
 
 class ContaBaseViewTestCase(TestCase):
     """
@@ -126,7 +129,6 @@ class ContaBaseViewTestCase(TestCase):
                 )
 
     def test_get_gives_category_from_current_contabase(self):
-        self.maxDiff = None
         ContaBase.objects.create(obsolete = True)
         ContaBase.objects.create()
         contabase_obsolete = ContaBase.objects.filter(obsolete = True)[0]
@@ -1230,4 +1232,94 @@ class DetailedContaminantViewTestCase(TestCase):
                         'sequence': 'ABCDEF',
                         'organism': 'Mario',
                     }
+                )
+
+
+class JobViewTestCase(TestCase):
+    """
+        Test the JobView views
+    """
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.test_file = tempfile.NamedTemporaryFile(suffix='.mtz')
+        self.post_data = {
+                'email_address': 'you@example.com',
+                'name': 'Test',
+                'contaminants': 'P0ACJ8,P0AA25',
+                }
+        self.mock_job_instance = mock.MagicMock()
+        self.mock_job_instance.id = 666
+        self.mock_job_instance.get_filename.return_value = "test_file.mtz"
+
+    def test_post_returns_400_on_empty_data(self):
+        request = self.factory.post(
+                reverse('ContaMiner:API:job')
+                )
+        response = JobView.as_view()(request)
+        self.assertEqual(response.status_code, 400)
+
+    def test_post_returns_400_on_missing_file(self):
+        request = self.factory.post(
+                reverse('ContaMiner:API:job'),
+                self.post_data,
+                )
+        response = JobView.as_view()(request)
+        self.assertEqual(response.status_code, 400)
+
+    @mock.patch('contaminer.views_api.Job')
+    def test_post_returns_200_on_good_input(self, mock_Job):
+        mock_Job.create.return_value = self.mock_job_instance
+        request = self.factory.post(
+                reverse('ContaMiner:API:job'),
+                self.post_data,
+                )
+        request.FILES['diffraction_data'] = self.test_file
+
+        response = JobView.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+
+    @mock.patch('contaminer.views_api.Job')
+    def test_post_creates_correct_job(self, mock_Job):
+        mock_Job.create.return_value = self.mock_job_instance
+        request = self.factory.post(
+                reverse('ContaMiner:API:job'),
+                self.post_data,
+                )
+        request.FILES['diffraction_data'] = self.test_file
+
+        response = JobView.as_view()(request)
+        mock_Job.create.assert_called_once_with(
+                email = 'you@example.com',
+                name = 'Test',
+                )
+
+    @mock.patch('contaminer.views_api.Job')
+    def test_post_submit_job(self, mock_Job):
+        mock_Job.create.return_value = self.mock_job_instance
+        request = self.factory.post(
+                reverse('ContaMiner:API:job'),
+                self.post_data,
+                )
+        request.FILES['diffraction_data'] = self.test_file
+
+        response = JobView.as_view()(request)
+        self.mock_job_instance.submit.assert_called_once()
+        args, kwargs = self.mock_job_instance.submit.call_args
+        self.assertEqual(args[1], "P0ACJ8\nP0AA25")
+
+    @mock.patch('contaminer.views_api.Job')
+    def test_post_returns_job_id(self, mock_Job):
+        mock_Job.create.return_value = self.mock_job_instance
+        request = self.factory.post(
+                reverse('ContaMiner:API:job'),
+                self.post_data,
+                )
+        request.FILES['diffraction_data'] = self.test_file
+
+        response = JobView.as_view()(request)
+        self.assertJSONEqual(response.content,
+                {
+                    'error': False,
+                    'id': 666,
+                }
                 )
