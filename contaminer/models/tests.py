@@ -1407,7 +1407,8 @@ class JobTestCase(TestCase):
     """
         Test the Job model
     """
-    def test_Job_is_well_displayed(self):
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
+    def test_Job_is_well_displayed(self, mock__):
         job = Job.objects.create(
                 name = "test",
                 email = "me@example.com",
@@ -1415,7 +1416,8 @@ class JobTestCase(TestCase):
         id = job.id
         self.assertEqual(str(job), str(id) + ' (me@example.com) New')
 
-    def test_status_gives_good_result(self):
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
+    def test_status_gives_good_result(self, mock__):
         job = Job.objects.create(
                 name = "test",
                 email = "me@example.com,",
@@ -1488,11 +1490,12 @@ class JobTestCase(TestCase):
                 job.get_filename(),
                 "web_task_" + str(job.id))
 
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_send_input_file(self, mock_sftpchannel, mock_remove,
-            mock_CMConfig):
+            mock_CMConfig, mock__):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -1511,11 +1514,12 @@ class JobTestCase(TestCase):
             "/local/dir/file.mtz",
             "/remote/dir/web_task_" + str(job.id) + ".mtz")
 
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_write_contaminants_list(self, mock_sftpchannel,
-            mock_remove, mock_CMConfig):
+            mock_remove, mock_CMConfig, mock__):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -1533,11 +1537,12 @@ class JobTestCase(TestCase):
         mock_client.write_file("/remote/dir/web_task_" + str(job.id) + ".txt",
             "cont1\ncont2\n")
 
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_runs_contaminer(self, mock_sftpchannel, mock_remove,
-            mock_CMConfig):
+            mock_CMConfig, mock__):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -1557,11 +1562,12 @@ class JobTestCase(TestCase):
                 + '"web_task_' + str(job.id) + '.mtz" ' \
                 + '"web_task_' + str(job.id) + '.txt"')
 
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_remove_local_file(self, mock_sftpchannel, mock_remove,
-            mock_CMConfig):
+            mock_CMConfig, mock__):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -1578,11 +1584,12 @@ class JobTestCase(TestCase):
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         mock_remove.assert_called_with("/local/dir/file.mtz")
 
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_raises_excep_if_notempty_stderr(self, mock_sftpchannel,
-            mock_remove, mock_CMConfig):
+            mock_remove, mock_CMConfig, mock__):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -1599,11 +1606,12 @@ class JobTestCase(TestCase):
         with self.assertRaises(RuntimeError):
             job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
 
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_change_status_to_submitted(self, mock_sftpchannel,
-            mock_remove, mock_CMConfig):
+            mock_remove, mock_CMConfig, mock__):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -1761,7 +1769,8 @@ class TaskTestCase(TestCase):
         task.status_error = True
         self.assertEqual(task.get_status(), "Error")
 
-    def test_Task_is_well_displayed(self):
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
+    def test_Task_is_well_displayed(self, mock__):
         task = Task.objects.create(
                 job = self.job,
                 pack = self.pack,

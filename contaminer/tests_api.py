@@ -1342,7 +1342,8 @@ class JobStatusTestCase(TestCase):
         with self.assertRaises(Http404):
             response = JobStatusView.as_view()(request, 25)
 
-    def test_job_status_returns_good_status(self):
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
+    def test_job_status_returns_good_status(self, mock__):
         request = self.factory.get(
                 reverse('ContaMiner:API:job_status', args = [self.job.id])
                 )
