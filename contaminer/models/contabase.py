@@ -56,7 +56,7 @@ class ContaBase(models.Model):
         Having different ContaBase at the same time allows us to keep the old
         jobs in the database, while being able to update it for the new jobs.
     """
-    id = models.IntegerField(unique = True, primary_key = True)
+    id = models.AutoField(unique = True, primary_key = True)
     obsolete = models.BooleanField(default = False)
 
     def __str__(self):

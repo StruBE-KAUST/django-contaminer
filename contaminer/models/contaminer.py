@@ -54,7 +54,7 @@ class Job(models.Model):
 
         For each file uploaded by a user, a new Job object is created.
     """
-    id = models.IntegerField(unique = True, primary_key = True)
+    id = models.AutoField(unique = True, primary_key = True)
     status_submitted = models.BooleanField(default = False)
     status_running = models.BooleanField(default = False)
     status_complete = models.BooleanField(default = False)
