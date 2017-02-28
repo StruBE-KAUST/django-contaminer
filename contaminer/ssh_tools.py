@@ -108,6 +108,22 @@ class SSHChannel(paramiko.SSHClient):
 
         return stdout
 
+    def read_file(self, remote_path):
+        """ Read a remote and return the content as a string """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        command = "cat " + str(remote_path)
+        with self as sshChannel:
+            (_, stdout, stderr) = sshChannel.exec_command(command)
+            stdout = stdout.read()
+            stderr = stderr.read()
+
+        if stderr is not '':
+            raise RuntimeError(stderr)
+
+        return stdout
+
 
 class SFTPChannel(SSHChannel):
     """
