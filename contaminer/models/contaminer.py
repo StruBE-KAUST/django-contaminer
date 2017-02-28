@@ -175,6 +175,7 @@ class Job(models.Model):
         log.debug("Exiting function")
 
     def update_status(self):
+        """ Retrieve the status from the cluster and update it in DB """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
