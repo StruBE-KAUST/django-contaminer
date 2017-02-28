@@ -104,8 +104,6 @@ class Job(models.Model):
             job.email = author.email
         if email:
             job.email = email
-        if job.email is None:
-            raise ValidationError("Email is missing")
 
         job.save()
         log.debug("Exiting function")

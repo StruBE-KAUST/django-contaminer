@@ -37,6 +37,7 @@ class UpperCaseCharField(models.CharField):
         value = super(UpperCaseCharField, self).pre_save(model_instance, add)
         return value.upper()
 
+
 class PercentageField(models.IntegerField):
     description = "An integer between 0 and 100"
 

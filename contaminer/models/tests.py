@@ -1451,11 +1451,13 @@ class JobTestCase(TestCase):
         except ObjectDoesNotExist:
             self.fail("Job has not been saved in DB")
 
-    def test_custom_create_Job_needs_email(self):
-        with self.assertRaises(ValidationError):
+    def test_custom_create_Job_allows_empty_email(self):
+        try:
             Job.create(
                     name = "test",
                     )
+        except ValidationError:
+            self.fail("Empty email address should not raise an error.")
 
     def test_get_filename_gives_good_output(self):
         job = Job()
