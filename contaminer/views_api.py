@@ -313,7 +313,6 @@ class JobView(TemplateView):
                 'error': False,
                 'id': job.id,
                 }
-        print "asdfasdfasdf" + str(job.id)
         return JsonResponse(response_data)
 
         log.debug("Exit")
