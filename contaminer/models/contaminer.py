@@ -283,6 +283,11 @@ class Job(models.Model):
 
         self.update_status()
         self.update_tasks()
+
+        if self.status_complete:
+            self.status_archive = True
+            self.save()
+
         log.debug("Exit")
 
 
