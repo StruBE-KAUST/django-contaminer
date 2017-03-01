@@ -256,6 +256,11 @@ class Job(models.Model):
 
         log.debug("Exit")
 
+    def update(self):
+        self.update_status()
+        self.update_tasks()
+
+
     def terminate(self):
         """ Retrieve the job from the cluster, then clean-up """
         log = logging.getLogger(__name__)
