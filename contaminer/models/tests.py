@@ -1712,23 +1712,9 @@ class JobTestCase(TestCase):
         with self.assertRaises(RuntimeError):
             job.update_status()
 
-    @mock.patch('contaminer.models.contaminer.Task.objects.filter')
-    def test_init_tasks_cannot_run_on_populated_tasks(self, mock_filter):
-        mock_filter.return_value = ["elem"]
-        job = Job()
-        job.create(
-                name = "test",
-                email = "me@example.com",
-                )
-        job.submitted = True
-        job.save()
-
-        with self.assertRaises(RuntimeError):
-            job.init_tasks()
-
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
-    def test_init_tasks_read_good_file(self, mock_ssh, mock_CMConfig):
+    def test_update_tasks_read_good_file(self, mock_ssh, mock_CMConfig):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_CMConfig.return_value = mock_config
@@ -1742,14 +1728,14 @@ class JobTestCase(TestCase):
                 )
         job.submitted = True
         job.save()
-        job.init_tasks()
+        job.update_tasks()
         expect_call = "/remote/dir/web_task_" + str(job.id) + "/results.txt"
         mock_channel.read_file.assert_called_once_with(expect_call)
 
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
     @mock.patch('contaminer.models.contaminer.Task')
-    def test_init_tasks_create_good_task(self, mock_task, mock_ssh,
+    def test_update_tasks_create_good_task(self, mock_task, mock_ssh,
             mock_CMConfig):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
@@ -1764,13 +1750,13 @@ class JobTestCase(TestCase):
                 )
         job.submitted = True
         job.save()
-        job.init_tasks()
-        mock_task.create.assert_called_once_with(job, "line1")
+        job.update_tasks()
+        mock_task.update.assert_called_once_with(job, "line1")
 
     @mock.patch('contaminer.models.contaminer.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
     @mock.patch('contaminer.models.contaminer.Task')
-    def test_init_tasks_create_good_task(self, mock_task, mock_ssh,
+    def test_update_tasks_create_enough_tasks(self, mock_task, mock_ssh,
             mock_CMConfig):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
@@ -1785,8 +1771,8 @@ class JobTestCase(TestCase):
                 )
         job.submitted = True
         job.save()
-        job.init_tasks()
-        self.assertEqual(mock_task.create.call_count, 2)
+        job.update_tasks()
+        self.assertEqual(mock_task.update.call_count, 2)
 
 
 class TaskTestCase(TestCase):

@@ -232,19 +232,13 @@ class Job(models.Model):
 
         log.debug("Exit")
 
-    def init_tasks(self):
+    def update_tasks(self):
         """ Create the tasks for the job """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         if not self.submitted:
             raise RuntimeError("Job should be submitted first.")
-
-        tasks = Task.objects.filter(job = self)
-        if len(tasks) is not 0:
-            raise RuntimeError(
-                "Tasks already exist. Did you run init_tasks twice?"
-                )
 
         remote_work_dirname = os.path.join(
                 ContaminerConfig().ssh_work_directory,
@@ -258,7 +252,7 @@ class Job(models.Model):
 
         for line in results_content.split('\n'):
             if line is not "":
-                Task.create(self, line)
+                Task.update(self, line)
 
         log.debug("Exit")
 
