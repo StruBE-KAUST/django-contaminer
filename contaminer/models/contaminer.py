@@ -65,6 +65,7 @@ class Job(models.Model):
     status_running = models.BooleanField(default = False)
     status_complete = models.BooleanField(default = False)
     status_error = models.BooleanField(default = False)
+    status_archived = models.BooleanField(default = False)
 
     name = models.CharField(max_length = 50, blank = True, null = True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL,
@@ -89,7 +90,8 @@ class Job(models.Model):
         if self.status_complete:
             return "Complete"
 
-        self.update_status()
+        if not self.status_archived:
+            self.update_status()
 
         if self.status_error:
             return "Error"
@@ -192,6 +194,10 @@ class Job(models.Model):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
+        if self.status_archived:
+            log.warning("Archived. No modification will be recorded.")
+            return
+
         remote_work_directory = ContaminerConfig().ssh_work_directory
         remote_contaminer_command = os.path.join(
                 ContaminerConfig().ssh_contaminer_location,
@@ -243,6 +249,10 @@ class Job(models.Model):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
+        if self.archived:
+            log.warning("Archived. No modification will be recorded.")
+            return
+
         if not self.submitted:
             raise RuntimeError("Job should be submitted first.")
 
@@ -263,8 +273,17 @@ class Job(models.Model):
         log.debug("Exit")
 
     def update(self):
+        """ If self is not archived, update status and tasks """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        if self.archived:
+            log.warning("Archived. No modification will be recorded.")
+            return
+
         self.update_status()
         self.update_tasks()
+        log.debug("Exit")
 
 
     def terminate(self):
