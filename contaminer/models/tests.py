@@ -1687,7 +1687,7 @@ class JobTestCase(TestCase):
         self.assertEqual(job.status_complete, True)
         self.assertEqual(job.get_status(), "Complete")
 
-        mock_client.exec_command.return_value = ("Job ecountered an error\n", "")
+        mock_client.exec_command.return_value = ("Job encountered an error\n", "")
         job.update_status()
         self.assertEqual(job.status_error, True)
         self.assertEqual(job.get_status(), "Error")
@@ -1711,6 +1711,82 @@ class JobTestCase(TestCase):
         job = Job.objects.get(name = "test")
         with self.assertRaises(RuntimeError):
             job.update_status()
+
+    @mock.patch('contaminer.models.contaminer.Task.objects.filter')
+    def test_init_tasks_cannot_run_on_populated_tasks(self, mock_filter):
+        mock_filter.return_value = ["elem"]
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        job.submitted = True
+        job.save()
+
+        with self.assertRaises(RuntimeError):
+            job.init_tasks()
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.SSHChannel')
+    def test_init_tasks_read_good_file(self, mock_ssh, mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_CMConfig.return_value = mock_config
+        mock_channel = mock.MagicMock()
+        mock_channel.read_file.return_value = ""
+        mock_ssh.return_value = mock_channel
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        job.submitted = True
+        job.save()
+        job.init_tasks()
+        expect_call = "/remote/dir/web_task_" + str(job.id) + "/results.txt"
+        mock_channel.read_file.assert_called_once_with(expect_call)
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.SSHChannel')
+    @mock.patch('contaminer.models.contaminer.Task')
+    def test_init_tasks_create_good_task(self, mock_task, mock_ssh,
+            mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_CMConfig.return_value = mock_config
+        mock_channel = mock.MagicMock()
+        mock_channel.read_file.return_value = "line1"
+        mock_ssh.return_value = mock_channel
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        job.submitted = True
+        job.save()
+        job.init_tasks()
+        mock_task.create.assert_called_once_with(job, "line1")
+
+    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.SSHChannel')
+    @mock.patch('contaminer.models.contaminer.Task')
+    def test_init_tasks_create_good_task(self, mock_task, mock_ssh,
+            mock_CMConfig):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_CMConfig.return_value = mock_config
+        mock_channel = mock.MagicMock()
+        mock_channel.read_file.return_value = "line1\nline2"
+        mock_ssh.return_value = mock_channel
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        job.submitted = True
+        job.save()
+        job.init_tasks()
+        self.assertEqual(mock_task.create.call_count, 2)
 
 
 class TaskTestCase(TestCase):

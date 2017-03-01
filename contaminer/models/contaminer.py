@@ -77,6 +77,7 @@ class Job(models.Model):
 
     def get_status(self):
         """ Gives the status of the job as a string """
+        # Return cached result if no improvement is possible
         if self.status_error:
             return "Error"
         if self.status_complete:
@@ -231,6 +232,35 @@ class Job(models.Model):
 
         log.debug("Exit")
 
+    def init_tasks(self):
+        """ Create the tasks for the job """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        if not self.submitted:
+            raise RuntimeError("Job should be submitted first.")
+
+        tasks = Task.objects.filter(job = self)
+        if len(tasks) is not 0:
+            raise RuntimeError(
+                "Tasks already exist. Did you run init_tasks twice?"
+                )
+
+        remote_work_dirname = os.path.join(
+                ContaminerConfig().ssh_work_directory,
+                self.get_filename(suffix = '')
+                )
+        remote_results_filename = os.path.join(
+                remote_work_dirname,
+                "results.txt"
+                )
+        results_content = SSHChannel().read_file(remote_results_filename)
+
+        for line in results_content.split('\n'):
+            if line is not "":
+                Task.create(self, line)
+
+        log.debug("Exit")
 
     def terminate(self):
         """ Retrieve the job from the cluster, then clean-up """
