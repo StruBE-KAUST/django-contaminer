@@ -32,6 +32,7 @@ import mock
 
 import lxml.etree as ET
 import json
+import datetime
 
 from .contabase import ContaBase
 from .contabase import Category
@@ -1867,4 +1868,60 @@ class TaskTestCase(TestCase):
                 job = self.job,
                 pack = self.pack,
                 space_group = "P 2 2 2",
+                 )
+
+    def test_update_create_new_task(self):
+        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
+        self.assertTrue(task.id is not None)
+
+    def test_update_use_existing_task(self):
+        task1 = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-1-2-1",
                 )
+        task1.save()
+        task2 = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
+        self.assertEqual(task1.id, task2.id)
+
+    def test_update_raises_error_on_bad_line(self):
+        with self.assertRaises(ValueError):
+            task = Task.update(self.job, "Tata yoyo")
+        with self.assertRaises(ValueError):
+            task = Task.update(self.job, "1:2:3")
+
+    def test_update_creates_good_task(self):
+        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
+        self.assertEqual(task.job, self.job)
+        self.assertEqual(task.pack, self.pack)
+        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertTrue(task.status_complete)
+        self.assertFalse(task.status_error)
+        self.assertEqual(task.percent, 52)
+        self.assertEqual(task.q_factor, 0.414)
+        self.assertEqual(task.exec_time, datetime.timedelta(seconds = 5169))
+
+        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:nosolution:2h 26m  9s")
+        self.assertEqual(task.job, self.job)
+        self.assertEqual(task.pack, self.pack)
+        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertTrue(task.status_complete)
+        self.assertFalse(task.status_error)
+        self.assertEqual(task.percent, 0)
+        self.assertEqual(task.q_factor, 0)
+        self.assertEqual(task.exec_time, datetime.timedelta(seconds = 8769))
+
+        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:cancelled:0h  0m  0s")
+        self.assertEqual(task.job, self.job)
+        self.assertEqual(task.pack, self.pack)
+        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertFalse(task.status_complete)
+        self.assertFalse(task.status_error)
+        self.assertEqual(task.exec_time, datetime.timedelta(seconds = 0))
+
+        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:error:1h  1m  1s")
+        self.assertEqual(task.job, self.job)
+        self.assertEqual(task.pack, self.pack)
+        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertTrue(task.status_error)
+        self.assertEqual(task.exec_time, datetime.timedelta(seconds = 3661))

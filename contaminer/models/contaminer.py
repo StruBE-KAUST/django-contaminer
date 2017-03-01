@@ -27,6 +27,7 @@
 """
 
 import os
+import re
 import datetime
 import paramiko
 import logging
@@ -38,12 +39,17 @@ from django.template.loader import render_to_string
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ValidationError
 
 from ..ssh_tools import SSHChannel
 from ..ssh_tools import SFTPChannel
 from .contabase import Pack
 from .tools import PercentageField
+
+from .contabase import ContaBase
+from .contabase import Contaminant
+from .contabase import Pack
 
 from ..apps import ContaminerConfig
 
@@ -394,3 +400,84 @@ class Task(models.Model):
                 + space_group
 
         return name
+
+    @classmethod
+    def update(cls, job, line):
+        """ Create the task attached to job, with line information """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        # Parse line
+        try:
+            pack, scores, time = line.split(':')
+
+            # Parse pack
+            uniprot_id, pack_number, space_group = pack.split('_')
+
+            # Parse time
+            hours, minutes, seconds = re.split(' +', time)
+            hours = int(hours[:-1])
+            minutes = int(minutes[:-1])
+            seconds = int(seconds[:-1])
+            time_seconds = ((hours * 60) + minutes) * 60 + seconds
+        except ValueError:
+            log.warning("Invalid line to parse: " + str(line))
+            raise
+
+        try:
+            contaminant = Contaminant.objects.get(
+                    uniprot_id = uniprot_id,
+                    category__contabase = ContaBase.get_current(),
+                    )
+            pack = Pack.objects.get(
+                    contaminant = contaminant,
+                    number = pack_number,
+                    )
+        except (ObjectDoesNotExist, MultipleObjectsReturned) as e:
+            log.warning("Multiple contaminants or packs returned.")
+            log.warning(str(e))
+            log.error("Database is not consistent.")
+            raise e
+
+        try:
+            task = Task.objects.get(
+                    job = job,
+                    pack = pack,
+                    space_group = space_group
+                    )
+        except ObjectDoesNotExist:
+            task = Task()
+            task.job = job
+            task.pack = pack
+            task.space_group = space_group
+
+        if scores == "cancelled":
+            task.status_complete = False
+            task.percent = 0
+            task.q_facotr = 0
+        else:
+            task.status_complete = True
+
+        if scores == "error":
+            task.status_error = True
+        else:
+            task.status_error = False
+
+        if task.status_complete and not task.status_error:
+            if scores == "nosolution":
+                task.percent = 0
+                task.q_factor = 0
+            else:
+                try:
+                    q_factor, percent = scores.split('-')
+                except ValueError:
+                    log.warning("Invalid line to parse: " + str(line))
+                    raise
+                task.percent = int(percent)
+                task.q_factor = float(q_factor)
+
+        task.exec_time = datetime.timedelta(seconds = time_seconds)
+
+        task.save()
+        log.debug("Exit")
+        return task
