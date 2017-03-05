@@ -249,7 +249,7 @@ class Job(models.Model):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        if self.archived:
+        if self.status_archived:
             log.warning("Archived. No modification will be recorded.")
             return
 
@@ -277,7 +277,7 @@ class Job(models.Model):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        if self.archived:
+        if self.status_archived:
             log.warning("Archived. No modification will be recorded.")
             return
 
