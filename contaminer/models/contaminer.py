@@ -523,7 +523,7 @@ class Task(models.Model):
     def to_dict(self):
         """ Return a dictionary of the fields """
         response_data = {}
-        response_data['contaminant_id'] = self.pack.contaminant.uniprot_id
+        response_data['uniprot_id'] = self.pack.contaminant.uniprot_id
         response_data['pack_nb'] = self.pack.number
         response_data['space_group'] = self.space_group
         response_data['status'] = self.get_status()

@@ -1468,7 +1468,7 @@ class JobTestCase(TestCase):
         except ValidationError:
             self.fail("Empty email address should not raise an error.")
 
-    def test_to_dict_gives_correct_result(self):
+    def test_to_detailed_dict_gives_correct_result(self):
         contabase = ContaBase.objects.create()
         category = Category.objects.create(
                 contabase = contabase,
@@ -1513,13 +1513,13 @@ class JobTestCase(TestCase):
                 'id': job.id,
                 'results': [
                     {
-                        'contaminant_id': "P0ACJ8",
+                        'uniprot_id': "P0ACJ8",
                         'pack_nb': 5,
                         'space_group': "P-1-2-1",
                         'status': 'New',
                     },
                     {
-                        'contaminant_id': "P0ACJ8",
+                        'uniprot_id': "P0ACJ8",
                         'pack_nb': 5,
                         'space_group': "P-1-2-2",
                         'status': 'Complete',
@@ -2002,7 +2002,7 @@ class TaskTestCase(TestCase):
                 )
         response_dict = task.to_dict()
         response_expected = {
-                'contaminant_id': "P0ACJ8",
+                'uniprot_id': "P0ACJ8",
                 'pack_nb': 5,
                 'space_group': "P-1-2-1",
                 'status': 'New',
@@ -2012,7 +2012,7 @@ class TaskTestCase(TestCase):
         task.status_complete = True
         response_dict = task.to_dict()
         response_expected = {
-                'contaminant_id': "P0ACJ8",
+                'uniprot_id': "P0ACJ8",
                 'pack_nb': 5,
                 'space_group': "P-1-2-1",
                 'status': 'Complete',
@@ -2024,7 +2024,7 @@ class TaskTestCase(TestCase):
         task.status_error = True
         response_dict = task.to_dict()
         response_expected = {
-                'contaminant_id': "P0ACJ8",
+                'uniprot_id': "P0ACJ8",
                 'pack_nb': 5,
                 'space_group': "P-1-2-1",
                 'status': 'Error',
