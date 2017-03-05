@@ -290,9 +290,22 @@ class Job(models.Model):
 
         log.debug("Exit")
 
+    def to_detailed_dict(self):
+        """ Return a dictionary of the fields """
+        response_data = {}
+        response_data['id'] = self.id
 
+        tasks = Task.objects.filter(job = self)
+        tasks_dict = [task.to_dict() for task in tasks]
+        response_data['results'] = tasks_dict
+
+        return response_data
+
+
+
+"""
     def terminate(self):
-        """ Retrieve the job from the cluster, then clean-up """
+        ""\" Retrieve the job from the cluster, then clean-up ""\"
         log = logging.getLogger(__name__)
         log.debug("Entering function for job : " + str(self.id))
 
@@ -380,6 +393,7 @@ class Job(models.Model):
         log.info("E-Mail sent to " + str(self.email))
 
         log.debug("Exiting function")
+"""
 
 
 class Task(models.Model):

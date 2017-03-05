@@ -1468,6 +1468,68 @@ class JobTestCase(TestCase):
         except ValidationError:
             self.fail("Empty email address should not raise an error.")
 
+    def test_to_dict_gives_correct_result(self):
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack = Pack.objects.create(
+                contaminant = contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.53,
+                ).save()
+        Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P-1-2-2",
+                percent = 40,
+                q_factor = 0.53,
+                status_complete = True,
+                ).save()
+
+        response_dict = job.to_detailed_dict()
+        response_expected = {
+                'id': job.id,
+                'results': [
+                    {
+                        'contaminant_id': "P0ACJ8",
+                        'pack_nb': 5,
+                        'space_group': "P-1-2-1",
+                        'status': 'New',
+                    },
+                    {
+                        'contaminant_id': "P0ACJ8",
+                        'pack_nb': 5,
+                        'space_group': "P-1-2-2",
+                        'status': 'Complete',
+                        'percent': 40,
+                        'q_factor': 0.53,
+                    },
+                ]
+            }
+        self.assertEqual(response_dict, response_expected)
+
     def test_get_filename_gives_good_output(self):
         job = Job()
         job.create(
