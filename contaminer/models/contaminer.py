@@ -301,6 +301,66 @@ class Job(models.Model):
 
         return response_data
 
+    def to_simple_dict(self):
+        """ Return the results compiled per contaminant """
+        response_data = {}
+        response_data['id'] = self.id
+
+        tasks = Task.objects.filter(job = self)
+        uniprot_ids = [task.pack.contaminant.uniprot_id for task in tasks]
+        unique_uniprot_ids = list(set(uniprot_ids))
+
+        results = []
+        for uniprot_id in unique_uniprot_ids:
+            result_data = {}
+            result_data['uniprot_id'] = uniprot_id
+
+            contaminant = Contaminant.objects.get(
+                    uniprot_id = uniprot_id,
+                    category__contabase = ContaBase.get_current()
+                    )
+
+            tasks = Task.objects.filter(job = self, pack__contaminant = contaminant)
+
+            error = True # All tasks are in error
+            complete = True # All tasks are complete
+            percent = 0
+            q_factor = 0
+
+            for task in tasks:
+                status = task.get_status()
+                if status == 'New':
+                    complete = False
+                    error = False
+                    continue
+                if status == 'Error':
+                    continue
+                if status == 'Complete':
+                    error = False
+                    if task.percent > percent:
+                        percent = task.percent
+                        q_factor = task.q_factor
+                    elif task.percent == percent:
+                        if task.q_factor > q_factor:
+                            percent = task.percent
+                            q_factor = task.q_factor
+
+            if error:
+                result_data['status'] = "Error"
+            elif complete:
+                result_data['status'] = "Complete"
+                result_data['percent'] = percent
+                result_data['q_factor'] = q_factor
+            else:
+                result_data['status'] = "Running"
+                if percent != 0:
+                    result_data['percent'] = percent
+                    result_data['q_factor'] = q_factor
+
+            results.append(result_data)
+
+        response_data['results'] = results
+        return response_data
 
 
 """

@@ -1530,6 +1530,357 @@ class JobTestCase(TestCase):
             }
         self.assertEqual(response_dict, response_expected)
 
+    def test_to_simple_dict_gives_running_tasks_new(self):
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack1 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        pack2 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 2,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.53,
+                ).save()
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.53,
+                ).save()
+
+        response_dict = job.to_simple_dict()
+        response_expected = {
+                'id': job.id,
+                'results': [
+                    {
+                        'uniprot_id': "P0ACJ8",
+                        'status': 'Running',
+                    },
+                ]
+            }
+        self.assertEqual(response_dict, response_expected)
+
+    def test_to_simple_dict_gives_running_score_tasks_new_complete(self):
+        self.maxDiff = None
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack1 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        pack2 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 2,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                ).save()
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.53,
+                status_complete = True,
+                ).save()
+
+        response_dict = job.to_simple_dict()
+        response_expected = {
+                'id': job.id,
+                'results': [
+                    {
+                        'uniprot_id': "P0ACJ8",
+                        'status': 'Running',
+                        'percent': 40,
+                        'q_factor': 0.53
+                    },
+                ]
+            }
+        self.assertEqual(response_dict, response_expected)
+
+    def test_to_simple_dict_gives_running_tasks_new_error(self):
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack1 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        pack2 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 2,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                ).save()
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.53,
+                status_error = True,
+                ).save()
+
+        response_dict = job.to_simple_dict()
+        response_expected = {
+                'id': job.id,
+                'results': [
+                    {
+                        'uniprot_id': "P0ACJ8",
+                        'status': 'Running',
+                    },
+                ]
+            }
+        self.assertEqual(response_dict, response_expected)
+
+    def test_to_simple_dict_gives_complete_scores_tasks_complete(self):
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack1 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        pack2 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 2,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                status_complete = True,
+                ).save()
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.70,
+                status_complete = True,
+                ).save()
+
+        response_dict = job.to_simple_dict()
+        response_expected = {
+                'id': job.id,
+                'results': [
+                    {
+                        'uniprot_id': "P0ACJ8",
+                        'status': 'Complete',
+                        'percent': 50,
+                        'q_factor': 0.60,
+                    },
+                ]
+            }
+        self.assertEqual(response_dict, response_expected)
+
+    def test_to_simple_dict_gives_complete_scores_tasks_complete_error(self):
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack1 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        pack2 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 2,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                status_error = True,
+                ).save()
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.70,
+                status_complete = True,
+                ).save()
+
+        response_dict = job.to_simple_dict()
+        response_expected = {
+                'id': job.id,
+                'results': [
+                    {
+                        'uniprot_id': "P0ACJ8",
+                        'status': 'Complete',
+                        'percent': 40,
+                        'q_factor': 0.70,
+                    },
+                ]
+            }
+        self.assertEqual(response_dict, response_expected)
+
+    def test_to_simple_dict_gives_error_tasks_error(self):
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack1 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        pack2 = Pack.objects.create(
+                contaminant = contaminant,
+                number = 2,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                status_error = True,
+                ).save()
+        Task.objects.create(
+                job = job,
+                pack = pack1,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.70,
+                status_error = True,
+                ).save()
+
+        response_dict = job.to_simple_dict()
+        response_expected = {
+                'id': job.id,
+                'results': [
+                    {
+                        'uniprot_id': "P0ACJ8",
+                        'status': 'Error',
+                    },
+                ]
+            }
+        self.assertEqual(response_dict, response_expected)
+
     def test_get_filename_gives_good_output(self):
         job = Job()
         job.create(
