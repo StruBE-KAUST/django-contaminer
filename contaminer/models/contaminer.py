@@ -505,3 +505,16 @@ class Task(models.Model):
         task.save()
         log.debug("Exit")
         return task
+
+    def to_dict(self):
+        """ Return a dictionary of the fields """
+        response_data = {}
+        response_data['contaminant_id'] = self.pack.contaminant.uniprot_id
+        response_data['pack_nb'] = self.pack.number
+        response_data['space_group'] = self.space_group
+        response_data['status'] = self.get_status()
+        if self.status_complete and not self.status_error:
+            response_data['percent'] = self.percent
+            response_data['q_factor'] = self.q_factor
+
+        return response_data

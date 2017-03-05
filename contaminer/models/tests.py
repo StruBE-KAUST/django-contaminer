@@ -1925,3 +1925,47 @@ class TaskTestCase(TestCase):
         self.assertEqual(task.space_group, "P-1-2-1")
         self.assertTrue(task.status_error)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 3661))
+
+    def test_to_dict_gives_correct_result(self):
+        job = Job.objects.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        job.save()
+        task = Task.objects.create(
+                job = job,
+                pack = self.pack,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.53,
+                )
+        response_dict = task.to_dict()
+        response_expected = {
+                'contaminant_id': "P0ACJ8",
+                'pack_nb': 5,
+                'space_group': "P-1-2-1",
+                'status': 'New',
+            }
+        self.assertEqual(response_dict, response_expected)
+
+        task.status_complete = True
+        response_dict = task.to_dict()
+        response_expected = {
+                'contaminant_id': "P0ACJ8",
+                'pack_nb': 5,
+                'space_group': "P-1-2-1",
+                'status': 'Complete',
+                'percent': 40,
+                'q_factor': 0.53,
+            }
+        self.assertEqual(response_dict, response_expected)
+
+        task.status_error = True
+        response_dict = task.to_dict()
+        response_expected = {
+                'contaminant_id': "P0ACJ8",
+                'pack_nb': 5,
+                'space_group': "P-1-2-1",
+                'status': 'Error',
+            }
+        self.assertEqual(response_dict, response_expected)
