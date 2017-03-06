@@ -2338,6 +2338,174 @@ class TaskTestCase(TestCase):
         self.assertTrue(task.status_error)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 3661))
 
+    @mock.patch('contaminer.models.contaminer.os.makedirs')
+    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.settings')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_get_final_files_get_good_files_writes_STATIC(self, mock_channel, mock_settings,
+            mock_CMConfig, mock_makedirs):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_channel.return_value = mock_client
+
+        mock_settings.STATIC_ROOT = "/static"
+
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack = Pack.objects.create(
+                contaminant = contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                status_complete = True,
+                )
+        task.save()
+
+        task.get_final_files()
+
+        mock_client.download_from_contaminer.assert_any_call(
+                "web_task_" + str(job.id) \
+                + "/P0ACJ8_1_P-1-2-1/final.pdb",
+                "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
+        mock_client.download_from_contaminer.assert_any_call(
+                "web_task_" + str(job.id) \
+                + "/P0ACJ8_1_P-1-2-1/final.mtz",
+                "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.mtz")
+
+    @mock.patch('contaminer.models.contaminer.os.path.isdir')
+    @mock.patch('contaminer.models.contaminer.os.makedirs')
+    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.settings')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_get_final_files_error_on_dir_is_file(self, mock_channel,
+            mock_settings, mock_CMConfig, mock_makedirs, mock_isdir):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_channel.return_value = mock_client
+
+        mock_settings.STATIC_ROOT = "/static"
+
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack = Pack.objects.create(
+                contaminant = contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                status_complete = True,
+                )
+        task.save()
+
+        mock_makedirs.side_effect = OSError(17, 'File exists', 'Foo')
+        mock_isdir.return_value = False
+
+        with self.assertRaises(OSError):
+            task.get_final_files()
+
+    @mock.patch('contaminer.models.contaminer.os.path.isdir')
+    @mock.patch('contaminer.models.contaminer.os.makedirs')
+    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.settings')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_get_final_files_pass_on_existing_local_dir(self, mock_channel,
+            mock_settings, mock_CMConfig, mock_makedirs, mock_isdir):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_channel.return_value = mock_client
+
+        mock_settings.STATIC_ROOT = "/static"
+
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack = Pack.objects.create(
+                contaminant = contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                status_complete = True,
+                )
+        task.save()
+
+        mock_makedirs.side_effect = OSError(17, 'File exists', 'Foo')
+        mock_isdir.return_value = True
+
+        try:
+            task.get_final_files()
+        except OSError:
+            self.fail("OSError raised")
+
     def test_to_dict_gives_correct_result(self):
         job = Job.objects.create(
                 name = "test",

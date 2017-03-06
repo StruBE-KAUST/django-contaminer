@@ -31,6 +31,7 @@ import re
 import datetime
 import paramiko
 import logging
+import errno
 
 from django.db import models
 from django.conf import settings
@@ -581,6 +582,56 @@ class Task(models.Model):
         task.save()
         log.debug("Exit")
         return task
+
+    def get_final_files(self):
+        """ Download the final PDB and MTZ files for this task """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        if not self.status_complete:
+            log.warning("Trying to retreive files for a non complete task.")
+            log.debug("Exit")
+            return
+
+        task_dir = self.pack.contaminant.uniprot_id + "_" \
+                + str(self.pack.number) + "_" \
+                + self.space_group
+
+        remote_mtz = os.path.join(os.path.join(
+                    self.job.get_filename(),
+                    task_dir),
+                    "final.mtz",
+                )
+        remote_pdb = os.path.join(os.path.join(
+                    self.job.get_filename(),
+                    task_dir),
+                    "final.pdb",
+                )
+
+        local_directory = os.path.join(settings.STATIC_ROOT,
+                self.job.get_filename())
+        local_mtz = os.path.join(local_directory,
+                    task_dir + ".mtz")
+        local_pdb = os.path.join(local_directory,
+                    task_dir + ".pdb")
+
+        try:
+            os.makedirs(local_directory)
+        except OSError as e:
+            if e.errno == errno.EEXIST and os.path.isdir(local_directory):
+                pass
+            else:
+                raise
+
+        client = SFTPChannel()
+        try:
+            client.download_from_contaminer(remote_mtz, local_mtz)
+            client.download_from_contaminer(remote_pdb, local_pdb)
+        except (OSError, IOError) as e:
+            log.error("Error when downloading files from cluster: " + str(e))
+            raise
+
+        log.debug("Exit")
 
     def to_dict(self):
         """ Return a dictionary of the fields """
