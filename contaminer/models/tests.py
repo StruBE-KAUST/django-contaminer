@@ -2338,6 +2338,13 @@ class TaskTestCase(TestCase):
         self.assertTrue(task.status_error)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 3661))
 
+    @mock.patch('contaminer.models.contaminer.Task.get_final_files')
+    def test_update_gets_final_on_high_percentage(self, mock_get):
+        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-89:1h 26m  9s")
+        self.assertFalse(mock_get.called)
+        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-91:1h 26m  9s")
+        self.assertTrue(mock_get.called)
+
     @mock.patch('contaminer.models.contaminer.os.makedirs')
     @mock.patch('contaminer.ssh_tools.ContaminerConfig')
     @mock.patch('contaminer.models.contaminer.settings')

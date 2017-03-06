@@ -367,70 +367,6 @@ class Job(models.Model):
 
 
 """
-    def terminate(self):
-        ""\" Retrieve the job from the cluster, then clean-up ""\"
-        log = logging.getLogger(__name__)
-        log.debug("Entering function for job : " + str(self.id))
-
-        if self.finished:
-            log.info("Job is already finished")
-            return
-
-        cluster_comm = SSHChannel()
-        result_file = cluster_comm.get_result(self.id)
-
-        with open(result_file, 'r') as f:
-            for line in f:
-                label, value, elaps_time = line[:-1].split(':')
-                uniprot_ID, ipack, space_group = label.split('_')
-                task = Task()
-                task.job = self
-                try:
-                    contaminant = Contaminant.objects.get(
-                            uniprot_ID = uniprot_ID)
-                    pack = Pack.objects.filter(
-                            contaminant = contaminant).get(
-                                    number = ipack)
-                except ObjectDoesNotExist:
-                    log.error("Database and MoRDa preparation are not "\
-                            + "synchronized. Please use the same version "\
-                            + "of ContaMiner and django-contaminer, and "\
-                            + "load data from fixtures")
-                    raise
-                task.pack = pack
-                task.space_group = space_group
-                task.finished = True
-
-                if value in ["error", "nosolution", "cancelled"]:
-                    task.percent = 0
-                    task.q_factor = 0
-                    task.error = (value == "error")
-                else:
-                    q_factor, percent, seq, struct, mod = value.split('-')
-                    task.q_factor = q_factor
-                    task.percent = percent
-                    task.error = False
-
-                    if int(percent) > 95:
-                        cluster_comm.get_final(
-                                self.id,
-                                task.pack.contaminant.uniprot_ID,
-                                task.pack.number,
-                                task.space_group
-                                )
-
-                task.save()
-
-        self.send_complete_mail()
-
-        self.finished = True
-        self.save()
-
-        log.info("Job complete")
-
-        log.debug("Exiting function")
-
-
     def send_complete_mail(self):
         log = logging.getLogger(__name__)
         log.debug("Entering function")
@@ -565,6 +501,7 @@ class Task(models.Model):
             task.status_error = False
 
         if task.status_complete and not task.status_error:
+            log.debug("Task complete")
             if scores == "nosolution":
                 task.percent = 0
                 task.q_factor = 0
@@ -576,6 +513,9 @@ class Task(models.Model):
                     raise
                 task.percent = int(percent)
                 task.q_factor = float(q_factor)
+
+                if task.percent > 90:
+                    task.get_final_files()
 
         task.exec_time = datetime.timedelta(seconds = time_seconds)
 
