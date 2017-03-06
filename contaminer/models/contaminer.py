@@ -67,6 +67,8 @@ class Job(models.Model):
     status_error = models.BooleanField(default = False)
     status_archived = models.BooleanField(default = False)
 
+    submission_date = models.DateField(auto_now_add = True)
+
     name = models.CharField(max_length = 50, blank = True, null = True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL,
             blank = True,
