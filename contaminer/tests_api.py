@@ -40,6 +40,8 @@ from .views_api import ContaminantView
 from .views_api import DetailedContaminantView
 from .views_api import JobView
 from .views_api import JobStatusView
+from .views_api import SimpleResultsView
+from .views_api import DetailedResultsView
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
@@ -48,6 +50,7 @@ from .models.contabase import Model
 from .models.contabase import Reference
 from .models.contabase import Suggestion
 from .models.contaminer import Job
+from .models.contaminer import Task
 
 import json
 import tempfile
@@ -1327,7 +1330,7 @@ class JobViewTestCase(TestCase):
                 )
 
 
-class JobStatusTestCase(TestCase):
+class JobStatusTestViewCase(TestCase):
     """
         Test the JobStatusView views
     """
@@ -1389,3 +1392,137 @@ class JobStatusTestCase(TestCase):
                     'id': self.job.id,
                     'status': 'Error',
                 })
+
+
+class SimpleResultsViewTestCase(TestCase):
+    """
+        Test the SimpleResultView views
+    """
+    def setUp(self):
+        self.factory = RequestFactory()
+
+        self.contabase = ContaBase.objects.create()
+        self.category = Category.objects.create(
+                contabase = self.contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        self.contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = self.category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        self.pack = Pack.objects.create(
+                contaminant = self.contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        self.job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        self.task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                status_complete = True,
+                )
+        self.task.save()
+
+        def test_simpleresult_returns_404_on_wrong_iod(self):
+            request = self.factory.get(
+                    reverse('ContaMiner:API:result', args = [25])
+                    )
+            with self.assertRaises(Http404):
+                response = SimpleResultsView.as_view()(request, 25)
+
+        def test_simpleresult_returns_good_status(self):
+            request = self.factory.get(
+                    reverse('ContaMiner:API:result', args = [25])
+                    )
+            response = SimpleResultsView.as_view()(request, self.job.id)
+            self.assertJSONEqual(response.content,
+                    {
+                        'id': self.job.id,
+                        'results': [
+                            {
+                                'uniprot_id': "P0ACJ8",
+                                'status': 'Complete',
+                                'percent': 50,
+                                'q_factor': 0.60
+                            },
+                        ]
+                    })
+
+
+class DetailedResultsViewTestCase(TestCase):
+    """
+        Test the SimpleResultView views
+    """
+    def setUp(self):
+        self.factory = RequestFactory()
+
+        self.contabase = ContaBase.objects.create()
+        self.category = Category.objects.create(
+                contabase = self.contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        self.contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = self.category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        self.pack = Pack.objects.create(
+                contaminant = self.contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        self.job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        self.task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-1-2-1",
+                percent = 50,
+                q_factor = 0.60,
+                status_complete = True,
+                )
+        self.task.save()
+
+        def test_detailedresult_returns_404_on_wrong_iod(self):
+            request = self.factory.get(
+                    reverse('ContaMiner:API:detailed_result', args = [25])
+                    )
+            with self.assertRaises(Http404):
+                response = DetailedResultsView.as_view()(request, 25)
+
+        def test_detailedresult_returns_good_status(self):
+            request = self.factory.get(
+                    reverse('ContaMiner:API:detailed_result', args = [25])
+                    )
+            response = DetailedResultsView.as_view()(request, self.job.id)
+            self.assertJSONEqual(response.content,
+                    {
+                        'id': self.job.id,
+                        'results': [
+                            {
+                                'uniprot_id': "P0ACJ8",
+                                'pack_nb': 1,
+                                'space_group': "P-1-2-1",
+                                'status': 'Complete',
+                                'percent': 50,
+                                'q_factor': 0.60
+                            },
+                        ]
+                    })

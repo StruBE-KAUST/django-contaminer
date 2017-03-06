@@ -339,3 +339,43 @@ class JobStatusView(TemplateView):
 
         log.debug("Exit")
         return JsonResponse(response_data)
+
+
+class SimpleResultsView(TemplateView):
+    """
+        Views accessible through api/job/result
+    """
+    def get(self, request, job_id):
+        """ Return the results of the job grouped by contaminant """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            job = Job.objects.get(id = job_id)
+        except ObjectDoesNotExist:
+            raise Http404()
+
+        response_data = job.to_simple_dict()
+
+        log.debug("Exit")
+        return JsonResponse(response_data)
+
+
+class DetailedResultsView(TemplateView):
+    """
+        Views accessible through api/job/detailed_result
+    """
+    def get(self, request, job_id):
+        """ Return the results of the job for each single task """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            job = Job.objects.get(id = job_id)
+        except ObjectDoesNotExist:
+            raise Http404()
+
+        response_data = job.to_detailed_dict()
+
+        log.debug("Exit")
+        return JsonResponse(response_data)
