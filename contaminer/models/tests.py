@@ -2282,6 +2282,21 @@ class TaskTestCase(TestCase):
                 space_group = "P 2 2 2",
                  )
 
+    def test_Task_get_final_filename_gives_good_result(self):
+        task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-2-2-2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        self.assertEqual(task.get_final_filename(),
+                "web_task_" + str(self.job.id) + "/P0ACJ8_5_P-2-2-2")
+        self.assertEqual(task.get_final_filename(suffix = "pdb"),
+                "web_task_" + str(self.job.id) + "/P0ACJ8_5_P-2-2-2.pdb")
+        self.assertEqual(task.get_final_filename(suffix = ".pdb"),
+                "web_task_" + str(self.job.id) + "/P0ACJ8_5_P-2-2-2.pdb")
+
     def test_update_create_new_task(self):
         task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
         self.assertTrue(task.id is not None)

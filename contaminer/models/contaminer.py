@@ -523,6 +523,19 @@ class Task(models.Model):
         log.debug("Exit")
         return task
 
+    def get_final_filename(self, suffix = ''):
+        """ Return the filename of the final files followed by the suffix """
+        filename = self.pack.contaminant.uniprot_id + "_" \
+                + str(self.pack.number) + "_" \
+                + self.space_group.replace(' ', '-')
+
+        if suffix:
+            if suffix[0] == '.':
+                suffix = suffix[1:]
+            filename = filename + "." + suffix
+
+        return os.path.join(self.job.get_filename(), filename)
+
     def get_final_files(self):
         """ Download the final PDB and MTZ files for this task """
         log = logging.getLogger(__name__)
@@ -533,32 +546,21 @@ class Task(models.Model):
             log.debug("Exit")
             return
 
-        task_dir = self.pack.contaminant.uniprot_id + "_" \
-                + str(self.pack.number) + "_" \
-                + self.space_group
+        task_dir = self.get_final_filename()
 
-        remote_mtz = os.path.join(os.path.join(
-                    self.job.get_filename(),
-                    task_dir),
-                    "final.mtz",
-                )
-        remote_pdb = os.path.join(os.path.join(
-                    self.job.get_filename(),
-                    task_dir),
-                    "final.pdb",
-                )
+        remote_mtz = os.path.join(task_dir, "final.mtz")
+        remote_pdb = os.path.join(task_dir, "final.pdb")
 
-        local_directory = os.path.join(settings.STATIC_ROOT,
-                self.job.get_filename())
-        local_mtz = os.path.join(local_directory,
-                    task_dir + ".mtz")
-        local_pdb = os.path.join(local_directory,
-                    task_dir + ".pdb")
+        local_mtz = os.path.join(settings.STATIC_ROOT,
+                self.get_final_filename(suffix = "mtz"))
+        local_pdb = os.path.join(settings.STATIC_ROOT,
+                self.get_final_filename(suffix = "pdb"))
 
         try:
-            os.makedirs(local_directory)
+            os.makedirs(os.path.basename(local_mtz))
         except OSError as e:
-            if e.errno == errno.EEXIST and os.path.isdir(local_directory):
+            if e.errno == errno.EEXIST \
+                    and os.path.isdir(os.path.basename(local_mtz)):
                 pass
             else:
                 raise
