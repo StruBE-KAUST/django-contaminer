@@ -201,23 +201,29 @@ class SFTPChannel(SSHChannel):
 
         log.debug("Exit")
 
-
-
-
     def get_file(self, remote_filename, local_filename):
         """ Get remote_filename from host through SFTP """
         log = logging.getLogger(__name__)
-        log.debug("Entering function")
+        log.debug("Enter")
 
-        if not self.is_sftp_connected():
-            log.debug("Open SFTP connection")
-            self.connectSFTP()
+        with self as sftpClient:
+            log.info("Get " + str(remote_filename) \
+                    + " to " + str(local_filename))
+            sftpClient.get(remote_filename, local_filename)
 
-        log.debug("Get " + str(remote_filename) + " to " + str(local_filename))
-        self.sftpclient.get(remote_filename, local_filename)
+        log.debug("Exit")
 
-        log.debug("Exiting function")
+    def download_from_contaminer(self, filename, local_filename):
+        """ Download file from ContaMiner work dir and put it in localdir """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
 
+        remote_directory = ContaminerConfig().ssh_work_directory
+        remote_filename = os.path.join(remote_directory, filename)
+
+        self.get_file(remote_filename, local_filename)
+
+        log.debug("Exit")
 
 
     def get_final(self, job_id, contaminant, pack_nb, space_group):

@@ -370,3 +370,45 @@ class SFTPChannelTestCase(TestCase):
         sftpChannel.write_file("/remote/dir/foo.txt", "bar\n")
         mock_client.open.called_once_with("/remote/dir/foo.txt", 'w')
         mock_file.write.called_once_with("bar\n")
+
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.open_sftp')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.__exit__')
+    def test_get_file_connects(self, mock_exit,
+            mock_open_sftp, mock_connect):
+        sftpChannel = SFTPChannel()
+        sftpChannel.get_file("/remote/dir/foo.txt", "/local/dir/bar.txt")
+        mock_connect.called_once()
+        mock_open_sftp.called_once()
+
+    @mock.patch('contaminer.ssh_tools.SSHChannel.__connect__')
+    @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.open_sftp')
+    @mock.patch('contaminer.ssh_tools.paramiko.SFTPClient.close')
+    @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.close')
+    def test_get_file_closes_connections(self, mock_ssh_close,
+            mock_open_sftp, mock_sftp_close, mock_connect):
+        sftpChannel = SFTPChannel()
+        sftpChannel.get_file("/remote/dir/foo.txt", "/local/dir/bar.txt")
+        mock_ssh_close.called_once()
+        mock_sftp_close.called_once()
+
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.__enter__')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.__exit__')
+    def test_get_file_calls_correct_get(self, mock_exit, mock_enter):
+        mock_file = mock.MagicMock()
+        mock_client = mock.MagicMock()
+        mock_enter.return_value = mock_client
+        sftpChannel = SFTPChannel()
+        sftpChannel.get_file("/remote/dir/foo.txt", "/local/dir/bar.txt")
+        mock_client.get.called_once_with("/remote/dir/foo.txt",
+                '/local/dir/bar.txt')
+
+    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.SFTPChannel.get_file')
+    def test_get_from_calls_get_file_with_good_params(self, mock_get, mock_config):
+        config = mock.MagicMock()
+        config.ssh_work_directory = "/work/dir"
+        mock_config.return_value = config
+        SFTPChannel().download_from_contaminer("subdir/foo.txt", "/local/dir/bar.txt")
+        mock_get.assert_called_once_with("/work/dir/subdir/foo.txt",
+                "/local/dir/bar.txt")
