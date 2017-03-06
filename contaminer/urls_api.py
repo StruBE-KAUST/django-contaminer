@@ -59,8 +59,8 @@ urlpatterns = [
             name='job_status'),
         url(r'^job/result/(?P<job_id>[0-9]*)$',
             views_api.SimpleResultsView.as_view(),
-            name='job_status'),
+            name='result'),
         url(r'^job/detailed_result/(?P<job_id>[0-9]*)$',
             views_api.DetailedResultsView.as_view(),
-            name='job_status'),
+            name='detailed_result'),
 ]

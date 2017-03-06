@@ -1434,30 +1434,30 @@ class SimpleResultsViewTestCase(TestCase):
                 )
         self.task.save()
 
-        def test_simpleresult_returns_404_on_wrong_iod(self):
-            request = self.factory.get(
-                    reverse('ContaMiner:API:result', args = [25])
-                    )
-            with self.assertRaises(Http404):
-                response = SimpleResultsView.as_view()(request, 25)
+    def test_simpleresult_returns_404_on_wrong_id(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        with self.assertRaises(Http404):
+            response = SimpleResultsView.as_view()(request, 25)
 
-        def test_simpleresult_returns_good_status(self):
-            request = self.factory.get(
-                    reverse('ContaMiner:API:result', args = [25])
-                    )
-            response = SimpleResultsView.as_view()(request, self.job.id)
-            self.assertJSONEqual(response.content,
-                    {
-                        'id': self.job.id,
-                        'results': [
-                            {
-                                'uniprot_id': "P0ACJ8",
-                                'status': 'Complete',
-                                'percent': 50,
-                                'q_factor': 0.60
-                            },
-                        ]
-                    })
+    def test_simpleresult_returns_good_status(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertJSONEqual(response.content,
+                {
+                    'id': self.job.id,
+                    'results': [
+                        {
+                            'uniprot_id': "P0ACJ8",
+                            'status': 'Complete',
+                            'percent': 50,
+                            'q_factor': 0.60
+                        },
+                    ]
+                })
 
 
 class DetailedResultsViewTestCase(TestCase):
@@ -1500,29 +1500,30 @@ class DetailedResultsViewTestCase(TestCase):
                 )
         self.task.save()
 
-        def test_detailedresult_returns_404_on_wrong_iod(self):
-            request = self.factory.get(
-                    reverse('ContaMiner:API:detailed_result', args = [25])
-                    )
-            with self.assertRaises(Http404):
-                response = DetailedResultsView.as_view()(request, 25)
+    def test_detailedresult_returns_404_on_wrong_iod(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:detailed_result', args = [25])
+                )
+        with self.assertRaises(Http404):
+            response = DetailedResultsView.as_view()(request, 25)
 
-        def test_detailedresult_returns_good_status(self):
-            request = self.factory.get(
-                    reverse('ContaMiner:API:detailed_result', args = [25])
-                    )
-            response = DetailedResultsView.as_view()(request, self.job.id)
-            self.assertJSONEqual(response.content,
-                    {
-                        'id': self.job.id,
-                        'results': [
-                            {
-                                'uniprot_id': "P0ACJ8",
-                                'pack_nb': 1,
-                                'space_group': "P-1-2-1",
-                                'status': 'Complete',
-                                'percent': 50,
-                                'q_factor': 0.60
-                            },
-                        ]
-                    })
+    def test_detailedresult_returns_good_status(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:detailed_result', args = [25])
+                )
+        response = DetailedResultsView.as_view()(request, self.job.id)
+        self.assertJSONEqual(response.content,
+                {
+                    'id': self.job.id,
+                    'results': [
+                        {
+                            'uniprot_id': "P0ACJ8",
+                            'pack_nb': 1,
+                            'space_group': "P-1-2-1",
+                            'status': 'Complete',
+                            'percent': 50,
+                            'q_factor': 0.60
+                        },
+                    ]
+                })
+
