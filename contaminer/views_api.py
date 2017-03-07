@@ -27,14 +27,17 @@ import tempfile
 import threading
 
 from django.http import JsonResponse
+from django.http import HttpResponseRedirect
 from django.http import Http404
 from django.views.generic import TemplateView
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
 from .models.contaminer import Job
+from .models.contaminer import Task
 
 
 class ContaBaseView(TemplateView):
@@ -379,3 +382,66 @@ class DetailedResultsView(TemplateView):
 
         log.debug("Exit")
         return JsonResponse(response_data)
+
+
+class GetFinalFilesView(TemplateView):
+    """
+        Views accessible through api/job/final{pdb,mtz}
+    """
+    def get(self, request, file_format):
+        """ Return the final file with the specified format """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        file_format = file_format.lower()
+        if file_format not in ['pdb', 'mtz']:
+            response_data = {
+                    'error': True,
+                    'message': 'Format file is not available',
+                    }
+            return JsonResponse(response_data, status = 404)
+
+        if not all(k in request.GET for k in
+                ["id", "uniprot_id", "space_group", "pack_nb"]):
+            log.warning("Bad request: " + str(request))
+            response_data = {
+                    'error': True,
+                    'message': 'Bad request',
+                    }
+            return JsonResponse(response_data, status = 400)
+
+        try:
+            job = Job.objects.get(id = request.GET['id'])
+        except ObjectDoesNotExist:
+            response_data = {
+                    'error': True,
+                    'message': 'Job does not exist',
+                    }
+            return JsonResponse(response_data, status = 404)
+
+        try:
+            task = Task.objects.get(
+                    job = job,
+                    pack__contaminant__uniprot_id = request.GET['uniprot_id'],
+                    pack__number = request.GET['pack_nb'],
+                    space_group = request.GET['space_group']
+                    )
+        except ObjectDoesNotExist:
+            response_data = {
+                    'error': True,
+                    'message': 'Task does not exist',
+                    }
+            return JsonResponse(response_data, status = 404)
+
+        if not task.status_complete or task.percent < 90:
+            response_data = {
+                    'error': True,
+                    'message': 'File is not available',
+                    }
+            return JsonResponse(response_data, status = 404)
+
+        filename = task.get_final_filename(suffix = file_format)
+        url = settings.STATIC_URL + filename
+
+        log.debug("Exit with: " + str(url))
+        return HttpResponseRedirect(url)

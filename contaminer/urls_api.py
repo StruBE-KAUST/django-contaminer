@@ -63,4 +63,7 @@ urlpatterns = [
         url(r'^job/detailed_result/(?P<job_id>[0-9]*)$',
             views_api.DetailedResultsView.as_view(),
             name='detailed_result'),
+        url(r'^job/final_(?P<format_file>\w+)$',
+            views_api.GetFinalFilesView.as_view(),
+            name='get_final'),
 ]

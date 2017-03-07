@@ -42,6 +42,7 @@ from .views_api import JobView
 from .views_api import JobStatusView
 from .views_api import SimpleResultsView
 from .views_api import DetailedResultsView
+from .views_api import GetFinalFilesView
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
@@ -1500,7 +1501,7 @@ class DetailedResultsViewTestCase(TestCase):
                 )
         self.task.save()
 
-    def test_detailedresult_returns_404_on_wrong_iod(self):
+    def test_detailedresult_returns_404_on_wrong_id(self):
         request = self.factory.get(
                 reverse('ContaMiner:API:detailed_result', args = [25])
                 )
@@ -1527,3 +1528,160 @@ class DetailedResultsViewTestCase(TestCase):
                     ]
                 })
 
+
+class GetFinalFilesViewTestCase(TestCase):
+    """
+        Test the GestFinalFiles views
+    """
+    def setUp(self):
+        self.factory = RequestFactory()
+
+        self.contabase = ContaBase.objects.create()
+        self.category = Category.objects.create(
+                contabase = self.contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        self.contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = self.category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        self.pack = Pack.objects.create(
+                contaminant = self.contaminant,
+                number = 1,
+                structure= '5-mer',
+                )
+        self.job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        self.task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-1-2-1",
+                percent = 90,
+                q_factor = 0.60,
+                status_complete = True,
+                )
+        self.task.save()
+
+    def test_return_404_on_wrong_format(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['EXT']),
+                {
+                    'id': self.job.id,
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-1-2-1',
+                    'pack_nb': 1,
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'EXT')
+        self.assertEqual(response.status_code, 404)
+
+    def test_return_404_on_wrong_job(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': 517,
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-1-2-1',
+                    'pack_nb': 1,
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertEqual(response.status_code, 404)
+
+    def test_return_404_on_non_existing_task(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': self.job.id,
+                    'uniprot_id': 'MANDA',
+                    'space_group': 'P-1-2-1',
+                    'pack_nb': 1,
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertEqual(response.status_code, 404)
+
+    def test_return_404_on_non_complete_task(self):
+        incomplete_task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-2-2-1",
+                percent = 90,
+                q_factor = 0.60,
+                status_complete = False,
+                )
+        incomplete_task.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': self.job.id,
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-2-2-1',
+                    'pack_nb': 1,
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertEqual(response.status_code, 404)
+
+    def test_return_404_on_task_inf_90(self):
+        unvalid_task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-1-2-2",
+                percent = 89,
+                q_factor = 0.60,
+                status_complete = True,
+                )
+        unvalid_task.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': self.job.id,
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-1-2-2',
+                    'pack_nb': 1,
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertEqual(response.status_code, 404)
+
+    def test_return_400_on_missing_key(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': self.job.id,
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-1-2-1',
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertEqual(response.status_code, 400)
+
+    def test_return_good_url_redirect(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': self.job.id,
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-1-2-1',
+                    'pack_nb': 1,
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url,
+            "/static/web_task_" + str(self.job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
