@@ -27,7 +27,10 @@ from . import views
 urlpatterns = [
         url(r'^$', views.newjob, name='home'),
         url(r'^(?P<jobid>\d+)$', views.result, name='result'),
-        url(r'^contaminants$', views.list_contaminants, name='contaminants'),
         url(r'^download$', views.download, name='download'),
         url(r'^api/', include('contaminer.urls_api', namespace="API")),
+        url(r'^contabase$', views.ContaBaseView.as_view(),
+            name='contabase'),
+        url(r'^contabase.xml$', views.ContaBaseXMLView.as_view(),
+            name='contabase.xml'),
 ]

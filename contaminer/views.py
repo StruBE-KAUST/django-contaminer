@@ -26,14 +26,18 @@ import re
 import errno
 import threading
 
+from django.views.generic import TemplateView
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 
 from .forms import UploadStructure
+
+from .models.contabase import ContaBase
 from .models.contabase import Contaminant
 from .models.contaminer import Job
 from .models.contaminer import Task
@@ -241,16 +245,38 @@ def result(request, jobid):
     return result
 
 
-def list_contaminants(request):
-    """ Display the list of registered contaminants """
-    log = logging.getLogger(__name__)
-    log.debug("Entering function")
+class ContaBaseView(TemplateView):
+    """
+        Views accessible through contabase
+    """
+    def get(self, request):
+        """ Display the list of registered contaminants """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
 
-    context = {'list_contaminants': Contaminant.get_all_by_category()}
-    result = render(request, 'ContaMiner/list.html', context = context)
+        try:
+            context = {'contabase':
+                    ContaBase.get_current().to_detailed_dict()['categories']
+                }
+        except ObjectDoesNotExist:
+            messages.warning(request, "The ContaBase is empty. You should" \
+                    + " update the database before continuing by using" \
+                    + " manage.py update")
+            context = {}
 
-    log.debug("Exiting function")
-    return result
+        result = render(request, 'ContaMiner/contabase.html', context = context)
+
+        log.debug("Exit")
+        return result
+
+
+class ContaBaseXMLView(TemplateView):
+    """
+        Views accessible through contabase.xml
+    """
+    def get(self, request):
+        pass
+
 
 def download(request):
     """ Show how to download the ContaMiner application """
