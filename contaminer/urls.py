@@ -22,10 +22,10 @@
 
 from django.conf.urls import url
 from django.conf.urls import include
+from django.views.generic.base import RedirectView
 from . import views
 
 urlpatterns = [
-        url(r'^$', views.newjob, name='home'),
         url(r'^(?P<jobid>\d+)$', views.result, name='result'),
         url(r'^download$', views.download, name='download'),
         url(r'^api/', include('contaminer.urls_api', namespace="API")),
@@ -35,4 +35,9 @@ urlpatterns = [
             name='contabase.xml'),
         url(r'^submit$', views.SubmitJobView.as_view(),
             name='submit'),
+        url(r'^$', RedirectView.as_view(
+            pattern_name = 'ContaMiner:submit',
+            permanent = False,
+            ),
+            name='home'),
 ]
