@@ -35,13 +35,36 @@ from django.contrib import messages
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
-from .forms import UploadStructure
+from .forms import SubmitJobForm
 
 from .models.contabase import ContaBase
 from .models.contabase import Contaminant
 from .models.contaminer import Job
 from .models.contaminer import Task
 
+
+class SubmitJobView(TemplateView):
+    """
+        Views to process the submitting form
+    """
+
+    def get(self, request):
+        """ Serve the form to submit a new job """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        form = SubmitJobForm(
+                user = request.user,
+                )
+
+        response_data = render(
+                request,
+                'ContaMiner/submit.html',
+                {'form': form}
+                )
+
+        log.debug("Exit")
+        return response_data
 
 def newjob(request):
     """ Serve the form to submit a new job, or give the data to the handler """
@@ -53,8 +76,7 @@ def newjob(request):
 
         form = UploadStructure(request.POST,
                 request.FILES,
-                grouped_contaminants = Contaminant.get_all_by_category(),
-                request = request)
+                user = request.user)
 
         if form.is_valid():
             log.debug("Valid form")
@@ -84,8 +106,7 @@ def newjob(request):
     else:
         log.debug("Give the form")
         form = UploadStructure(
-                grouped_contaminants = Contaminant.get_all_by_category(),
-                request = request
+                user = request.user
                 )
 
     result = render(request, 'ContaMiner/newjob.html', {'form': form})

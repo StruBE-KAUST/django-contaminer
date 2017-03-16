@@ -33,4 +33,6 @@ urlpatterns = [
             name='contabase'),
         url(r'^contabase.xml$', views.ContaBaseXMLView.as_view(),
             name='contabase.xml'),
+        url(r'^submit$', views.SubmitJobView.as_view(),
+            name='submit'),
 ]
