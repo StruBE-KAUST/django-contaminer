@@ -35,6 +35,7 @@ from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.datastructures import MultiValueDictKeyError
 
 from .forms import SubmitJobForm
 
@@ -77,53 +78,65 @@ class SubmitJobView(TemplateView):
         log.debug("Exit")
         return response_data
 
-def newjob(request):
-    """ Serve the form to submit a new job, or give the data to the handler """
-    log = logging.getLogger(__name__)
-    log.debug("Entering function")
+    def post(self, request):
+        """ If the form is valid, submit the job. Return the form otherwise """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
 
-    if request.method == 'POST':
-        log.debug("POST request")
+        try:
+            user = request.user
+        except AttributeError:
+            user = None
 
-        form = UploadStructure(request.POST,
+        form = SubmitJobForm(
+                request.POST,
                 request.FILES,
-                user = request.user)
+                user = user
+                )
 
         if form.is_valid():
             log.debug("Valid form")
-            try:
-                newjob_handler(request)
-            except ValueError as e:
-                log.warning("Bad file submitted : " + str(e))
-                messages.error(request,
-                        "Bad input file. Please upload a valid cif or mtz\
-                        file.")
-            except Exception as e:
-                log.error("Error when submitting new job : " + str(e))
-                messages.error(request,
-                        "Something went wrong. Please try again later.")
+            response_data = newjob_handler(request)
+            if response_data['error'] :
+                messages.error(request, response_data['message'])
+                try:
+                    Category.objects.filter(
+                            contabase = ContaBase.get_current()
+                            )
+                except ObjectDoesNotExist:
+                    messages.warning(request, "The ContaBase is empty. You should" \
+                            + " update the database before continuing by using" \
+                            + " manage.py update")
+                response = render(
+                        request,
+                        'ContaMiner/submit.html',
+                        {'form': form}
+                        )
+
             else:
                 log.info("New job submitted")
                 messages.success(request, "File submitted")
+                response = HttpResponseRedirect(reverse('ContaMiner:home'))
+        else:
+            log.debug("Invalid form")
+            messages.error(request, "Please check the form")
+            try:
+                Category.objects.filter(
+                        contabase = ContaBase.get_current()
+                        )
+            except ObjectDoesNotExist:
+                messages.warning(request, "The ContaBase is empty. You should" \
+                        + " update the database before continuing by using" \
+                        + " manage.py update")
 
-            result = HttpResponseRedirect(reverse('ContaMiner:home'))
+            response = render(
+                    request,
+                    'ContaMiner/submit.html',
+                    {'form': form}
+                    )
 
-            log.debug("Exiting function")
-            return result
-
-        # if form is not valid, the form is updated, then used after
-        # this else block
-
-    else:
-        log.debug("Give the form")
-        form = UploadStructure(
-                user = request.user
-                )
-
-    result = render(request, 'ContaMiner/newjob.html', {'form': form})
-
-    log.debug("Exiting function")
-    return result
+        log.debug("Exit")
+        return response
 
 
 def newjob_handler(request):
@@ -149,16 +162,15 @@ def newjob_handler(request):
         return response_data
 
     # Define user and confidentiality
-    user = None
-    confidential = False
     try:
         user = request.user
     except AttributeError:
         user = None
-
-        # If choosen, define confidential
-        if request.POST.has_key('confidential'):
-            confidential = request.POST['confidential']
+    # If choosen, define confidential
+    try:
+        confidential = request.POST['confidential']
+    except MultiValueDictKeyError:
+        confidential = False
     log.debug("User : " + str(user))
     log.debug("Conf : " + str(confidential))
 
@@ -180,11 +192,25 @@ def newjob_handler(request):
     try:
         contaminants = request.POST['contaminants']
     except KeyError:
-        response_data = {
-                'error': True,
-                'message': 'Missing list of contaminants',
-                }
-        return response_data
+        # contaminants could be a result of the checkbox list
+        contaminants = ""
+        for contaminant in Contaminant.objects.filter(
+                category__contabase = ContaBase.get_current()
+                ):
+            if contaminant.uniprot_id in request.POST:
+                contaminants += contaminant.uniprot_id
+                contaminants += ","
+
+        if not contaminants:
+            response_data = {
+                    'error': True,
+                    'message': 'Missing list of contaminants',
+                    }
+            return response_data
+        else:
+            # Remove trailing comma
+            contaminants = contaminants[:-1]
+
     contaminants = contaminants.replace(',', '\n')
 
     # Create job

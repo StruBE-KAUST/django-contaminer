@@ -39,8 +39,8 @@ class SubmitJobForm(forms.Form):
     """
         Upload a mtz or cif file and select contaminants to test
     """
-    job_name = forms.CharField(max_length = 50, required = False)
-    structure_file = forms.FileField()
+    name = forms.CharField(max_length = 50, required = False)
+    diffraction_data = forms.FileField()
     confidential = forms.BooleanField(
             label = "Make your job confidential",
             required = False)
@@ -61,9 +61,9 @@ class SubmitJobForm(forms.Form):
                 TabHolder(
                     Tab('File',
                         Field(
-                            'job_name',
-                            'structure_file',
-                            'email'
+                            'name',
+                            'diffraction_data',
+                            'email_address'
                         ),
                     ),
                     Tab('Contaminants',
@@ -80,12 +80,12 @@ class SubmitJobForm(forms.Form):
         # Add confidential button and pre-fill e-mail if user if logged in
         if user and user.is_authenticated():
             self.helper.layout[0][0].append("confidential")
-            self.fields['email'] = forms.EmailField(
+            self.fields['email_address'] = forms.EmailField(
                     initial = user.email,
                     required = True
                     )
         else:
-            self.fields['email'] = forms.EmailField(
+            self.fields['email_address'] = forms.EmailField(
                     required = True
                     )
 
