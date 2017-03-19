@@ -24,6 +24,7 @@ import logging
 
 from django import forms
 from django.utils import text
+from django.core.exceptions import ObjectDoesNotExist
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, HTML, Fieldset
@@ -89,9 +90,15 @@ class SubmitJobForm(forms.Form):
                     )
 
         # Add contaminants selection to form
-        for category in Category.objects.filter(
-                contabase = ContaBase.get_current()
-                ):
+        try:
+            contabase = ContaBase.get_current()
+            categories = Category.objects.filter(
+                    contabase = contabase
+                    )
+        except ObjectDoesNotExist:
+            categories = []
+
+        for category in categories:
             log.debug("Category found : " + str(category))
 
             initial = (category.selected_by_default)

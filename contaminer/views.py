@@ -38,6 +38,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from .forms import SubmitJobForm
 
 from .models.contabase import ContaBase
+from .models.contabase import Category
 from .models.contabase import Contaminant
 from .models.contaminer import Job
 from .models.contaminer import Task
@@ -52,6 +53,15 @@ class SubmitJobView(TemplateView):
         """ Serve the form to submit a new job """
         log = logging.getLogger(__name__)
         log.debug("Enter")
+
+        try:
+            Category.objects.filter(
+                    contabase = ContaBase.get_current()
+                    )
+        except ObjectDoesNotExist:
+            messages.warning(request, "The ContaBase is empty. You should" \
+                    + " update the database before continuing by using" \
+                    + " manage.py update")
 
         form = SubmitJobForm(
                 user = request.user,

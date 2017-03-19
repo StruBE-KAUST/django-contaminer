@@ -47,7 +47,7 @@ class ContaBaseViewTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
-    def test_get_returns_404_on_empty_contabase(self):
+    def test_get_returns_message_on_empty_contabase(self):
         response = self.client.get(
                 reverse('ContaMiner:contabase')
                 )
@@ -133,3 +133,19 @@ class ContaBaseViewTestCase(TestCase):
         self.assertEqual(len(response.context['contabase']), 1)
         self.assertEqual(response.context['contabase'][0]['name'],
                 'Not obsolete')
+
+
+class SubmitJobViewTestCase(TestCase):
+    """
+        Test the views related to the submit form
+    """
+    def setUp(self):
+        self.client = Client()
+
+    def test_get_returns_message_on_empty_contabase(self):
+        response = self.client.get(
+                reverse('ContaMiner:submit')
+                )
+        messages = response.context['messages']
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(messages), 1)
