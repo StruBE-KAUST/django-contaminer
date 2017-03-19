@@ -24,6 +24,7 @@ import logging
 import os
 import re
 import errno
+import tempfile
 import threading
 
 from django.views.generic import TemplateView
@@ -130,86 +131,94 @@ def newjob_handler(request):
     log = logging.getLogger(__name__)
     log.debug("Entering function")
 
+    # Check if file is uploaded
+    if not request.FILES.has_key('diffraction_data'):
+        response_data = {
+                'error': True,
+                'message': 'Missing diffraction data file',
+                }
+        return response_data
+
+    # Check the file extension
+    extension = os.path.splitext(request.FILES['diffraction_data'].name)[1]
+    if extension.lower() not in ['.mtz', '.cif']:
+        response_data = {
+                'error': True,
+                'message': 'File format is not CIF or MTZ',
+                }
+        return response_data
+
     # Define user and confidentiality
     user = None
     confidential = False
-    if request.user is not None and request.user.is_authenticated():
+    try:
         user = request.user
+    except AttributeError:
+        user = None
 
         # If choosen, define confidential
         if request.POST.has_key('confidential'):
             confidential = request.POST['confidential']
-
     log.debug("User : " + str(user))
     log.debug("Conf : " + str(confidential))
 
     # Define job name
-    job_name = ""
-    if request.POST.has_key('job_name') and request.POST['job_name'] :
-        job_name = request.POST['job_name']
+    if request.POST.has_key('name') and request.POST['name'] :
+        name = request.POST['name']
     else:
-        for filename, file in request.FILES.iteritems():
-            job_name = file.name
-    log.debug("Job name : " + str(job_name))
-
-    # Define the file extension
-    suffix = ""
-    if re.match(".*\.cif$", request.FILES['structure_file'].name):
-        suffix = "cif"
-    elif re.match(".*\.mtz", request.FILES['structure_file'].name):
-        suffix = "mtz"
-    else:
-        raise ValueError
-    log.debug("Suffix : " + str(suffix))
+        name = request.FILES['diffraction_data'].name
+    log.debug("Job name : " + str(name))
 
     # Define email
-    email = ""
-    if request.POST.has_key('email'):
-        email = request.POST['email']
+    try:
+        email = request.POST['email_address']
+    except AttributeError:
+        email = None
     log.debug("Email : " + str(email))
 
+    # Define list of contaminants
+    try:
+        contaminants = request.POST['contaminants']
+    except KeyError:
+        response_data = {
+                'error': True,
+                'message': 'Missing list of contaminants',
+                }
+        return response_data
+    contaminants = contaminants.replace(',', '\n')
+
     # Create job
-    newjob = Job()
-    newjob.create(
-            name = job_name,
+    job = Job.create(
+            name = name,
             author = user,
             email = email,
             confidential = confidential
             )
     log.debug("Job created")
 
-    # Save file in media path
-    filename = newjob.get_filename(suffix = suffix)
-    log.debug("Filename : " + str(filename))
-    file_path = os.path.join(settings.MEDIA_ROOT, filename)
-    try:
-        os.makedirs(settings.MEDIA_ROOT)
-    except OSError as e:
-        if e.errno == errno.EEXIST and os.path.isdir(settings.MEDIA_ROOT):
-            pass
-        else:
-            raise
+    # Locally save file
+    filename = job.get_filename(suffix = extension)
+    tmp_diff_data_file = os.path.join(tempfile.mkdtemp(), filename)
 
-    with open(file_path, 'wb') as destination:
-        for chunk in request.FILES['structure_file']:
+    with open(tmp_diff_data_file, 'wb') as destination:
+        for chunk in request.FILES['diffraction_data']:
             destination.write(chunk)
     log.debug("Diffraction data file saved")
 
-    # Define list of contaminants
-    listname = newjob.get_filename(suffix='txt')
-    list_path = os.path.join(settings.MEDIA_ROOT, listname)
-    with open(list_path, 'wb') as destination:
-        for cont in Contaminant.get_all():
-            if request.POST.has_key(cont.uniprot_ID):
-                destination.write(cont.uniprot_ID + '\n')
-    log.debug("Contaminants list file saved")
-
     # Submit job
-    threading.Thread(target=newjob.submit, args=(file_path, list_path)).start()
-#    newjob.submit(file_path, list_path)
-    log.debug("Job is submitted")
+    threading.Thread(
+            target = job.submit,
+            args = (tmp_diff_data_file, contaminants)
+            ).start()
+    job.status_submitted = True
+    job.save()
+    log.info("New job submitted")
 
-    log.debug("Exiting function")
+    response_data = {
+            'error': False,
+            'id': job.id,
+            }
+    return response_data
 
 
 def result(request, jobid):
