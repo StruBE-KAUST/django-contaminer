@@ -1160,59 +1160,44 @@ class ModelTestCase(TestCase):
         Test the Model model
     """
     def setUp(self):
-        ContaBase.objects.create()
-        contabase = ContaBase.objects.all()[0]
-        Category.objects.create(
+        self.contabase = ContaBase.objects.create()
+        self.category = Category.objects.create(
                 number = 1,
                 name="Protein in E.Coli",
-                contabase = contabase,
+                contabase = self.contabase,
                 )
-        category = Category.objects.get(
-                name="Protein in E.Coli",
-                )
-        Contaminant.objects.create(
+        self.contaminant = Contaminant.objects.create(
                 uniprot_id = "P0ACJ8",
-                category = category,
+                category = self.category,
                 short_name = "CRP_ECOLI",
                 long_name = "cAMP-activated global transcriptional regulator",
                 sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
                 organism = "Escherichia coli",
                 )
-        contaminant = Contaminant.objects.get(
-                uniprot_id = "P0ACJ8",
-                )
-        Pack.objects.create(
-                contaminant = contaminant,
+        self.pack = Pack.objects.create(
+                contaminant = self.contaminant,
                 number = 1,
                 structure = "2-mer",
                 )
-        pack = Pack.objects.get(
-                contaminant = contaminant,
-                number = 1,
-                )
-        Model.objects.create(
+        self.model = Model.objects.create(
                 pdb_code = '1o3t',
                 chain = 'B',
                 domain = 1,
                 nb_residues = 20,
                 identity = 100,
-                pack = pack,
+                pack = self.pack,
                 )
+
+        self.contabase.refresh_from_db()
+        self.category.refresh_from_db()
+        self.contaminant.refresh_from_db()
+        self.pack.refresh_from_db()
+        self.model.refresh_from_db()
 
     def test_Model_is_well_displayed(self):
-        model = Model.objects.get(
-                pdb_code = '1O3T',
-                )
-        self.assertEqual(str(model), 'P0ACJ8 - CRP_ECOLI - 1 (2-mer) - 1O3T')
+        self.assertEqual(str(self.model), 'P0ACJ8 - CRP_ECOLI - 1 (2-mer) - 1O3T')
 
     def test_Model_identity_is_valid_percentage(self):
-        contaminant = Contaminant.objects.get(
-                uniprot_id = 'P0ACJ8',
-                )
-        pack = Pack.objects.get(
-                contaminant = contaminant,
-                number = 1,
-                )
         with self.assertRaises(ValidationError):
             Model.objects.create(
                     pdb_code = '1o3t',
@@ -1220,7 +1205,7 @@ class ModelTestCase(TestCase):
                     domain = 1,
                     nb_residues = 20,
                     identity = 101,
-                    pack = pack,
+                    pack = self.pack,
                     )
         with self.assertRaises(ValidationError):
             Model.objects.create(
@@ -1229,28 +1214,20 @@ class ModelTestCase(TestCase):
                     domain = 1,
                     nb_residues = 20,
                     identity = -1,
-                    pack = pack,
+                    pack = self.pack,
                     )
 
     def test_Model_identity_cannot_be_none(self):
-        contaminant = Contaminant.objects.get(
-                uniprot_id = 'P0ACJ8',
-                )
-        pack = Pack.objects.get(
-                contaminant = contaminant,
-                number = 1,
-                )
         with self.assertRaises(IntegrityError):
             Model.objects.create(
                     pdb_code = '1o3t',
                     chain = 'B',
                     domain = 1,
                     nb_residues = 20,
-                    pack = pack,
+                    pack = self.pack,
                     )
 
     def test_update_creates_good_model(self):
-        pack = Pack.objects.all()[0]
         xml_example = "" \
             + "<model>\n" \
             + "    <template>3qy1</template>\n" \
@@ -1262,19 +1239,16 @@ class ModelTestCase(TestCase):
         parser = ET.XMLParser(remove_blank_text = True)
         model_dict = ET.XML(xml_example, parser)
 
-        Model.update(pack, model_dict)
+        Model.update(self.pack, model_dict)
 
-        model = Model.objects.get(
-                pdb_code = '3QY1',
-                )
-        self.assertEqual(model.pack, pack)
+        model = Model.objects.get(pdb_code = "3QY1")
+        self.assertEqual(model.pack, self.pack)
         self.assertEqual(model.pdb_code, "3QY1")
         self.assertEqual(model.chain, "B")
         self.assertEqual(model.domain, 1)
         self.assertEqual(model.identity, 100)
 
     def test_update_creates_good_model_with_identity_float(self):
-        pack = Pack.objects.all()[0]
         xml_example = "" \
             + "<model>\n" \
             + "    <template>3qy1</template>\n" \
@@ -1286,22 +1260,17 @@ class ModelTestCase(TestCase):
         parser = ET.XMLParser(remove_blank_text = True)
         model_dict = ET.XML(xml_example, parser)
 
-        Model.update(pack, model_dict)
+        Model.update(self.pack, model_dict)
 
-        model = Model.objects.get(
-                pdb_code = '3QY1',
-                )
-        self.assertEqual(model.pack, pack)
+        model = Model.objects.get(pdb_code = "3QY1")
+        self.assertEqual(model.pack, self.pack)
         self.assertEqual(model.pdb_code, "3QY1")
         self.assertEqual(model.chain, "B")
         self.assertEqual(model.domain, 1)
         self.assertEqual(model.identity, 89)
 
     def test_to_dict_gives_correct_result(self):
-        model = Model.objects.get(
-                pdb_code = '1O3T',
-                )
-        response_dict = model.to_dict()
+        response_dict = self.model.to_dict()
         response_expected = {
                 'template': '1O3T',
                 'chain': 'B',
@@ -1311,6 +1280,81 @@ class ModelTestCase(TestCase):
             }
 
         self.assertEqual(response_dict, response_expected)
+
+    def test_identity_gives_good_result(self):
+        Model.objects.create(
+                pdb_code = '3qy1',
+                chain = 'A',
+                domain = 1,
+                nb_residues = 2,
+                identity = 20,
+                pack = self.pack
+                )
+        self.assertAlmostEqual(self.pack.identity, float(100*20+20*2)/(22))
+
+    def test_coverage_gives_good_result_on_monomer(self):
+        pack = Pack.objects.create(
+                contaminant = self.contaminant,
+                number = 2,
+                structure='1-mer',
+                )
+        Model.objects.create(
+                pdb_code = '3qy1',
+                chain = 'A',
+                domain = 1,
+                nb_residues = 20,
+                identity = 20,
+                pack = pack
+                )
+        Model.objects.create(
+                pdb_code = '4qy1',
+                chain = 'A',
+                domain = 1,
+                nb_residues = 2,
+                identity = 20,
+                pack = pack
+                )
+        self.assertAlmostEqual(pack.coverage, float(22)/26)
+
+    def test_coverage_gives_good_result_on_domains(self):
+        pack = Pack.objects.create(
+                contaminant = self.contaminant,
+                number = 2,
+                structure='domains',
+                )
+        Model.objects.create(
+                pdb_code = '3qy1',
+                chain = 'A',
+                domain = 1,
+                nb_residues = 20,
+                identity = 20,
+                pack = pack
+                )
+        Model.objects.create(
+                pdb_code = '4qy1',
+                chain = 'A',
+                domain = 1,
+                nb_residues = 2,
+                identity = 20,
+                pack = pack
+                )
+        self.assertAlmostEqual(pack.coverage, float(22)/26)
+
+    def test_coverage_gives_good_result_on_multimer(self):
+        pack = Pack.objects.create(
+                contaminant = self.contaminant,
+                number = 3,
+                structure='6-mer',
+                )
+        Model.objects.create(
+                pdb_code = '3qy1',
+                chain = 'ABCD',
+                domain = 1,
+                nb_residues = 120,
+                identity = 20,
+                pack = pack
+                )
+        self.assertAlmostEqual(pack.coverage, float(20)/26)
 
 
 class ReferenceTestCase(TestCase):

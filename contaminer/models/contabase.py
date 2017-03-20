@@ -341,6 +341,29 @@ class Pack(models.Model):
         structure = str(self.structure)
         return (contaminant + ' - ' + number + ' (' + structure + ')')
 
+    @property
+    def coverage(self):
+        cont_length = len(self.contaminant.sequence)
+        models_length = sum([model.nb_residues
+            for model in self.model_set.all()])
+        if self.structure != "domains":
+            # structure has the form n-mer
+            nb_structure = int(self.structure.split('-')[0])
+            models_length /= nb_structure
+        return (float(models_length) / cont_length)
+
+    @property
+    def identity(self):
+        models_length = sum([model.nb_residues
+            for model in self.model_set.all()])
+        weighted_id = [
+                (model.identity * model.nb_residues) / float(models_length)
+                for model in self.model_set.all()
+                ]
+        total_id = sum(weighted_id)
+        return total_id
+
+
     @classmethod
     def update(cls, parent_contaminant, pack_dict):
         """ Create Pack based on pack_dict """
