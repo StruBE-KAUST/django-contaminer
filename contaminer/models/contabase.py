@@ -436,7 +436,7 @@ class Model(models.Model):
         new_model.chain = model_dict.find('chain').text
         new_model.domain = int(model_dict.find('domain').text)
         new_model.nb_residues = int(model_dict.find('n_res').text)
-        new_model.identity = int(float(model_dict.find('identity').text)) * 100
+        new_model.identity = int(round(float(model_dict.find('identity').text) * 100))
         new_model.pack = parent_pack
         new_model.save()
 

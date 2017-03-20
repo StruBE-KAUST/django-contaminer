@@ -1273,6 +1273,30 @@ class ModelTestCase(TestCase):
         self.assertEqual(model.domain, 1)
         self.assertEqual(model.identity, 100)
 
+    def test_update_creates_good_model_with_identity_float(self):
+        pack = Pack.objects.all()[0]
+        xml_example = "" \
+            + "<model>\n" \
+            + "    <template>3qy1</template>\n" \
+            + "    <chain>B</chain>\n" \
+            + "    <domain>1</domain>\n" \
+            + "    <n_res>10</n_res>\n" \
+            + "    <identity>0.887</identity>\n" \
+            + "</model>\n"
+        parser = ET.XMLParser(remove_blank_text = True)
+        model_dict = ET.XML(xml_example, parser)
+
+        Model.update(pack, model_dict)
+
+        model = Model.objects.get(
+                pdb_code = '3QY1',
+                )
+        self.assertEqual(model.pack, pack)
+        self.assertEqual(model.pdb_code, "3QY1")
+        self.assertEqual(model.chain, "B")
+        self.assertEqual(model.domain, 1)
+        self.assertEqual(model.identity, 89)
+
     def test_to_dict_gives_correct_result(self):
         model = Model.objects.get(
                 pdb_code = '1O3T',
