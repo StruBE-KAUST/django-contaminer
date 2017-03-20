@@ -2255,6 +2255,263 @@ class JobTestCase(TestCase):
         job.update_tasks()
         self.assertEqual(mock_task.update.call_count, 2)
 
+    def create_pack(self):
+        job = Job.objects.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
+                contabase = contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack = Pack.objects.create(
+                contaminant = contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+
+        return (job, pack)
+
+    def test_get_best_task_gives_empty_if_no_task(self):
+        (job, pack) = self.create_pack()
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, None)
+
+    def test_get_best_task_gives_empty_if_error(self):
+        (job, pack) = self.create_pack()
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 2 2 2",
+                status_complete = True,
+                status_error = True,
+                )
+
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, None)
+
+    def test_get_best_task_gives_empty_if_non_complete(self):
+        (job, pack) = self.create_pack()
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 2 2 2",
+                status_complete = False,
+                status_error = False,
+                )
+
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, None)
+
+    def test_get_best_task_gives_empty_if_error_and_non_complete(self):
+        (job, pack) = self.create_pack()
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 2 2 2",
+                status_complete = False,
+                status_error = True,
+                )
+
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, None)
+
+    def test_get_best_task_gives_non_error(self):
+        (job, pack) = self.create_pack()
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = True,
+                )
+        task2 = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 21 2 2",
+                percent = 0,
+                q_factor = 0,
+                status_complete = True,
+                status_error = False,
+                )
+
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, task2)
+
+    def test_get_best_task_gives_complete(self):
+        (job, pack) = self.create_pack()
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = False,
+                status_error = False,
+                )
+        task2 = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 21 2 2",
+                percent = 0,
+                q_factor = 0,
+                status_complete = True,
+                status_error = False,
+                )
+
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, task2)
+
+    def test_get_best_task_gives_best_percent(self):
+        (job, pack) = self.create_pack()
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+        task2 = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 21 2 2",
+                percent = 0,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, task)
+
+    def test_get_best_task_gives_best_q_factor(self):
+        (job, pack) = self.create_pack()
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 0.8,
+                status_complete = True,
+                status_error = False,
+                )
+        task2 = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 21 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, task2)
+
+    def test_get_best_task_gives_best_coverage(self):
+        (job, pack) = self.create_pack()
+        pack2 = Pack.objects.create(
+                contaminant = pack.contaminant,
+                number = 6,
+                structure = '1-mer',
+                )
+        Model.objects.create(
+                pdb_code = 'TEST',
+                chain = 'A',
+                domain = '1',
+                nb_residues = 20,
+                identity = 100,
+                pack = pack,
+                )
+        Model.objects.create(
+                pdb_code = 'TEST2',
+                chain = 'ABCD',
+                domain = '1',
+                nb_residues = 26,
+                identity = 100,
+                pack = pack2,
+                )
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+        task2 = Task.objects.create(
+                job = job,
+                pack = pack2,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, task2)
+
+    def test_get_best_task_gives_best_identity(self):
+        (job, pack) = self.create_pack()
+        pack2 = Pack.objects.create(
+                contaminant = pack.contaminant,
+                number = 6,
+                structure = '5-mer',
+                )
+        Model.objects.create(
+                pdb_code = 'TEST',
+                chain = 'A',
+                domain = '1',
+                nb_residues = 20,
+                identity = 99,
+                pack = pack,
+                )
+        Model.objects.create(
+                pdb_code = 'TEST2',
+                chain = 'ABCD',
+                domain = '1',
+                nb_residues = 20,
+                identity = 100,
+                pack = pack2,
+                )
+        task = Task.objects.create(
+                job = job,
+                pack = pack,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+        task2 = Task.objects.create(
+                job = job,
+                pack = pack2,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+
+        best_task = job.get_best_task(pack.contaminant)
+        self.assertEqual(best_task, task2)
+
 
 class TaskTestCase(TestCase):
     """

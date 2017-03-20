@@ -365,6 +365,41 @@ class Job(models.Model):
         response_data['results'] = results
         return response_data
 
+    def get_best_task(self, contaminant):
+        """ Return the best task for the given contaminant
+
+            Sort by validity (complete and not error), percent, q_factor,
+            pack coverage, then pack identity """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        tasks = Task.objects.filter(job = self, pack__contaminant = contaminant)
+
+        valid_tasks = [task for task in tasks
+                if task.status_complete and not task.status_error]
+
+        if valid_tasks == []:
+            return None
+
+        max_percent = max([task.percent for task in valid_tasks])
+        max_tasks = [task for task in valid_tasks
+                if task.percent == max_percent]
+
+        max_q_factor = max([task.q_factor for task in max_tasks])
+        max2_tasks = [task for task in max_tasks
+                if task.q_factor == max_q_factor]
+
+        max_coverage = max([task.pack.coverage for task in max2_tasks])
+        max3_tasks = [task for task in max2_tasks
+                if task.pack.coverage == max_coverage]
+
+        max_identity = max([task.pack.identity for task in max3_tasks])
+        max4_tasks = [task for task in max3_tasks
+                if task.pack.identity == max_identity]
+
+        log.debug("Exit")
+        return max4_tasks[0]
+
 
 """
     def send_complete_mail(self):
