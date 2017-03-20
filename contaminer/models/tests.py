@@ -2512,6 +2512,34 @@ class JobTestCase(TestCase):
         best_task = job.get_best_task(pack.contaminant)
         self.assertEqual(best_task, task2)
 
+    def test_get_best_tasks_gives_empty_list_if_no_task(self):
+        (job, pack) = self.create_pack()
+        best_tasks = job.get_best_tasks()
+        self.assertEqual(best_tasks, [])
+
+    @mock.patch('contaminer.models.contaminer.Job.get_best_task')
+    def test_get_best_tasks_gives_as_many_as_contaminants(self, mock_task):
+        mock_task.return_value = None
+        (job, pack) = self.create_pack()
+        contaminant2 = Contaminant.objects.create(
+                uniprot_id = "P0AA25",
+                category = pack.contaminant.category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        pack2 = Pack.objects.create(
+                contaminant = contaminant2,
+                number = 5,
+                structure= '5-mer',
+                )
+        best_tasks = job.get_best_tasks()
+        self.assertEqual(len(best_tasks), 0)
+        self.assertEqual(mock_task.call_count, 2)
+        mock_task.assert_any_call(pack.contaminant)
+        mock_task.assert_any_call(contaminant2)
+
 
 class TaskTestCase(TestCase):
     """

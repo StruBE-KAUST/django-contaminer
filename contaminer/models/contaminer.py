@@ -365,6 +365,19 @@ class Job(models.Model):
         response_data['results'] = results
         return response_data
 
+    def get_best_tasks(self):
+        """ Return the list of the best task for each contaminant """
+        contaminants = Contaminant.objects.filter(
+                category__contabase = ContaBase.get_current()
+                )
+        best_tasks = []
+        for contaminant in contaminants:
+            best_task = self.get_best_task(contaminant)
+            if best_task:
+                best_tasks.append(best_task)
+
+        return best_tasks
+
     def get_best_task(self, contaminant):
         """ Return the best task for the given contaminant
 
