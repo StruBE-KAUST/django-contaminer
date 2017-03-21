@@ -2004,7 +2004,7 @@ class JobTestCase(TestCase):
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         mock_client.send_file.assert_called_with(
             "/local/dir/file.mtz",
-            "/remote/dir/web_task_" + str(job.id) + ".mtz")
+            "/remote/dir")
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')

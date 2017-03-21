@@ -149,7 +149,7 @@ class Job(models.Model):
                 )
         remote_contaminants = self.get_filename(suffix = 'txt')
         client = SFTPChannel()
-        client.send_file(filepath, remote_filepath)
+        client.send_file(filepath, remote_work_directory)
         client.write_file(remote_contaminants, contaminants)
 
         # Remove local file
