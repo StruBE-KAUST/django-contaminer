@@ -1983,7 +1983,7 @@ class JobTestCase(TestCase):
                 "web_task_" + str(job.id))
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_send_input_file(self, mock_sftpchannel, mock_remove,
@@ -2007,7 +2007,7 @@ class JobTestCase(TestCase):
             "/remote/dir/web_task_" + str(job.id) + ".mtz")
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_write_contaminants_list(self, mock_sftpchannel,
@@ -2030,7 +2030,7 @@ class JobTestCase(TestCase):
             "cont1\ncont2\n")
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_runs_contaminer(self, mock_sftpchannel, mock_remove,
@@ -2055,7 +2055,7 @@ class JobTestCase(TestCase):
                 + '"web_task_' + str(job.id) + '.txt"')
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_remove_local_file(self, mock_sftpchannel, mock_remove,
@@ -2077,7 +2077,7 @@ class JobTestCase(TestCase):
         mock_remove.assert_called_with("/local/dir/file.mtz")
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_raises_excep_if_notempty_stderr(self, mock_sftpchannel,
@@ -2099,7 +2099,7 @@ class JobTestCase(TestCase):
             job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_change_status_to_submitted(self, mock_sftpchannel,
@@ -2120,7 +2120,7 @@ class JobTestCase(TestCase):
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         self.assertEqual(job.status_submitted, True)
 
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
     def test_update_status_call_good_command(self, mock_sshchannel,
             mock_CMConfig):
@@ -2142,7 +2142,7 @@ class JobTestCase(TestCase):
                 '/remote/CM/contaminer job_status /remote/dir/web_task_' \
                         + str(job.id))
 
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
     def test_update_status_change_status(self, mock_sshchannel,
             mock_CMConfig):
@@ -2184,7 +2184,7 @@ class JobTestCase(TestCase):
         self.assertEqual(job.status_error, True)
         self.assertEqual(job.get_status(), "Error")
 
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
     def test_update_status_raise_exception_on_stderr(self, mock_sshchannel,
             mock_CMConfig):
@@ -2204,7 +2204,7 @@ class JobTestCase(TestCase):
         with self.assertRaises(RuntimeError):
             job.update_status()
 
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
     def test_update_tasks_read_good_file(self, mock_ssh, mock_CMConfig):
         mock_config = mock.MagicMock()
@@ -2224,7 +2224,7 @@ class JobTestCase(TestCase):
         expect_call = "/remote/dir/web_task_" + str(job.id) + "/results.txt"
         mock_channel.read_file.assert_called_once_with(expect_call)
 
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
     @mock.patch('contaminer.models.contaminer.Task')
     def test_update_tasks_create_good_task(self, mock_task, mock_ssh,
@@ -2245,7 +2245,7 @@ class JobTestCase(TestCase):
         job.update_tasks()
         mock_task.update.assert_called_once_with(job, "line1")
 
-    @mock.patch('contaminer.models.contaminer.ContaminerConfig')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
     @mock.patch('contaminer.models.contaminer.Task')
     def test_update_tasks_create_enough_tasks(self, mock_task, mock_ssh,
@@ -2725,7 +2725,7 @@ class TaskTestCase(TestCase):
         self.assertTrue(mock_get.called)
 
     @mock.patch('contaminer.models.contaminer.os.makedirs')
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.settings')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_get_final_files_get_good_files_writes_STATIC(self, mock_channel, mock_settings,
@@ -2784,7 +2784,7 @@ class TaskTestCase(TestCase):
 
     @mock.patch('contaminer.models.contaminer.os.path.isdir')
     @mock.patch('contaminer.models.contaminer.os.makedirs')
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.settings')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_get_final_files_error_on_dir_is_file(self, mock_channel,
@@ -2838,7 +2838,7 @@ class TaskTestCase(TestCase):
 
     @mock.patch('contaminer.models.contaminer.os.path.isdir')
     @mock.patch('contaminer.models.contaminer.os.makedirs')
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.settings')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_get_final_files_pass_on_existing_local_dir(self, mock_channel,

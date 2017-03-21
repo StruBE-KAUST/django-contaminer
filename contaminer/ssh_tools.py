@@ -32,9 +32,7 @@ import logging
 import errno
 import socket
 
-from django.conf import settings
-
-from .apps import ContaminerConfig
+from django.apps import apps
 
 class SSHChannel(paramiko.SSHClient):
     """
@@ -64,7 +62,7 @@ class SSHChannel(paramiko.SSHClient):
         if not hasattr(self, 'sshconfig') or self.sshconfig == {}:
             log.debug("Configuring SSH connection")
             self.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            contaminer_config = ContaminerConfig()
+            contaminer_config = apps.get_app_config('contaminer')
             self.sshconfig = {
                     'hostname': contaminer_config.ssh_hostname,
                     'port': contaminer_config.ssh_port,
@@ -95,7 +93,7 @@ class SSHChannel(paramiko.SSHClient):
         log.debug("Entering function")
 
         command = "sh " + os.path.join(
-                ContaminerConfig().ssh_contaminer_location,
+                apps.get_app_config('contaminer').ssh_contaminer_location,
                 "contaminer") \
                 + " display"
         with self as sshChannel:
@@ -130,6 +128,7 @@ class SFTPChannel(SSHChannel):
         An SFTP connection to the cluster or superconputer
     """
     def __init__(self):
+        super(SFTPChannel, self).__init__()
         self.sftpclient = None
 
     def __enter__(self):
@@ -183,7 +182,7 @@ class SFTPChannel(SSHChannel):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        remote_directory = ContaminerConfig().ssh_work_directory
+        remote_directory = apps.get_app_config('contaminer').ssh_work_directory
 
         self.send_file(filename, remote_directory)
 
@@ -218,7 +217,7 @@ class SFTPChannel(SSHChannel):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        remote_directory = ContaminerConfig().ssh_work_directory
+        remote_directory = apps.get_app_config('contaminer').ssh_work_directory
         remote_filename = os.path.join(remote_directory, filename)
 
         self.get_file(remote_filename, local_filename)

@@ -33,6 +33,7 @@ import paramiko
 import logging
 import errno
 
+from django.apps import apps
 from django.db import models
 from django.conf import settings
 from django.core.mail import send_mail
@@ -52,7 +53,6 @@ from .contabase import ContaBase
 from .contabase import Contaminant
 from .contabase import Pack
 
-from ..apps import ContaminerConfig
 
 
 class Job(models.Model):
@@ -140,7 +140,8 @@ class Job(models.Model):
                 contaminants: " + str(contaminants))
 
         # Send files to cluster
-        remote_work_directory = ContaminerConfig().ssh_work_directory
+        remote_work_directory = \
+                apps.get_app_config('contaminer').ssh_work_directory
         input_file_ext = os.path.splitext(filepath)[1]
         remote_filepath = os.path.join(
                 remote_work_directory,
@@ -157,7 +158,7 @@ class Job(models.Model):
 
         # Run contaminer command
         contaminer_solve_command = os.path.join(
-                ContaminerConfig().ssh_contaminer_location,
+                apps.get_app_config('contaminer').ssh_contaminer_location,
                 "contaminer") + " solve"
         cd_command = 'cd "' + remote_work_directory + '"'
 
@@ -192,9 +193,10 @@ class Job(models.Model):
             log.warning("Archived. No modification will be recorded.")
             return
 
-        remote_work_directory = ContaminerConfig().ssh_work_directory
+        remote_work_directory = \
+                apps.get_app_config('contaminer').ssh_work_directory
         remote_contaminer_command = os.path.join(
-                ContaminerConfig().ssh_contaminer_location,
+                apps.get_app_config('contaminer').ssh_contaminer_location,
                 "contaminer") + " job_status"
         remote_filename = os.path.join(
                 remote_work_directory,
@@ -251,7 +253,7 @@ class Job(models.Model):
             raise RuntimeError("Job should be submitted first.")
 
         remote_work_dirname = os.path.join(
-                ContaminerConfig().ssh_work_directory,
+                apps.get_app_config('contaminer').ssh_work_directory,
                 self.get_filename(suffix = '')
                 )
         remote_results_filename = os.path.join(

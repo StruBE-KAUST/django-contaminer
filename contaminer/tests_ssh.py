@@ -35,7 +35,7 @@ class SSHChannelTestCase(TestCase):
     """
         Test the correct communication with the cluster
     """
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.' \
             + 'set_missing_host_key_policy')
     @mock.patch('contaminer.ssh_tools.paramiko.AutoAddPolicy')
@@ -56,7 +56,7 @@ class SSHChannelTestCase(TestCase):
         sshChannel.__get_config__()
         mock_paramiko_set_policy.assert_called_once_with("AutoAddPolicy")
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     def test_configure_uses_cache_results(self, mock_config):
         sshChannel = SSHChannel()
         return_value = mock.MagicMock()
@@ -70,7 +70,7 @@ class SSHChannelTestCase(TestCase):
         sshChannel.__get_config__()
         mock_config.assert_called_once()
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     def test_configure_returns_expected_results(self, mock_config):
         sshChannel = SSHChannel()
         return_value = mock.MagicMock()
@@ -87,7 +87,7 @@ class SSHChannelTestCase(TestCase):
         self.assertEqual(sshconfig['password'], "password")
         self.assertEqual(sshconfig['key_filename'], "identityfile")
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     def test_configure_returns_expected_cached_results(self, mock_config):
         sshChannel = SSHChannel()
         return_value = mock.MagicMock()
@@ -105,7 +105,7 @@ class SSHChannelTestCase(TestCase):
         self.assertEqual(sshconfig['password'], "password")
         self.assertEqual(sshconfig['key_filename'], "identityfile")
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.connect')
     def test_connect_takes_configuration(self, mock_paramiko, mock_config):
         sshChannel = SSHChannel()
@@ -131,7 +131,7 @@ class SSHChannelTestCase(TestCase):
         sshChannel2 = sshChannel.__enter__()
         self.assertEqual(sshChannel, sshChannel2)
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.exec_command')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.connect')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.close')
@@ -149,7 +149,7 @@ class SSHChannelTestCase(TestCase):
         sshChannel.get_contabase()
         self.assertTrue(mock_close.called)
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.exec_command')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.connect')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.close')
@@ -170,7 +170,7 @@ class SSHChannelTestCase(TestCase):
             pass
         self.assertTrue(mock_close.called)
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.exec_command')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.connect')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.close')
@@ -189,7 +189,7 @@ class SSHChannelTestCase(TestCase):
         mock_command.assert_called_once_with(
             "sh /home/user/ContaMiner/contaminer display")
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.exec_command')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.connect')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.close')
@@ -207,7 +207,7 @@ class SSHChannelTestCase(TestCase):
         answer = sshChannel.get_contabase()
         self.assertEqual(answer, "2")
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.exec_command')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.connect')
     @mock.patch('contaminer.ssh_tools.paramiko.SSHClient.close')
@@ -329,7 +329,7 @@ class SFTPChannelTestCase(TestCase):
         sftpChannel.send_file("foo.txt", "/remote/dir")
         client.put.called_once_with("foo.txt", "/remote/dir/foo.txt")
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.ssh_tools.SFTPChannel.send_file')
     def test_upload_calls_send_with_good_params(self, mock_send, mock_config):
         config = mock.MagicMock()
@@ -403,7 +403,7 @@ class SFTPChannelTestCase(TestCase):
         mock_client.get.called_once_with("/remote/dir/foo.txt",
                 '/local/dir/bar.txt')
 
-    @mock.patch('contaminer.ssh_tools.ContaminerConfig')
+    @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.ssh_tools.SFTPChannel.get_file')
     def test_get_from_calls_get_file_with_good_params(self, mock_get, mock_config):
         config = mock.MagicMock()

@@ -33,7 +33,7 @@ class ContaminerConfig(AppConfig):
     name = 'contaminer'
     verbose_name = 'ContaMiner'
 
-    def __init__(self):
+    def ready(self):
         log = logging.getLogger(__name__)
         log.debug("Entering function")
 
