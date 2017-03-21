@@ -1486,6 +1486,17 @@ class JobTestCase(TestCase):
         self.assertEqual(str(job), str(id) + ' (me@example.com) New')
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
+    def test_Job_does_not_connect_to_cluster(self, mock_update):
+        # Avoid the connection when displaying for performance purpose
+        job = Job.objects.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        id = job.id
+        s = str(job)
+        self.assertFalse(mock_update.called)
+
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
     def test_status_gives_good_result(self, mock__):
         job = Job.objects.create(
                 name = "test",

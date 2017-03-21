@@ -87,15 +87,6 @@ class Job(models.Model):
 
     def get_status(self):
         """ Gives the status of the job as a string """
-        # Return cached result if no improvement is possible
-        if self.status_error:
-            return "Error"
-        if self.status_complete:
-            return "Complete"
-
-        if not self.status_archived:
-            self.update_status()
-
         if self.status_error:
             return "Error"
         if self.status_complete:
