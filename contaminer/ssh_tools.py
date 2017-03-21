@@ -173,6 +173,7 @@ class SFTPChannel(SSHChannel):
 
         with self as sftpClient:
             log.info("Send " + str(filename) + " to " + str(remote_filename))
+            sftpClient.mkdir(remote_directory)
             sftpClient.put(filename, remote_filename, confirm = True)
 
         log.debug("Exiting function")
