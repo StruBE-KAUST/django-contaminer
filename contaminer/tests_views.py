@@ -475,3 +475,38 @@ class SubmitJobViewTestCase(TestCase):
                 )
 
         self.assertEqual(response.status_code, 302)
+
+    @mock.patch('contaminer.views.Job.submit')
+    def test_post_accept_AnonymousUser(self, mock_submit):
+        ContaBase.objects.create()
+        contabase = ContaBase.get_current()
+        category = Category.objects.create(
+                number = 1,
+                name = "Cat1",
+                contabase = contabase,
+                )
+        contaminant1 = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        contaminant2 = Contaminant.objects.create(
+                uniprot_id = "P0AA25",
+                category = category,
+                short_name = "TESTOBS",
+                long_name = "View testing obs",
+                sequence = "ABCDEFOBS",
+                organism = "Mario obs",
+                )
+
+        try:
+            response = self.client.post(
+                    reverse('ContaMiner:submit'),
+                    self.post_data,
+                    )
+        except ValueError as e:
+            self.fail("ValueError raised: " + str(e))
+

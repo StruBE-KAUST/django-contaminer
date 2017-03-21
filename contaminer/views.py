@@ -164,6 +164,8 @@ def newjob_handler(request):
     # Define user and confidentiality
     try:
         user = request.user
+        if not user.is_authenticated():
+            user = None
     except AttributeError:
         user = None
     # If choosen, define confidential
