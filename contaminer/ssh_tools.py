@@ -96,8 +96,17 @@ class SSHChannel(paramiko.SSHClient):
                 apps.get_app_config('contaminer').ssh_contaminer_location,
                 "contaminer") \
                 + " display"
+        stdout = self.exec_command(command)
+
+        return stdout
+
+    def exec_command(self, command):
+        """ Open a channel then execute command on remote dest """
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
         with self as sshChannel:
-            (_, stdout, stderr) = sshChannel.exec_command(command)
+            (_, stdout, stderr) = super(SSHChannel, self).exec_command(command)
             stdout = stdout.read()
             stderr = stderr.read()
 
@@ -173,8 +182,11 @@ class SFTPChannel(SSHChannel):
 
         with self as sftpClient:
             log.info("Send " + str(filename) + " to " + str(remote_filename))
-            sftpClient.mkdir(remote_directory)
-            sftpClient.put(filename, remote_filename, confirm = True)
+            try:
+                sftpClient.put(filename, remote_filename, confirm = True)
+            except IOError as e:
+                log.warning("Unable to upload file.")
+                raise e
 
         log.debug("Exiting function")
 
