@@ -23,10 +23,10 @@
 from django.conf.urls import url
 from django.conf.urls import include
 from django.views.generic.base import RedirectView
+from django.views.generic import TemplateView
 from . import views
 
 urlpatterns = [
-        url(r'^download$', views.download, name='download'),
         url(r'^api/', include('contaminer.urls_api', namespace="API")),
         url(r'^contabase.json$', views.ContaBaseJSONView.as_view(),
             name='contabase.json'),
@@ -41,4 +41,7 @@ urlpatterns = [
             name='home'),
         url(r'^display/(?P<jobid>\d+)$', views.DisplayJobView.as_view(),
             name='display'),
+        url(r'^download$', TemplateView.as_view(
+                template_name = "ContaMiner/download.html"),
+            name='download'),
 ]
