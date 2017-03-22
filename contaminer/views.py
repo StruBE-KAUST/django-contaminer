@@ -249,68 +249,47 @@ def newjob_handler(request):
     return response_data
 
 
-def result(request, jobid):
-    """ Display the result of a job """
-    log = logging.getLogger(__name__)
-    log.debug("Entering function")
+class DisplayJobView(TemplateView):
+    def get(self, request, jobid):
+        """ Display the result of a job """
+        log = logging.getLogger(__name__)
+        log.debug("Entering function")
 
-    job = get_object_or_404(Job, pk = jobid)
+        job = get_object_or_404(Job, pk = jobid)
 
-    if job.confidential and request.user != job.author:
-        messages.error(request, "This job is confidential. You are not "\
-                + "allowed to see the results.")
-        result = HttpResponseRedirect(reverse('ContaMiner:home'))
+        if job.confidential and request.user != job.author:
+            messages.error(request, "This job is confidential. You are not "\
+                    + "allowed to see the results.")
+            result = HttpResponseRedirect(reverse('ContaMiner:home'))
+            log.debug("Exiting function")
+            return result
+
+        if not job.status_complete:
+            messages.warning(request, "This job is not yet complete.")
+            result = HttpResponseRedirect(reverse('ContaMiner:home'))
+            log.debug("Exiting function")
+            return result
+
+        # Retrieve best tasks for this
+        best_tasks = job.get_best_tasks()
+
+        # If a positive result is found for a pack with low coverage or low identity
+        # display a message to encourage publication
+        for task in best_tasks:
+            if task.percent > 97:
+                coverage = task.pack.coverage
+                identity = task.pack.identity
+
+                if coverage < 85 or identity < 80:
+                    messages.info(request, "Your dataset gives a positive result "\
+                            + "for a contaminant for which no identical "\
+                            + "model is available in the PDB.\nYou could deposit "\
+                            + "or publish this structure.")
+
+        result = render(request, 'ContaMiner/result.html',
+                {'job': job, 'tasks': best_tasks})
         log.debug("Exiting function")
         return result
-
-    if not job.finished:
-        messages.warning(request, "This job is not yet complete.")
-        result = HttpResponseRedirect(reverse('ContaMiner:home'))
-        log.debug("Exiting function")
-        return result
-
-    # Retrieve all tasks for this job
-    tasks = job.task_set.all()
-
-    # Keep only the best pack for each contaminant
-    best_tasks = []
-    for task in tasks:
-        # co_tasks are tasks for the same contaminant and same job
-        # (different pack and different space group)
-        co_tasks = [e_task
-                for e_task in best_tasks
-                if e_task.pack.contaminant == task.pack.contaminant]
-        if co_tasks:
-            # Can only be one pack
-            co_task = co_tasks[0]
-            if co_task.error or co_task.q_factor < task.q_factor:
-                task_index = best_tasks.index(co_task)
-                best_tasks[task_index] = task
-
-        else:
-            best_tasks.append(task)
-
-    log.debug("Selected tasks : " + str(best_tasks))
-
-    # If a positive result is found for a pack with low coverage or low identity
-    # display a message to encourage publication
-    for task in best_tasks:
-        if task.percent > 97:
-            coverage = task.pack.coverage
-
-            models = task.pack.model_set.all()
-            identity = sum([model.identity for model in models]) / len(models)
-
-            if coverage < 85 or identity < 90:
-                messages.info(request, "Your dataset gives a positive result "\
-                        + "for a contaminant for which no identical "\
-                        + "model is available in the PDB.\nYou could deposit "\
-                        + "or publish this structure.")
-
-    result = render(request, 'ContaMiner/result.html',
-            {'job': job, 'tasks': best_tasks})
-    log.debug("Exiting function")
-    return result
 
 
 class ContaBaseView(TemplateView):

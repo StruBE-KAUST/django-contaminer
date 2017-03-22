@@ -26,7 +26,6 @@ from django.views.generic.base import RedirectView
 from . import views
 
 urlpatterns = [
-        url(r'^(?P<jobid>\d+)$', views.result, name='result'),
         url(r'^download$', views.download, name='download'),
         url(r'^api/', include('contaminer.urls_api', namespace="API")),
         url(r'^contabase$', views.ContaBaseView.as_view(),
@@ -40,4 +39,6 @@ urlpatterns = [
             permanent = False,
             ),
             name='home'),
+        url(r'^display/(?P<jobid>\d+)$', views.DisplayJobView.as_view(),
+            name='display'),
 ]

@@ -26,11 +26,14 @@
 from django.test import TestCase
 from django.test import RequestFactory
 from django.test import Client
+from django.contrib.auth.models import User
 from django.urls import reverse
 import mock
 
+
 from .views import ContaBaseView
 from .views import SubmitJobView
+from .views import DisplayJobView
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contabase import Contaminant
@@ -510,3 +513,128 @@ class SubmitJobViewTestCase(TestCase):
         except ValueError as e:
             self.fail("ValueError raised: " + str(e))
 
+
+class DisplayJobViewTestCase(TestCase):
+    """
+        Test the DisplayJobView
+    """
+    def setUp(self):
+        self.client = Client()
+        self.factory = RequestFactory()
+
+        self.contabase = ContaBase.objects.create()
+        self.category = Category.objects.create(
+                contabase = self.contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        self.contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = self.category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        self.pack = Pack.objects.create(
+                contaminant = self.contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+        self.job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        self.task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-1-2-1",
+                percent = 40,
+                q_factor = 0.53,
+                )
+
+    def test_smoke(self):
+        self.job.status_complete = True
+        self.job.save()
+        response = self.client.get(
+                reverse('ContaMiner:display', args = [self.job.id]),
+                )
+        self.assertEqual(response.status_code, 200)
+
+    def test_do_not_show_confidential_job(self):
+        self.job.confidential = True
+        user = User.objects.create_user(
+                username = 'SpongeBob',
+                email = 'bob@sea.com',
+                password = 'squarepants',
+                )
+        self.job.author = user
+        self.job.save()
+
+        response = self.client.get(
+                reverse('ContaMiner:display', args = [self.job.id]),
+                follow = True,
+                )
+        messages = response.context['messages']
+        self.assertTrue(len(messages) >= 1)
+        self.assertTrue(any(['confidential' in str(e) for e in messages]))
+
+    def test_show_confidential_if_logged_in_good_user(self):
+        self.job.confidential = True
+        user = User.objects.create_user(
+                username = 'SpongeBob',
+                email = 'bob@sea.com',
+                password = 'squarepants',
+                )
+        self.job.author = user
+        self.job.save()
+
+        self.client.login(username = 'SpongeBob', password = 'squarepants')
+        response = self.client.get(
+                reverse('ContaMiner:display', args = [self.job.id]),
+                follow = True,
+                )
+        messages = response.context['messages']
+        self.assertTrue(all(['confidential' not in str(e) for e in messages]))
+
+    def test_no_show_confidential_if_logged_in_wrong_user(self):
+        self.job.confidential = True
+        user = User.objects.create_user(
+                username = 'SpongeBob',
+                email = 'bob@sea.com',
+                password = 'squarepants',
+                )
+        user2 = User.objects.create_user(
+                username = 'Alice',
+                email = 'alice@example.com',
+                password = 'password',
+                )
+        self.job.author = user
+        self.job.save()
+
+        self.client.login(username = 'Alice', password = 'password')
+        response= self.client.get(
+                reverse('ContaMiner:display', args = [self.job.id]),
+                follow = True,
+                )
+
+        messages = response.context['messages']
+        self.assertTrue(len(messages) >= 1)
+        self.assertTrue(any(['confidential' in str(e) for e in messages]))
+
+    def test_404_on_non_existing_job(self):
+        response = self.client.get(
+                reverse('ContaMiner:display', args = [200]),
+                )
+        self.assertEqual(response.status_code, 404)
+
+    def test_no_display_if_non_complete(self):
+        self.job.status_complete = False
+        self.job.save()
+        response = self.client.get(
+                reverse('ContaMiner:display', args = [self.job.id]),
+                follow = True,
+                )
+        messages = response.context['messages']
+        self.assertTrue(len(messages) >= 1)
+        self.assertTrue(any(['complete' in str(e) for e in messages]))
