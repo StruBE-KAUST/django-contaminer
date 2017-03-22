@@ -28,10 +28,10 @@ from . import views
 urlpatterns = [
         url(r'^download$', views.download, name='download'),
         url(r'^api/', include('contaminer.urls_api', namespace="API")),
+        url(r'^contabase.json$', views.ContaBaseJSONView.as_view(),
+            name='contabase.json'),
         url(r'^contabase$', views.ContaBaseView.as_view(),
             name='contabase'),
-        url(r'^contabase.xml$', views.ContaBaseXMLView.as_view(),
-            name='contabase.xml'),
         url(r'^submit$', views.SubmitJobView.as_view(),
             name='submit'),
         url(r'^$', RedirectView.as_view(

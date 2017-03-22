@@ -40,6 +40,7 @@ from .models.contaminer import Job
 from .models.contaminer import Task
 
 from .views_tools import newjob_handler
+from . import views_api
 
 
 class SubmitJobView(TemplateView):
@@ -203,12 +204,12 @@ class ContaBaseView(TemplateView):
         return result
 
 
-class ContaBaseXMLView(TemplateView):
+class ContaBaseJSONView(TemplateView):
     """
-        Views accessible through contabase.xml
+        Views accessible through contabase.json
     """
     def get(self, request):
-        pass
+        return views_api.ContaBaseView.as_view()(request)
 
 
 def download(request):
