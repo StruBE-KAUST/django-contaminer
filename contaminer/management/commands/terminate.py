@@ -24,7 +24,7 @@ import re
 import logging
 
 from django.core.management.base import BaseCommand, CommandError
-from contaminer.models import Job
+from contaminer.models.contaminer import Job
 
 
 class Command(BaseCommand):
@@ -37,17 +37,19 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         log = logging.getLogger(__name__)
-        log.debug("Entering function")
+        log.debug("Enter")
 
         for job_id in options['job_id']:
             log.info("Complete job : " + str(job_id))
 
             try:
                 job = Job.objects.get(pk=job_id)
-                job.terminate()
+                job.update()
             except (Job.DoesNotExist, RuntimeError):
                 raise CommandError(
                 'Job "%s" does not exist or is not completed.' % job_id)
 
             log.info("Job " + str(job_id) + " complete")
             self.stdout.write('Successfully terminate job number "%s"' % job_id)
+
+        log.debug("Exit")
