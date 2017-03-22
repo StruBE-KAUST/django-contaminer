@@ -122,12 +122,7 @@ class SSHChannel(paramiko.SSHClient):
 
         command = "cat " + str(remote_path)
         with self as sshChannel:
-            (_, stdout, stderr) = sshChannel.exec_command(command)
-            stdout = stdout.read()
-            stderr = stderr.read()
-
-        if stderr is not '':
-            raise RuntimeError(stderr)
+            stdout = sshChannel.exec_command(command)
 
         return stdout
 

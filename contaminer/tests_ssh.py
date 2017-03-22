@@ -225,10 +225,11 @@ class SSHChannelTestCase(TestCase):
         with self.assertRaisesMessage(RuntimeError, "3"):
             answer = sshChannel.get_contabase()
 
+    @mock.patch('contaminer.ssh_tools.super')
     @mock.patch('contaminer.ssh_tools.SSHChannel.__enter__')
     @mock.patch('contaminer.ssh_tools.SSHChannel.__exit__')
-    def test_read_file_raises_exception_with_stderr(self,
-            mock_exit, mock_enter):
+    def test_exec_command_raises_exception_with_stderr(self,
+            mock_exit, mock_enter, mock_super):
         mock_ssh = mock.MagicMock()
         stdout = mock.MagicMock()
         stdout.read.return_value = "2"
@@ -236,9 +237,10 @@ class SSHChannelTestCase(TestCase):
         stderr.read.return_value = "3"
         mock_ssh.exec_command.return_value = (0, stdout, stderr)
         mock_enter.return_value = mock_ssh
+        mock_super.return_value = mock_ssh
         sshChannel = SSHChannel()
         with self.assertRaisesMessage(RuntimeError, "3"):
-            sshChannel.read_file("foo")
+            sshChannel.exec_command("foo")
 
     @mock.patch('contaminer.ssh_tools.SSHChannel.__enter__')
     @mock.patch('contaminer.ssh_tools.SSHChannel.__exit__')
@@ -255,17 +257,15 @@ class SSHChannelTestCase(TestCase):
         _ = sshChannel.read_file("/home/foo/bar.txt")
         mock_ssh.exec_command.assert_called_once_with("cat /home/foo/bar.txt")
 
+    @mock.patch('contaminer.ssh_tools.super')
     @mock.patch('contaminer.ssh_tools.SSHChannel.__enter__')
     @mock.patch('contaminer.ssh_tools.SSHChannel.__exit__')
     def test_read_file_gives_correct_output(self,
-            mock_exit, mock_enter):
+            mock_exit, mock_enter, mock_super):
         mock_ssh = mock.MagicMock()
-        stdout = mock.MagicMock()
-        stdout.read.return_value = "2"
-        stderr = mock.MagicMock()
-        stderr.read.return_value = ""
-        mock_ssh.exec_command.return_value = (0, stdout, stderr)
+        mock_ssh.exec_command.return_value = '2'
         mock_enter.return_value = mock_ssh
+        mock_super = mock_ssh
         sshChannel = SSHChannel()
         out = sshChannel.read_file("/home/foo/bar.txt")
         self.assertEqual(out, "2")

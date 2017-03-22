@@ -210,27 +210,22 @@ class Job(models.Model):
 
         client = SSHChannel()
         log.debug("Execute command on remote host:\n" + command)
-        stdout, stderr = client.exec_command(command)
+        stdout = client.exec_command(command)
 
         log.debug("stdout: " + str(stdout))
-        log.debug("stderr: " + str(stderr))
-
-        if stderr is not "":
-            log.warning("Standard error is not empty : \n" + str(stderr))
-            raise RuntimeError(str(stderr))
 
         # Change state
         if "submitted" in stdout:
             self.status_submitted = True
             self.status_error = False
             if self.status_complete or self.status_running:
-                log.warning("Job states are not coherent.")
+                log.warning("Job status are not coherent.")
         elif "running" in stdout:
             self.status_submitted = True
             self.status_running = True
             self.status_error = False
             if self.status_complete:
-                log.warning("Job states are not coherent.")
+                log.warning("Job status are not coherent.")
         elif "complete" in stdout:
             self.status_submitted = True
             self.status_running = False
@@ -252,7 +247,7 @@ class Job(models.Model):
             log.warning("Archived. No modification will be recorded.")
             return
 
-        if not self.submitted:
+        if not self.status_submitted:
             raise RuntimeError("Job should be submitted first.")
 
         remote_work_dirname = os.path.join(

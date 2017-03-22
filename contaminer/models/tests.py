@@ -2159,27 +2159,27 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "test")
 
-        mock_client.exec_command.return_value = ("Job does not exist\n", "")
+        mock_client.exec_command.return_value = "Job does not exist\n"
         job.update_status()
         self.assertEqual(job.status_submitted, False)
         self.assertEqual(job.get_status(), "New")
 
-        mock_client.exec_command.return_value = ("Job is submitted\n", "")
+        mock_client.exec_command.return_value = "Job is submitted\n"
         job.update_status()
         self.assertEqual(job.status_submitted, True)
         self.assertEqual(job.get_status(), "Submitted")
 
-        mock_client.exec_command.return_value = ("Job is running\n", "")
+        mock_client.exec_command.return_value = "Job is running\n"
         job.update_status()
         self.assertEqual(job.status_running, True)
         self.assertEqual(job.get_status(), "Running")
 
-        mock_client.exec_command.return_value = ("Job is complete\n", "")
+        mock_client.exec_command.return_value = "Job is complete\n"
         job.update_status()
         self.assertEqual(job.status_complete, True)
         self.assertEqual(job.get_status(), "Complete")
 
-        mock_client.exec_command.return_value = ("Job encountered an error\n", "")
+        mock_client.exec_command.return_value = "Job encountered an error\n"
         job.update_status()
         self.assertEqual(job.status_error, True)
         self.assertEqual(job.get_status(), "Error")
@@ -2192,8 +2192,9 @@ class JobTestCase(TestCase):
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
         mock_CMConfig.return_value = mock_config
-        mock_client = mock.MagicMock()
-        mock_client.exec_command.return_value = ("", "error")
+        mock_client = mock.MagicMock(side_effect = RuntimeError())
+        property_mock = mock.PropertyMock(side_effect = RuntimeError)
+        mock_client.exec_command = property_mock
         mock_sshchannel.return_value = mock_client
         job = Job()
         job.create(
@@ -2218,7 +2219,7 @@ class JobTestCase(TestCase):
                 name = "test",
                 email = "me@example.com",
                 )
-        job.submitted = True
+        job.status_submitted = True
         job.save()
         job.update_tasks()
         expect_call = "/remote/dir/web_task_" + str(job.id) + "/results.txt"
@@ -2240,7 +2241,7 @@ class JobTestCase(TestCase):
                 name = "test",
                 email = "me@example.com",
                 )
-        job.submitted = True
+        job.status_submitted = True
         job.save()
         job.update_tasks()
         mock_task.update.assert_called_once_with(job, "line1")
@@ -2261,7 +2262,7 @@ class JobTestCase(TestCase):
                 name = "test",
                 email = "me@example.com",
                 )
-        job.submitted = True
+        job.status_submitted = True
         job.save()
         job.update_tasks()
         self.assertEqual(mock_task.update.call_count, 2)
