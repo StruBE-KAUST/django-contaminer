@@ -147,7 +147,10 @@ class Job(models.Model):
                 remote_work_directory,
                 self.get_filename(suffix = input_file_ext)
                 )
-        remote_contaminants = self.get_filename(suffix = 'txt')
+        remote_contaminants = os.path.join(
+                remote_work_directory,
+                self.get_filename(suffix = 'txt')
+                )
         client = SFTPChannel()
         client.send_file(filepath, remote_work_directory)
         client.write_file(remote_contaminants, contaminants)
