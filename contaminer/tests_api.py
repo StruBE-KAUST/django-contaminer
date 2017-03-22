@@ -1272,7 +1272,7 @@ class JobViewTestCase(TestCase):
         response = JobView.as_view()(request)
         self.assertEqual(response.status_code, 400)
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_200_on_good_input(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
         request = self.factory.post(
@@ -1284,7 +1284,7 @@ class JobViewTestCase(TestCase):
         response = JobView.as_view()(request)
         self.assertEqual(response.status_code, 200)
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_creates_correct_job(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
         request = self.factory.post(
@@ -1301,7 +1301,7 @@ class JobViewTestCase(TestCase):
                 name = 'Test',
                 )
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_submit_job(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
         request = self.factory.post(
@@ -1315,7 +1315,7 @@ class JobViewTestCase(TestCase):
         args, kwargs = self.mock_job_instance.submit.call_args
         self.assertEqual(args[1], "P0ACJ8\nP0AA25")
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_job_id(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
         request = self.factory.post(

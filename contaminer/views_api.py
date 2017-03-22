@@ -37,7 +37,7 @@ from .models.contabase import Contaminant
 from .models.contaminer import Job
 from .models.contaminer import Task
 
-from .views import newjob_handler
+from .views_tools import newjob_handler
 
 
 class ContaBaseView(TemplateView):

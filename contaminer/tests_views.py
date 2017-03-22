@@ -208,7 +208,7 @@ class SubmitJobViewTestCase(TestCase):
         self.assertTrue(len(messages) >= 1)
         self.assertTrue(any(['form' in str(e) for e in messages]))
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_message_fail_on_missing_file(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
 
@@ -249,7 +249,7 @@ class SubmitJobViewTestCase(TestCase):
         self.assertTrue(len(messages) >= 1)
         self.assertTrue(any(['form' in str(e) for e in messages]))
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_message_fail_on_missing_contaminants(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
 
@@ -291,7 +291,7 @@ class SubmitJobViewTestCase(TestCase):
         self.assertTrue(len(messages) >= 1)
         self.assertTrue(any(['contaminants' in str(e) for e in messages]))
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_message_success_on_good_input(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
 
@@ -330,7 +330,7 @@ class SubmitJobViewTestCase(TestCase):
         self.assertTrue(len(messages) >= 1)
         self.assertTrue(any(['submitted' in str(e) for e in messages]))
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_creates_correct_job(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
 
@@ -369,7 +369,7 @@ class SubmitJobViewTestCase(TestCase):
         self.assertEqual(kwargs['email'], "you@example.com")
         self.assertEqual(kwargs['name'], "Test")
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_submit_good_parameters(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
 
@@ -408,7 +408,7 @@ class SubmitJobViewTestCase(TestCase):
         with open(data_f, 'r') as f:
             self.assertEqual(f.read(), "Foooo")
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_submit_job(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
 
@@ -444,7 +444,7 @@ class SubmitJobViewTestCase(TestCase):
 
         self.assertTrue(self.mock_job_instance.submit.called)
 
-    @mock.patch('contaminer.views.Job')
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_redirect(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
 
@@ -479,7 +479,7 @@ class SubmitJobViewTestCase(TestCase):
 
         self.assertEqual(response.status_code, 302)
 
-    @mock.patch('contaminer.views.Job.submit')
+    @mock.patch('contaminer.views_tools.Job.submit')
     def test_post_accept_AnonymousUser(self, mock_submit):
         ContaBase.objects.create()
         contabase = ContaBase.get_current()
