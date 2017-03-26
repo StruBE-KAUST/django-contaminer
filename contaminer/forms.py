@@ -51,7 +51,7 @@ class SubmitJobForm(forms.Form):
 
         # Pop user if given
         user = None
-        if kwargs.has_key("user"):
+        if "user" in kwargs:
             user = kwargs.pop("user")
 
         super(SubmitJobForm, self).__init__(*args, **kwargs)

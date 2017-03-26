@@ -38,7 +38,7 @@ def newjob_handler(request):
     log.debug("Entering function")
 
     # Check if file is uploaded
-    if not request.FILES.has_key('diffraction_data'):
+    if not "diffraction_data" in request.FILES:
         response_data = {
                 'error': True,
                 'message': 'Missing diffraction data file',
@@ -70,7 +70,7 @@ def newjob_handler(request):
     log.debug("Conf : " + str(confidential))
 
     # Define job name
-    if request.POST.has_key('name') and request.POST['name'] :
+    if "name" in request.POST and request.POST['name'] :
         name = request.POST['name']
     else:
         name = request.FILES['diffraction_data'].name
