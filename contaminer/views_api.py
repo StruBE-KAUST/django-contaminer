@@ -277,6 +277,13 @@ class JobStatusView(TemplateView):
         except ObjectDoesNotExist:
             raise Http404()
 
+        if job.confidential:
+            response_data = {
+                    'error': True,
+                    'message': 'You are not allowed to see this job',
+                    }
+            return JsonResponse(response_data, status = 403)
+
         response_data = {
                 'id': job.id,
                 'status': job.get_status(),
@@ -300,6 +307,13 @@ class SimpleResultsView(TemplateView):
         except ObjectDoesNotExist:
             raise Http404()
 
+        if job.confidential:
+            response_data = {
+                    'error': True,
+                    'message': 'You are not allowed to see this job',
+                    }
+            return JsonResponse(response_data, status = 403)
+
         response_data = job.to_simple_dict()
 
         log.debug("Exit")
@@ -319,6 +333,13 @@ class DetailedResultsView(TemplateView):
             job = Job.objects.get(id = job_id)
         except ObjectDoesNotExist:
             raise Http404()
+
+        if job.confidential:
+            response_data = {
+                    'error': True,
+                    'message': 'You are not allowed to see this job',
+                    }
+            return JsonResponse(response_data, status = 403)
 
         response_data = job.to_detailed_dict()
 
@@ -360,6 +381,13 @@ class GetFinalFilesView(TemplateView):
                     'message': 'Job does not exist',
                     }
             return JsonResponse(response_data, status = 404)
+
+        if job.confidential:
+            response_data = {
+                    'error': True,
+                    'message': 'You are not allowed to see this job',
+                    }
+            return JsonResponse(response_data, status = 403)
 
         try:
             task = Task.objects.get(

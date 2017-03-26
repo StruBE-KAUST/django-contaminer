@@ -1349,7 +1349,7 @@ class JobStatusTestViewCase(TestCase):
             response = JobStatusView.as_view()(request, 25)
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
-    def test_job_status_returns_good_status(self, mock__):
+    def test_jobstatus_returns_good_status(self, mock__):
         request = self.factory.get(
                 reverse('ContaMiner:API:job_status', args = [self.job.id])
                 )
@@ -1395,6 +1395,29 @@ class JobStatusTestViewCase(TestCase):
                     'id': self.job.id,
                     'status': 'Error',
                 })
+
+    def test_jobstatus_do_not_display_confidential_job(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:job_status', args = [self.job.id])
+                )
+        response = JobStatusView.as_view()(request, self.job.id)
+        self.assertJSONEqual(response.content,
+                {
+                    'id': self.job.id,
+                    'status': 'New',
+                })
+
+        self.job.status_submitted = True
+        self.job.confidential = True
+        self.job.save()
+        response = JobStatusView.as_view()(request, self.job.id)
+
+        self.assertJSONEqual(response.content,
+                {
+                    'error': True,
+                    'message': 'You are not allowed to see this job',
+                })
+        self.assertEqual(response.status_code, 403)
 
 
 class SimpleResultsViewTestCase(TestCase):
@@ -1462,6 +1485,22 @@ class SimpleResultsViewTestCase(TestCase):
                     ]
                 })
 
+    def test_simpleresult_do_not_display_confidential_job(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        self.job.confidential = True
+        self.job.save()
+        response = SimpleResultsView.as_view()(request, self.job.id)
+
+        self.assertJSONEqual(response.content,
+                {
+                    'error': True,
+                    'message': 'You are not allowed to see this job',
+                })
+        self.assertEqual(response.status_code, 403)
+
+
 
 class DetailedResultsViewTestCase(TestCase):
     """
@@ -1514,6 +1553,7 @@ class DetailedResultsViewTestCase(TestCase):
         request = self.factory.get(
                 reverse('ContaMiner:API:detailed_result', args = [25])
                 )
+        self.job.confidential = True
         response = DetailedResultsView.as_view()(request, self.job.id)
         self.assertJSONEqual(response.content,
                 {
@@ -1529,6 +1569,21 @@ class DetailedResultsViewTestCase(TestCase):
                         },
                     ]
                 })
+
+    def test_detailed_result_do_not_display_confidential_job(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:detailed_result', args = [25])
+                )
+        self.job.confidential = True
+        self.job.save()
+        response = DetailedResultsView.as_view()(request, self.job.id)
+
+        self.assertJSONEqual(response.content,
+                {
+                    'error': True,
+                    'message': 'You are not allowed to see this job',
+                })
+        self.assertEqual(response.status_code, 403)
 
 
 class GetFinalFilesViewTestCase(TestCase):
@@ -1687,3 +1742,24 @@ class GetFinalFilesViewTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url,
             "/static/web_task_" + str(self.job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
+
+    def test_do_not_display_if_confidential(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': self.job.id,
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-1-2-1',
+                    'pack_nb': 1,
+                },
+                follow = False,
+            )
+        self.job.confidential = True
+        self.job.save()
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertJSONEqual(response.content,
+                {
+                    'error': True,
+                     'message': 'You are not allowed to see this job',
+                 })
+        self.assertEqual(response.status_code, 403)
