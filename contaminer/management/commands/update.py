@@ -39,6 +39,8 @@ class Command(BaseCommand):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
+        self.stdout.write("Update ContaBase. Please wait a minute...")
+
         try:
             ContaBase.update()
         except ValidationError as e:
