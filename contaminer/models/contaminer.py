@@ -29,9 +29,11 @@
 import os
 import re
 import datetime
+import time
 import paramiko
 import logging
 import errno
+import threading
 
 from django.apps import apps
 from django.db import models
@@ -295,7 +297,7 @@ class Job(models.Model):
 
         if self.status_archived:
             pass
-        elif time.time() - start_time < 86400:
+        elif time.time() - start_time > 86400:
             self.status_error = True
             self.save()
         else:

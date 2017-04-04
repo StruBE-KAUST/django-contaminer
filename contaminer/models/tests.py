@@ -33,6 +33,7 @@ import mock
 import lxml.etree as ET
 import json
 import datetime
+import time
 
 from .contabase import ContaBase
 from .contabase import Category
@@ -1478,7 +1479,7 @@ class JobTestCase(TestCase):
     """
     def setUp(self):
         self.patcher = mock.patch('contaminer.models.contaminer.Job.update_thread')
-        self.mock_updating_thread = self.patcher.start()
+        self.mock_update_thread = self.patcher.start()
         self.addCleanup(self.patcher.stop)
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
@@ -2063,6 +2064,28 @@ class JobTestCase(TestCase):
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
+    def test_submit_launches_background_updater(self, mock_sftpchannel, mock_remove,
+            mock_CMConfig, mock__):
+        mock_config = mock.MagicMock()
+        mock_config.ssh_work_directory = "/remote/dir"
+        mock_config.ssh_contaminer_location = "/remote/CM"
+        mock_CMConfig.return_value = mock_config
+        mock_client = mock.MagicMock()
+        mock_client.exec_command.return_value = ("", "")
+        mock_sftpchannel.return_value = mock_client
+        job = Job()
+        job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job = Job.objects.get(name = "test")
+        job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
+        self.assertTrue(self.mock_update_thread.called)
+
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
+    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
+    @mock.patch('contaminer.models.contaminer.os.remove')
+    @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_remove_local_file(self, mock_sftpchannel, mock_remove,
             mock_CMConfig, mock__):
         mock_config = mock.MagicMock()
@@ -2201,12 +2224,10 @@ class JobTestCase(TestCase):
         property_mock = mock.PropertyMock(side_effect = RuntimeError)
         mock_client.exec_command = property_mock
         mock_sshchannel.return_value = mock_client
-        job = Job()
-        job.create(
+        job = Job.create(
                 name = "test",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
         with self.assertRaises(RuntimeError):
             job.update_status()
 
@@ -2556,6 +2577,76 @@ class JobTestCase(TestCase):
         self.assertEqual(mock_task.call_count, 2)
         mock_task.assert_any_call(pack.contaminant)
         mock_task.assert_any_call(contaminant2)
+
+    @mock.patch('contaminer.models.contaminer.Job.update_thread')
+    @mock.patch('contaminer.models.contaminer.Job.update')
+    def test_update_thread_updates_job(self, mock_update, mock_thread):
+        self.patcher.stop()
+        try:
+            job = Job.create(
+                    name = "test",
+                    email = "me@example.com,",
+                    )
+            job.update_thread()
+            self.assertTrue(mock_update.called)
+        finally:
+            self.mock_update_thread = self.patcher.start()
+
+    @mock.patch('contaminer.models.contaminer.threading')
+    @mock.patch('contaminer.models.contaminer.Job.update')
+    def test_update_thread_re_runs_after_delay(self, mock_update,
+            mock_threading):
+        self.patcher.stop()
+        mock_timer = mock.MagicMock()
+        mock_threading.Timer.return_value = mock_timer
+        try:
+            job = Job.create(
+                    name = "test",
+                    email = "me@example.com,",
+                    )
+            job.update_thread()
+            self.assertTrue(mock_timer.start.called)
+            self.assertEqual(mock_threading.Timer.call_count, 1)
+            self.assertTrue(mock_threading.Timer.call_args[0][0] > 0)
+        finally:
+            self.mock_update_thread = self.patcher.start()
+
+    @mock.patch('contaminer.models.contaminer.threading')
+    @mock.patch('contaminer.models.contaminer.Job.update')
+    def test_update_thread_stops_after_one_day(self, mock_update,
+            mock_threading):
+        self.patcher.stop()
+        mock_timer = mock.MagicMock()
+        mock_threading.Timer.return_value = mock_timer
+        try:
+            job = Job.create(
+                    name = "test",
+                    email = "me@example.com,",
+                    )
+            job.update_thread(time.time() - 86400)
+            self.assertFalse(mock_timer.start.called)
+        finally:
+            self.mock_update_thread = self.patcher.start()
+
+    @mock.patch('contaminer.models.contaminer.threading')
+    @mock.patch('contaminer.models.contaminer.Job.update')
+    def test_update_thread_stops_when_archived(self, mock_update,
+            mock_threading):
+        self.patcher.stop()
+        mock_timer = mock.MagicMock()
+        mock_threading.Timer.return_value = mock_timer
+        try:
+            job = Job.create(
+                    name = "test",
+                    email = "me@example.com,",
+                    )
+            job.update_thread(time.time() - 86400)
+            job.status_archived = True
+            job.save()
+            job.update_thread()
+            self.assertFalse(mock_timer.start.called)
+        finally:
+            self.mock_update_thread = self.patcher.start()
 
 
 class TaskTestCase(TestCase):
