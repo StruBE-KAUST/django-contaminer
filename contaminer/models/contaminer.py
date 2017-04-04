@@ -184,6 +184,9 @@ class Job(models.Model):
         self.status_submitted = True
         self.save()
 
+        # Start updating scheduler
+        self.update_thread()
+
         log.debug("Job " + str(self.id) + " submitted")
         log.debug("Exiting function")
 
@@ -283,6 +286,23 @@ class Job(models.Model):
             self.save()
 
         log.debug("Exit")
+
+    def update_thread(self, start_time = None):
+        """ Periodically update the job """
+        if start_time is None:
+            start_time = time.time()
+        self.update()
+
+        if self.status_archived:
+            pass
+        elif time.time() - start_time < 86400:
+            self.status_error = True
+            self.save()
+        else:
+            t = threading.Timer(120, self.update_thread, start_time)
+            t.daemon = True
+            t.name = 'UpdateJobThread'
+            t.start()
 
     def to_detailed_dict(self):
         """ Return a dictionary of the fields """

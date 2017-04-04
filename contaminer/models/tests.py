@@ -1476,6 +1476,11 @@ class JobTestCase(TestCase):
     """
         Test the Job model
     """
+    def setUp(self):
+        self.patcher = mock.patch('contaminer.models.contaminer.Job.update_thread')
+        self.mock_updating_thread = self.patcher.start()
+        self.addCleanup(self.patcher.stop)
+
     @mock.patch('contaminer.models.contaminer.Job.update_status')
     def test_Job_is_well_displayed(self, mock__):
         job = Job.objects.create(
