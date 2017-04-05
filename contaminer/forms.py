@@ -105,7 +105,7 @@ class SubmitJobForm(forms.Form):
 
             title = "<h3 onclick=\"toggle_all('" \
                     + text.slugify(category) + "')\">" \
-                    + str(category) \
+                    + category.name \
                     + " <button type=\"button\" class=\"btn btn-primary "\
                     + "btn-xs\">" \
                     + "Toggle all" \
