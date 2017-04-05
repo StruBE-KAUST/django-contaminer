@@ -45,6 +45,8 @@ from .models.contaminer import Job
 from .models.contaminer import Task
 
 import tempfile
+import shutil
+import os
 
 
 class ContaBaseViewTestCase(TestCase):
@@ -147,6 +149,12 @@ class SubmitJobViewTestCase(TestCase):
     """
         Test the views related to the submit form
     """
+    def clean_tmp_dir(self):
+        try:
+            shutil.rmtree(self.test_file.name.split('.')[0])
+        except OSError:
+            pass
+
     def setUp(self):
         self.client = Client()
         self.factory = RequestFactory()
@@ -163,6 +171,14 @@ class SubmitJobViewTestCase(TestCase):
         self.mock_job_instance = mock.MagicMock()
         self.mock_job_instance.id = 666
         self.mock_job_instance.get_filename.return_value = "test_file.mtz"
+        self.mock_job_instance.submit.side_effect = self.rm_dir
+        self.addCleanup(self.clean_tmp_dir)
+
+    def rm_dir(self, filename, _):
+        try:
+            shutil.rmtree(os.path.dirname(filename))
+        except OSError:
+            pass
 
     def test_get_returns_message_on_empty_contabase(self):
         response = self.client.get(
@@ -371,6 +387,7 @@ class SubmitJobViewTestCase(TestCase):
 
     @mock.patch('contaminer.views_tools.Job')
     def test_post_submit_good_parameters(self, mock_Job):
+        self.mock_job_instance.submit.side_effect = None
         mock_Job.create.return_value = self.mock_job_instance
 
         ContaBase.objects.create()
@@ -407,6 +424,11 @@ class SubmitJobViewTestCase(TestCase):
         self.assertEqual(cont, "P0ACJ8\nP0AA25")
         with open(data_f, 'r') as f:
             self.assertEqual(f.read(), "Foooo")
+
+        dir_to_rm = os.path.dirname(
+                self.mock_job_instance.submit.call_args[0][0]
+                )
+        shutil.rmtree(dir_to_rm)
 
     @mock.patch('contaminer.views_tools.Job')
     def test_post_submit_job(self, mock_Job):
@@ -481,6 +503,7 @@ class SubmitJobViewTestCase(TestCase):
 
     @mock.patch('contaminer.views_tools.Job.submit')
     def test_post_accept_AnonymousUser(self, mock_submit):
+        mock_submit.side_effect = self.rm_dir
         ContaBase.objects.create()
         contabase = ContaBase.get_current()
         category = Category.objects.create(

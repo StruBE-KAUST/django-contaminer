@@ -56,6 +56,8 @@ from .models.contaminer import Task
 import json
 import tempfile
 import time
+import shutil
+import os
 
 class ContaBaseViewTestCase(TestCase):
     """
@@ -1245,6 +1247,12 @@ class JobViewTestCase(TestCase):
     """
         Test the JobView views
     """
+    def clean_tmp_dir(self):
+        try:
+            shutil.rmtree(self.test_file.name.split('.')[0])
+        except OSError:
+            pass
+
     def setUp(self):
         self.factory = RequestFactory()
         self.test_file = tempfile.NamedTemporaryFile(suffix='.mtz')
@@ -1256,6 +1264,14 @@ class JobViewTestCase(TestCase):
         self.mock_job_instance = mock.MagicMock()
         self.mock_job_instance.id = 666
         self.mock_job_instance.get_filename.return_value = "test_file.mtz"
+        self.mock_job_instance.submit.side_effect = self.rm_dir
+        self.addCleanup(self.clean_tmp_dir)
+
+    def rm_dir(self, filename, _):
+        try:
+            shutil.rmtree(os.path.dirname(filename))
+        except OSError:
+            pass
 
     def test_post_returns_400_on_empty_data(self):
         request = self.factory.post(
