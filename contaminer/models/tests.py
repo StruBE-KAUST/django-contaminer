@@ -2223,6 +2223,46 @@ class JobTestCase(TestCase):
         with self.assertRaises(RuntimeError):
             job.update_status()
 
+    def make_job_complete(self):
+        self.job.status_complete = True
+        self.job.save()
+
+    @mock.patch('contaminer.models.contaminer.Job.update_tasks')
+    @mock.patch('contaminer.models.contaminer.Job.send_complete_mail')
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
+    def test_update_send_mail_when_complete(self, mock_status, mock_mail, _):
+        mock_status.side_effect = self.make_job_complete
+        self.job = Job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        self.job.update()
+        self.assertTrue(mock_mail.called)
+
+    @mock.patch('contaminer.models.contaminer.Job.update_tasks')
+    @mock.patch('contaminer.models.contaminer.Job.send_complete_mail')
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
+    def test_update_send_no_mail_when_archived(self, _, mock_mail, __):
+        job = Job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job.status_archived = True
+        job.save()
+        job.update()
+        self.assertFalse(mock_mail.called)
+
+    @mock.patch('contaminer.models.contaminer.Job.update_tasks')
+    @mock.patch('contaminer.models.contaminer.Job.send_complete_mail')
+    @mock.patch('contaminer.models.contaminer.Job.update_status')
+    def test_update_send_no_mail_when_not_complete(self, _, mock_mail, __):
+        job = Job.create(
+                name = "test",
+                email = "me@example.com,",
+                )
+        job.update()
+        self.assertFalse(mock_mail.called)
+
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.SSHChannel')
     def test_update_tasks_read_good_file(self, mock_ssh, mock_CMConfig):
@@ -2632,13 +2672,30 @@ class JobTestCase(TestCase):
                     name = "test",
                     email = "me@example.com,",
                     )
-            job.update_thread(time.time() - 86400)
             job.status_archived = True
             job.save()
             job.update_thread()
             self.assertFalse(mock_timer.start.called)
         finally:
             self.mock_update_thread = self.patcher.start()
+
+    @mock.patch('contaminer.models.contaminer.send_mail')
+    def test_send_email_to_good_address(self, mock_send_mail):
+        job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        job.send_complete_mail()
+        self.assertTrue(mock_send_mail.called)
+        self.assertEqual(mock_send_mail.call_args[0][3], ['me@example.com'])
+
+    @mock.patch('contaminer.models.contaminer.send_mail')
+    def test_do_not_send_email_if_no_address(self, mock_send_mail):
+        job = Job.create(
+                name = "test",
+                )
+        job.send_complete_mail()
+        self.assertFalse(mock_send_mail.called)
 
 
 class TaskTestCase(TestCase):

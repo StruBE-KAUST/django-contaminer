@@ -286,6 +286,7 @@ class Job(models.Model):
         if self.status_complete:
             self.status_archive = True
             self.save()
+            self.send_complete_mail()
 
         log.debug("Exit")
 
@@ -426,17 +427,19 @@ class Job(models.Model):
         log.debug("Exit")
         return max4_tasks[0]
 
-
-"""
     def send_complete_mail(self):
         log = logging.getLogger(__name__)
         log.debug("Entering function")
+
+        if not self.email:
+            log.warning("No mail for this job: " + str(self))
+            return
 
         current_site = Site.objects.get_current()
         result_url = "{0}://{1}{2}".format(
                 "https",
                 current_site.domain,
-                reverse("ContaMiner:result", args=[self.id])
+                reverse("ContaMiner:display", args=[self.id])
                 )
         log.debug("Result URL : " + str(result_url))
 
@@ -448,12 +451,11 @@ class Job(models.Model):
         message = render_to_string("ContaMiner/email/complete_message.html",
                 ctx)
         send_mail("Job complete", "",
-                settings.DEFAULT_MAIL_FROM, [self.email],
+                settings.DEFAULT_FROM_EMAIL, [self.email],
                 html_message = message)
         log.info("E-Mail sent to " + str(self.email))
 
         log.debug("Exiting function")
-"""
 
 
 class Task(models.Model):
