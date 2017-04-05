@@ -210,9 +210,3 @@ class ContaBaseJSONView(TemplateView):
     """
     def get(self, request):
         return views_api.ContaBaseView.as_view()(request)
-
-
-def download(request):
-    """ Show how to download the ContaMiner application """
-    result = render(request, 'ContaMiner/download.html')
-    return result
