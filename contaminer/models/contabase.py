@@ -208,6 +208,11 @@ class Category(models.Model):
 
         return response_data
 
+    @property
+    def count_contaminants(self):
+        """ Return the number of contaminants in the category """
+        return Contaminant.objects.filter(category = self).count()
+
 
 class Contaminant(models.Model):
     """

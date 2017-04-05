@@ -17,8 +17,9 @@ likely proteins contaminants.</p>
     "https://en.wikipedia.org/wiki/Crystallographic_Information_File">cif</a>
 data file, ContaMiner uses an optimized molecular replacement procedure, based
 on the <a href= "http://www.biomexsolutions.co.uk/morda/">MoRDa</a> automatic
-molecular replacement pipeline. Contaminants tested include 33 E. coli
-contaminants, 8 protein tags and 5 proteins often added during purification.
+molecular replacement pipeline. Contaminants tested include
+{% for category in categories %}{% if forloop.last %} and {% else %}{% if not forloop.first %},
+{% endif %}{% endif %}{{ category.count_contaminants }} {{ category.name }}{% endfor %}.
 The full list is available <a href="{% url "ContaMiner:contabase" %}">here</a>. Any
 additional suggestions or comments? -- Please
 <a href="{% url "contact" %}">let us know</a>.</p>

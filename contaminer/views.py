@@ -48,32 +48,41 @@ class SubmitJobView(TemplateView):
         Views to process the submitting form
     """
 
-    def get(self, request):
-        """ Serve the form to submit a new job """
+    def render_page(self, request, form = None):
+        """ Render the page with the form """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
-            Category.objects.filter(
-                    contabase = ContaBase.get_current()
+            contabase = ContaBase.get_current()
+            categories = Category.objects.filter(
+                    contabase = contabase
                     )
         except ObjectDoesNotExist:
             messages.warning(request, "The ContaBase is empty. You should" \
                     + " update the database before continuing by using" \
                     + " manage.py update")
+            categories = {}
 
-        form = SubmitJobForm(
-                user = request.user,
-                )
+        if form is None:
+            form = SubmitJobForm(
+                    user = request.user,
+                    )
 
         response_data = render(
                 request,
                 'ContaMiner/submit.html',
-                {'form': form}
-                )
+                {
+                    'form': form,
+                    'categories': categories,
+                })
 
         log.debug("Exit")
         return response_data
+
+    def get(self, request):
+        """ Serve the form to submit a new job """
+        return self.render_page(request)
 
     def post(self, request):
         """ If the form is valid, submit the job. Return the form otherwise """
@@ -96,20 +105,7 @@ class SubmitJobView(TemplateView):
             response_data = newjob_handler(request)
             if response_data['error'] :
                 messages.error(request, response_data['message'])
-                try:
-                    Category.objects.filter(
-                            contabase = ContaBase.get_current()
-                            )
-                except ObjectDoesNotExist:
-                    messages.warning(request, "The ContaBase is empty. You should" \
-                            + " update the database before continuing by using" \
-                            + " manage.py update")
-                response = render(
-                        request,
-                        'ContaMiner/submit.html',
-                        {'form': form}
-                        )
-
+                response = self.render_page(request, form)
             else:
                 log.info("New job submitted")
                 messages.success(request, "File submitted")
@@ -117,20 +113,7 @@ class SubmitJobView(TemplateView):
         else:
             log.debug("Invalid form")
             messages.error(request, "Please check the form")
-            try:
-                Category.objects.filter(
-                        contabase = ContaBase.get_current()
-                        )
-            except ObjectDoesNotExist:
-                messages.warning(request, "The ContaBase is empty. You should" \
-                        + " update the database before continuing by using" \
-                        + " manage.py update")
-
-            response = render(
-                    request,
-                    'ContaMiner/submit.html',
-                    {'form': form}
-                    )
+            response = self.render_page(request, form)
 
         log.debug("Exit")
         return response

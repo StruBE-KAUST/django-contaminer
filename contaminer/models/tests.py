@@ -233,47 +233,31 @@ class CategoryTestCase(TestCase):
         Test the Category model
     """
     def setUp(self):
-        ContaBase.objects.create()
-        self.contabase = ContaBase.objects.all()[0]
-        ContaBase.objects.create(obsolete = True)
-        self.contabase_obsolete = ContaBase.objects.filter(
-                obsolete = True,
-                )[0]
-        Category.objects.create(
+        self.contabase = ContaBase.objects.create()
+        self.contabase_obsolete = ContaBase.objects.create(obsolete = True)
+        self.category1 = Category.objects.create(
                 number = 1,
                 name = "Protein in E.Coli",
                 contabase = self.contabase,
                 )
-        Category.objects.create(
+        self.category2 = Category.objects.create(
                 number = 2,
                 name = "Protein in yeast",
                 contabase = self.contabase,
                 selected_by_default = True,
                 )
-        Category.objects.create(
+        self.category3 = Category.objects.create(
                 number = 3,
                 name = "Obsolete protein",
                 contabase = self.contabase_obsolete,
                 )
 
     def test_Category_is_well_displayed(self):
-        category1 = Category.objects.get(
-                name = "Protein in E.Coli",
-                )
-        category2 = Category.objects.get(
-                name = "Protein in yeast",
-                )
-        category3 = Category.objects.get(
-                name = "Obsolete protein",
-                )
-        self.assertEqual(str(category1), 'Protein in E.Coli - False')
-        self.assertEqual(str(category2), 'Protein in yeast - True')
-        self.assertEqual(str(category3), 'Obsolete protein - False (obsolete)')
+        self.assertEqual(str(self.category1), 'Protein in E.Coli - False')
+        self.assertEqual(str(self.category2), 'Protein in yeast - True')
+        self.assertEqual(str(self.category3), 'Obsolete protein - False (obsolete)')
 
     def test_Category_number_is_unique_per_contabase(self):
-        category1 = Category.objects.get(
-                name = "Protein in E.Coli",
-                )
         with self.assertRaises(ValidationError):
             Category.objects.create(
                     number = 1,
@@ -394,10 +378,7 @@ class CategoryTestCase(TestCase):
         self.assertFalse(category.selected_by_default)
 
     def test_to_simple_dict_gives_correct_result(self):
-        category = Category.objects.get(
-                name = "Protein in E.Coli",
-                )
-        response_dict = category.to_simple_dict()
+        response_dict = self.category1.to_simple_dict()
         response_expected = {
                 'id': 1,
                 'name': "Protein in E.Coli",
@@ -407,31 +388,20 @@ class CategoryTestCase(TestCase):
         self.assertEqual(response_dict, response_expected)
 
     def test_to_detailed_dict_gives_correct_result(self):
-        category = Category.objects.get(
-                number = 1,
-                )
-        Contaminant.objects.create(
-                category = category,
+        contaminant = Contaminant.objects.create(
+                category = self.category1,
                 uniprot_id = 'P0ACJ8',
                 short_name = 'CRP_ECOLI',
                 long_name = 'regulator',
                 sequence = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
                 organism= 'Mario',
                 )
-        contaminant = Contaminant.objects.get(
-                uniprot_id = 'P0ACJ8',
-                category = category,
-                )
-        Pack.objects.create(
+        pack = Pack.objects.create(
                 contaminant = contaminant,
                 number = 5,
                 structure= '5-mer',
                 )
-        pack = Pack.objects.get(
-                contaminant = contaminant,
-                number = 5,
-                )
-        Model.objects.create(
+        model = Model.objects.create(
                 pack = pack,
                 pdb_code = '3RYP',
                 chain = 'A',
@@ -439,28 +409,20 @@ class CategoryTestCase(TestCase):
                 identity = 100,
                 nb_residues = 112,
                 )
-        Contaminant.objects.create(
-                category = category,
+        contaminant = Contaminant.objects.create(
+                category = self.category1,
                 uniprot_id = 'P0ACJ9',
                 short_name = 'CAN_ECOLI',
                 long_name = 'regulator',
                 sequence = 'ABCDEF',
                 organism= 'Luigi',
                 )
-        contaminant = Contaminant.objects.get(
-                uniprot_id = 'P0ACJ9',
-                category = category,
-                )
-        Pack.objects.create(
+        pack = Pack.objects.create(
                 contaminant = contaminant,
                 number = 6,
                 structure= '6-mer',
                 )
-        pack = Pack.objects.get(
-                contaminant = contaminant,
-                number = 6,
-                )
-        Model.objects.create(
+        model = Model.objects.create(
                 pack = pack,
                 pdb_code = '3RYP',
                 chain = 'A',
@@ -468,7 +430,7 @@ class CategoryTestCase(TestCase):
                 identity = 100,
                 nb_residues = 71,
                 )
-        response_dict = category.to_detailed_dict()
+        response_dict = self.category1.to_detailed_dict()
         response_expected = {
                 'id': 1,
                 'name': 'Protein in E.Coli',
@@ -522,6 +484,36 @@ class CategoryTestCase(TestCase):
             }
 
         self.assertEqual(response_dict, response_expected)
+
+    def test_count_gives_good_result(self):
+        Contaminant.objects.create(
+                category = self.category1,
+                uniprot_id = 'P0ACJ8',
+                short_name = 'CRP_ECOLI',
+                long_name = 'regulator',
+                sequence = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                organism= 'Mario',
+                )
+        Contaminant.objects.create(
+                category = self.category1,
+                uniprot_id = 'P0ACJ9',
+                short_name = 'CRP_ECOLI',
+                long_name = 'regulator',
+                sequence = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                organism= 'Mario',
+                )
+        Contaminant.objects.create(
+                category = self.category2,
+                uniprot_id = 'P0ACJ0',
+                short_name = 'CRP_ECOLI',
+                long_name = 'regulator',
+                sequence = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                organism= 'Mario',
+                )
+
+        self.assertEqual(self.category1.count_contaminants, 2)
+        self.assertEqual(self.category2.count_contaminants, 1)
+        self.assertEqual(self.category3.count_contaminants, 0)
 
 
 class ContaminantTestCase(TestCase):
