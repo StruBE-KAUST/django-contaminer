@@ -297,7 +297,7 @@ class Job(models.Model):
             self.status_error = True
             self.save()
         else:
-            t = threading.Timer(120, self.update_thread, start_time)
+            t = threading.Timer(120, self.update_thread, [start_time])
             t.daemon = True
             t.name = 'UpdateJobThread'
             t.start()
