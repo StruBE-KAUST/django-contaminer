@@ -30,6 +30,7 @@ from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.apps import apps
 
 from .forms import SubmitJobForm
 
@@ -143,21 +144,27 @@ class DisplayJobView(TemplateView):
         # Retrieve best tasks for this
         best_tasks = job.get_best_tasks()
 
+        app_config = apps.get_app_config('contaminer')
         # If a positive result is found for a pack with low coverage or low identity
         # display a message to encourage publication
         for task in best_tasks:
-            if task.percent > 97:
+            if task.percent >= app_config.threshold:
                 coverage = task.pack.coverage
                 identity = task.pack.identity
 
-                if coverage < 85 or identity < 80:
+                if coverage < app_config.bad_model_coverage_threshold \
+                    or identity < app_config.bad_model_identity_threshold:
                     messages.info(request, "Your dataset gives a positive result "\
                             + "for a contaminant for which no identical "\
                             + "model is available in the PDB.\nYou could deposit "\
                             + "or publish this structure.")
 
         result = render(request, 'ContaMiner/result.html',
-                {'job': job, 'tasks': best_tasks})
+                {
+                    'job': job,
+                    'tasks': best_tasks,
+                    'threshold': app_config.threshold
+                })
         log.debug("Exiting function")
         return result
 
