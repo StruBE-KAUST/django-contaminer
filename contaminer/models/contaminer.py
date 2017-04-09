@@ -173,14 +173,9 @@ class Job(models.Model):
             + str(os.path.basename(remote_contaminants)) + '"'
 
         log.debug("Execute command on remote host:\n" + command)
-        stdout, stderr = client.exec_command(command)
+        stdout = client.exec_command(command)
 
         log.debug("stdout: " + str(stdout))
-        log.debug("stderr: " + str(stderr))
-
-        if stderr is not "":
-            log.warning("Standard error is not empty : \n" + str(stderr))
-            raise RuntimeError(str(stderr))
 
         # Change state
         self.status_submitted = True
