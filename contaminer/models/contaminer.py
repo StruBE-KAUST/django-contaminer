@@ -490,7 +490,7 @@ class Task(models.Model):
 
     def name(self):
         space_group = self.space_group.replace(' ', '-')
-        name = str(self.pack.contaminant.uniprot_ID) + '_'\
+        name = str(self.pack.contaminant.uniprot_id) + '_'\
                 + str(self.pack.number) + '_'\
                 + space_group
 
