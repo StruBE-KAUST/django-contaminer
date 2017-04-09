@@ -2100,28 +2100,6 @@ class JobTestCase(TestCase):
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
-    def test_submit_raises_excep_if_notempty_stderr(self, mock_sftpchannel,
-            mock_remove, mock_CMConfig, mock__):
-        mock_config = mock.MagicMock()
-        mock_config.ssh_work_directory = "/remote/dir"
-        mock_config.ssh_contaminer_location = "/remote/CM"
-        mock_CMConfig.return_value = mock_config
-        mock_client = mock.MagicMock()
-        mock_client.exec_command.return_value = ("", "error")
-        mock_sftpchannel.return_value = mock_client
-        job = Job()
-        job.create(
-                name = "test",
-                email = "me@example.com,",
-                )
-        job = Job.objects.get(name = "test")
-        with self.assertRaises(RuntimeError):
-            job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
-
-    @mock.patch('contaminer.models.contaminer.Job.update_status')
-    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
-    @mock.patch('contaminer.models.contaminer.os.remove')
-    @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_change_status_to_submitted(self, mock_sftpchannel,
             mock_remove, mock_CMConfig, mock__):
         mock_config = mock.MagicMock()
