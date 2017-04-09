@@ -135,23 +135,18 @@ class SubmitFormTestCase(TestCase):
         self.assertTrue('CONT' in fields[0].fields)
         self.assertTrue('CHECKED' in fields[1].fields)
 
-    @expectedFailure
     def test_contaminants_stay_checked(self):
-        request = self.factory.post(
-                reverse('ContaMiner:submit'),
-                {
-                    'CONT': True,
-                }
-            )
+        post_data = self.request.POST
+        post_data['CONT'] = 'on'
         form = SubmitJobForm(
-                self.request.POST,
+                post_data,
                 self.request.FILES,
                 )
-        fields = form.helper.layout[0][1]
-        # TODO: Fix this test
 
-        self.assertTrue(form.fields['CONT'].initial)
-        self.assertFalse(form.fields['CHECKED'].initial)
+        form.is_valid()
+
+        self.assertTrue(form.cleaned_data['CONT'])
+        self.assertFalse(form.cleaned_data['CHECKED'])
 
     def test_default_selected_contaminants_are_selected(self):
         form = SubmitJobForm(
