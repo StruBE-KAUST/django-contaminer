@@ -17,44 +17,53 @@
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-    Add a command to manage.py to launch the update_thread of non-archived jobs
+    Add a command to manage.py to start the updating process for one or
+    several jobs
 """
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-from django.core.exceptions import ValidationError
 
 from contaminer.models.contaminer import Job
 
 import logging
-import threading
 
 class Command(BaseCommand):
     """
         Call update_thread on non archived jobs
     """
 
-    help = 'Launch job updaters threads. Useful after a server shutdown.'
+    help = 'Start the updater process for the jobs with the given IDs. If no '\
+            + 'ID is given, start a detached process to update all the non ' \
+            + 'archived jobs.'
+
+    def add_arguments(self, parser):
+        parser.add_argument('job_id', nargs='?', type=int)
 
     def handle(self, *args, **options):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        threads = [t for t in threading.enumerate()
-                if t.name == "UpdateJobThread" ]
-        if len(threads) > 0:
-            raise CommandError(
-                    'Threads are already running. Not launching again.'
-                    )
+        if not options['job_id']:
+            jobs = Job.objects.filter(status_archived = False)
+            for job in jobs:
+                job.start_update_process()
 
-        self.stdout.write("Launching updaters...")
-        jobs = Job.objects.filter(status_archived == False)
-
-        for job in jobs:
-            job.update_thread
-
-        log.debug("Exit")
-        if len(job) == 0:
-            self.stdout.write("No job to update.")
         else:
-            self.stdout.write("The updater threads are now running.")
+            job_id = options['job_id']
+
+            try:
+                job = Job.objects.get(id = job_id)
+            except Job.DoesNotExist:
+                raise CommandError(
+                        'Job "%s" does not exist.' % job_id)
+
+            if job.status_archived:
+                raise CommandError(
+                        'Job "%s" is archived.' % job_id)
+
+            self.stdout.write("Periodically update job with ID: " \
+                    + str(job_id))
+            self.stdout.write("Quit with CONTROL-C")
+
+            job.update_process()

@@ -50,6 +50,8 @@ class ContaminerConfig(AppConfig):
         self.threshold = 95
         self.bad_model_coverage_threshold = 85
         self.bad_model_identity_threshold = 80
+        self.update_interval = 120 # seconds
+        self.update_timeout = 86400 # seconds
         self.ssh_hostname = config.get("SSH", "hostname")
         self.ssh_port = eval(config.get("SSH", "port"))
         self.ssh_username = config.get("SSH", "username")

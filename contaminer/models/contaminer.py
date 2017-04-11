@@ -33,7 +33,7 @@ import time
 import paramiko
 import logging
 import errno
-import threading
+import subprocess
 
 from django.apps import apps
 from django.db import models
@@ -77,8 +77,9 @@ class Job(models.Model):
             blank = True,
             null = True)
     email = models.EmailField(blank = True, null = True)
-
     confidential = models.BooleanField(default = False)
+
+    update_pid = models.IntegerField(blank = True, null = True)
 
     def __str__(self):
         """ Write id (email) """
@@ -182,7 +183,7 @@ class Job(models.Model):
         self.save()
 
         # Start updating scheduler
-        self.update_thread()
+        self.start_update_process()
 
         log.debug("Job " + str(self.id) + " submitted")
         log.debug("Exiting function")
@@ -285,22 +286,46 @@ class Job(models.Model):
 
         log.debug("Exit")
 
-    def update_thread(self, start_time = None):
+    def update_process(self):
         """ Periodically update the job """
-        if start_time is None:
-            start_time = time.time()
-        self.update()
 
-        if self.status_archived:
-            pass
-        elif time.time() - start_time > 86400:
+        app_config = apps.get_app_config('contaminer')
+
+        start_time = time.time()
+
+        while time.time() - start_time < app_config.update_timeout \
+                and not self.status_archived:
+            self.update()
+            time.sleep(app_config.update_interval)
+
+        if not self.status_archived:
             self.status_error = True
             self.save()
-        else:
-            t = threading.Timer(120, self.update_thread, [start_time])
-            t.daemon = True
-            t.name = 'UpdateJobThread'
-            t.start()
+
+        self.update_pid = None
+        self.save()
+
+    def start_update_process(self):
+        """ Start update_process as a subprocess through manage.py """
+        manage_location = os.path.join(
+            settings.BASE_DIR,
+            'manage.py')
+        if self.update_pid:
+            try:
+                os.kill(self.update_pid, 0)
+            except OSError:
+                self.update_pid = None
+            else:
+                return
+
+        fnull = open(os.devnull, 'w')
+        proc = subprocess.Popen(
+            ['python', manage_location, 'start_updater', str(self.id)],
+            stdout=fnull,
+            stderr=subprocess.STDOUT)
+
+        self.update_pid = proc.pid
+        self.save()
 
     def to_detailed_dict(self):
         """ Return a dictionary of the fields """
