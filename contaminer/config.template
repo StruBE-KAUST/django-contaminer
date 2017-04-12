@@ -13,3 +13,12 @@ work_directory = /data/contaminer
 [LOCAL]
 tmp_dir = /tmp
 website_dir = /home/django/website/
+
+[UPDATER]
+interval = 120
+timeout = 86400
+
+[THRESHOLDS]
+positive = 95
+bad_model_coverage = 85
+bad_model_identity = 80

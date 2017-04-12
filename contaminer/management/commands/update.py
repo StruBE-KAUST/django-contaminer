@@ -16,9 +16,9 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    Add a command to manage.py to update the ContaBase
-"""
+"""Update the ContaBase."""
+
+import logging
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
@@ -26,16 +26,13 @@ from django.core.exceptions import ValidationError
 
 from contaminer.models.contabase import ContaBase
 
-import logging
-
 class Command(BaseCommand):
-    """
-        Update the ContaBase
-    """
+    """Update the ContaBase."""
 
     help = 'Synchronize the ContaBase with the remote ContaMiner installation'
 
     def handle(self, *args, **options):
+        """Call ContaBase.update."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
@@ -43,10 +40,9 @@ class Command(BaseCommand):
 
         try:
             ContaBase.update()
-        except ValidationError as e:
+        except ValidationError as excep:
             raise CommandError(
-                    'Update failed. Here is the reason: ' + str(e)
-                    )
+                'Update failed. Here is the reason: ' + str(excep))
 
         log.debug("Exit")
         self.stdout.write('The ContaBase has been updated.')

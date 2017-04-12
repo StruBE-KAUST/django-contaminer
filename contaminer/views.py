@@ -16,19 +16,15 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    ContaMiner views
-"""
+"""ContaMiner views."""
 
 import logging
 
-from django.views.generic import TemplateView
+from django.views.generic import View
 from django.shortcuts import render
-from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.apps import apps
 
@@ -36,29 +32,24 @@ from .forms import SubmitJobForm
 
 from .models.contabase import ContaBase
 from .models.contabase import Category
-from .models.contabase import Contaminant
 from .models.contaminer import Job
-from .models.contaminer import Task
 
 from .views_tools import newjob_handler
 from . import views_api
 
 
-class SubmitJobView(TemplateView):
-    """
-        Views to process the submitting form
-    """
+class SubmitJobView(View):
+    """Views to process the submitting form."""
 
-    def render_page(self, request, form = None):
-        """ Render the page with the form """
+    @staticmethod
+    def render_page(request, form=None):
+        """Render the page with the form."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
             contabase = ContaBase.get_current()
-            categories = Category.objects.filter(
-                    contabase = contabase
-                    )
+            categories = Category.objects.filter(contabase=contabase)
         except ObjectDoesNotExist:
             messages.warning(request, "The ContaBase is empty. You should" \
                     + " update the database before continuing by using" \
@@ -66,27 +57,24 @@ class SubmitJobView(TemplateView):
             categories = {}
 
         if form is None:
-            form = SubmitJobForm(
-                    user = request.user,
-                    )
+            form = SubmitJobForm(user=request.user)
 
         response_data = render(
-                request,
-                'ContaMiner/submit.html',
-                {
-                    'form': form,
-                    'categories': categories,
-                })
+            request,
+            'ContaMiner/submit.html',
+            {
+                'form': form,
+                'categories': categories})
 
         log.debug("Exit")
         return response_data
 
     def get(self, request):
-        """ Serve the form to submit a new job """
+        """Serve the form to submit a new job."""
         return self.render_page(request)
 
     def post(self, request):
-        """ If the form is valid, submit the job. Return the form otherwise """
+        """If the form is valid, submit the job. Return the form otherwise."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
@@ -96,20 +84,20 @@ class SubmitJobView(TemplateView):
             user = None
 
         form = SubmitJobForm(
-                request.POST,
-                request.FILES,
-                user = user
-                )
+            request.POST,
+            request.FILES,
+            user=user)
 
         if form.is_valid():
             log.debug("Valid form")
             response_data = newjob_handler(request)
-            if response_data['error'] :
+            if response_data['error']:
                 messages.error(request, response_data['message'])
                 response = self.render_page(request, form)
             else:
                 log.info("New job submitted")
                 messages.success(request, "File submitted")
+                # pylint: disable=redefined-variable-type
                 response = HttpResponseRedirect(reverse('ContaMiner:home'))
         else:
             log.debug("Invalid form")
@@ -120,33 +108,44 @@ class SubmitJobView(TemplateView):
         return response
 
 
-class DisplayJobView(TemplateView):
-    def get(self, request, jobid):
-        """ Display the result of a job """
-        log = logging.getLogger(__name__)
-        log.debug("Entering function")
+class DisplayJobView(View):
+    """Views to see the results of a job."""
 
-        job = get_object_or_404(Job, pk = jobid)
+    def get(self, request, job_id):
+        """Display the result of a job."""
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            job = Job.objects.get(pk=job_id)
+        except ObjectDoesNotExist:
+            messages.error(request, "This job does not exist.")
+            result = SubmitJobView().get(request)
+            result.status_code = 404
+            log.debug("Job not found")
+            return result
 
         if job.confidential and request.user != job.author:
             messages.error(request, "This job is confidential. You are not "\
                     + "allowed to see the results.")
-            result = HttpResponseRedirect(reverse('ContaMiner:home'))
-            log.debug("Exiting function")
+            result = SubmitJobView().get(request)
+            result.status_code = 403
+            log.debug("Permission denied")
             return result
 
         if not job.status_complete:
             messages.warning(request, "This job is not yet complete.")
-            result = HttpResponseRedirect(reverse('ContaMiner:home'))
-            log.debug("Exiting function")
+            result = SubmitJobView().get(request)
+            log.debug("Job not complete")
+            log.debug(result)
             return result
 
         # Retrieve best tasks for this
         best_tasks = job.get_best_tasks()
 
         app_config = apps.get_app_config('contaminer')
-        # If a positive result is found for a pack with low coverage or low identity
-        # display a message to encourage publication
+        # If a positive result is found for a pack with low coverage or low
+        # identity display a message to encourage publication
         for task in best_tasks:
             if task.percent >= app_config.threshold:
                 coverage = task.pack.coverage
@@ -154,49 +153,48 @@ class DisplayJobView(TemplateView):
 
                 if coverage < app_config.bad_model_coverage_threshold \
                     or identity < app_config.bad_model_identity_threshold:
-                    messages.info(request, "Your dataset gives a positive result "\
-                            + "for a contaminant for which no identical "\
-                            + "model is available in the PDB.\nYou could deposit "\
-                            + "or publish this structure.")
+                    messages.info(request, "Your dataset gives a positive "\
+                            + "result for a contaminant for which no "\
+                            + "identical model is available in the PDB.\nYou "\
+                            + "could deposit or publish this structure.")
 
-        result = render(request, 'ContaMiner/result.html',
-                {
-                    'job': job,
-                    'tasks': best_tasks,
-                    'threshold': app_config.threshold
-                })
-        log.debug("Exiting function")
+        result = render(
+            request,
+            'ContaMiner/result.html',
+            {
+                'job': job,
+                'tasks': best_tasks,
+                'threshold': app_config.threshold})
+        log.debug("Exit")
         return result
 
 
-class ContaBaseView(TemplateView):
-    """
-        Views accessible through contabase
-    """
+class ContaBaseView(View):
+    """Views accessible through contabase."""
+
     def get(self, request):
-        """ Display the list of registered contaminants """
+        """Display the list of registered contaminants."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
-            context = {'contabase':
-                    ContaBase.get_current().to_detailed_dict()['categories']
-                }
+            contabase = ContaBase.get_current()
+            context = {'contabase': contabase.to_detailed_dict()['categories']}
         except ObjectDoesNotExist:
             messages.warning(request, "The ContaBase is empty. You should" \
                     + " update the database before continuing by using" \
                     + " manage.py update")
-            context = {}
+            context = {'contabase': {}}
 
-        result = render(request, 'ContaMiner/contabase.html', context = context)
+        result = render(request, 'ContaMiner/contabase.html', context=context)
 
         log.debug("Exit")
         return result
 
 
-class ContaBaseJSONView(TemplateView):
-    """
-        Views accessible through contabase.json
-    """
+class ContaBaseJSONView(View):
+    """Views accessible through contabase.json."""
+
     def get(self, request):
+        """Return the contabase in JSON format."""
         return views_api.ContaBaseView.as_view()(request)

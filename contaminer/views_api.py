@@ -16,18 +16,14 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    ContaMiner views to access the API
-"""
+"""ContaMiner views to access the API."""
 
 import logging
-import os
-import json
 
 from django.http import JsonResponse
 from django.http import HttpResponseRedirect
 from django.http import Http404
-from django.views.generic import TemplateView
+from django.views.generic import View
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 
@@ -40,30 +36,27 @@ from .models.contaminer import Task
 from .views_tools import newjob_handler
 
 
-class ContaBaseView(TemplateView):
-    """
-        Views accessible through api/contabase
-    """
-    def get(self, request):
-        """ Return the full ContaBase """
+class ContaBaseView(View):
+    """Views accessible through api/contabase."""
 
+    def get(self, request):
+        """Return the full ContaBase."""
         return DetailedCategoriesView().get(request)
 
 
-class CategoriesView(TemplateView):
-    """
-        Views accessible through api/categories
-    """
+class CategoriesView(View):
+    """Views accessible through api/categories."""
+
     def get(self, request):
-        """ Return the list of all contaminants in current contabase """
+        """Return the list of all contaminants in current contabase."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
             categories = Category.objects.filter(
-                    contabase = ContaBase.get_current()
-                    )
+                contabase=ContaBase.get_current())
         except ObjectDoesNotExist: #happens if no ContaBase is available
+            log.debug("Raise 404")
             raise Http404()
 
         categories_data = [cat.to_simple_dict() for cat in categories]
@@ -75,20 +68,19 @@ class CategoriesView(TemplateView):
         return JsonResponse(response_data)
 
 
-class DetailedCategoriesView(TemplateView):
-    """
-        Views accessible through api/categories
-    """
+class DetailedCategoriesView(View):
+    """Views accessible through api/categories."""
+
     def get(self, request):
-        """ Return the list of all contaminants in current contabase """
+        """Return the list of all contaminants in current contabase."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
             categories = Category.objects.filter(
-                    contabase = ContaBase.get_current()
-                    )
+                contabase=ContaBase.get_current())
         except ObjectDoesNotExist: #happens if no ContaBase is available
+            log.debug("Raise 404")
             raise Http404()
 
         categories_data = [cat.to_detailed_dict() for cat in categories]
@@ -100,21 +92,20 @@ class DetailedCategoriesView(TemplateView):
         return JsonResponse(response_data)
 
 
-class CategoryView(TemplateView):
-    """
-        Views accessible thourgh api/category
-    """
-    def get(self, request, id):
-        """ Return the fileds of the category with the given id """
+class CategoryView(View):
+    """Views accessible through api/category."""
+
+    def get(self, request, category_id):
+        """Return the fields of the category with the given id."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
             category = Category.objects.get(
-                    number = id,
-                    contabase = ContaBase.get_current()
-                    )
+                number=category_id,
+                contabase=ContaBase.get_current())
         except ObjectDoesNotExist:
+            log.debug("Raise 404")
             raise Http404()
 
         response_data = category.to_simple_dict()
@@ -123,21 +114,20 @@ class CategoryView(TemplateView):
         return JsonResponse(response_data)
 
 
-class DetailedCategoryView(TemplateView):
-    """
-        Views accessible thourgh api/category
-    """
-    def get(self, request, id):
-        """ Return the fileds of the category with the given id """
+class DetailedCategoryView(View):
+    """Views accessible thourgh api/category."""
+
+    def get(self, request, category_id):
+        """Return the fields of the category with the given id."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
             category = Category.objects.get(
-                    number = id,
-                    contabase = ContaBase.get_current()
-                    )
+                number=category_id,
+                contabase=ContaBase.get_current())
         except ObjectDoesNotExist:
+            log.debug("Raise 404")
             raise Http404()
 
         response_data = category.to_detailed_dict()
@@ -146,20 +136,19 @@ class DetailedCategoryView(TemplateView):
         return JsonResponse(response_data)
 
 
-class ContaminantsView(TemplateView):
-    """
-        Views accessible through api/contaminants
-    """
+class ContaminantsView(View):
+    """Views accessible through api/contaminants."""
+
     def get(self, request):
-        """ Return the list of all contaminants in current contabase """
+        """Return the list of all contaminants in current contabase."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
             contaminants = Contaminant.objects.filter(
-                    category__contabase = ContaBase.get_current()
-                    )
+                category__contabase=ContaBase.get_current())
         except ObjectDoesNotExist: #happens if no ContaBase is available
+            log.debug("Raise 404")
             raise Http404()
 
         contaminants_data = [cont.to_simple_dict() for cont in contaminants]
@@ -171,20 +160,19 @@ class ContaminantsView(TemplateView):
         return JsonResponse(response_data)
 
 
-class DetailedContaminantsView(TemplateView):
-    """
-        Views accessible through api/contaminants
-    """
+class DetailedContaminantsView(View):
+    """Views accessible through api/contaminants."""
+
     def get(self, request):
-        """ Return the list of all contaminants in current contabase """
+        """Return the list of all contaminants in current contabase."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
             contaminants = Contaminant.objects.filter(
-                    category__contabase = ContaBase.get_current()
-                    )
+                category__contabase=ContaBase.get_current())
         except ObjectDoesNotExist: #happens if no ContaBase is available
+            log.debug("Raise 404")
             raise Http404()
 
         contaminants_data = [cont.to_detailed_dict() for cont in contaminants]
@@ -196,21 +184,20 @@ class DetailedContaminantsView(TemplateView):
         return JsonResponse(response_data)
 
 
-class ContaminantView(TemplateView):
-    """
-        Views accessible through api/contaminant
-    """
+class ContaminantView(View):
+    """Views accessible through api/contaminant."""
+
     def get(self, request, uniprot_id):
-        """ Return the fields of the contaminant with the given uniprot_id """
+        """Return the fields of the contaminant with the given uniprot_id."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
             contaminant = Contaminant.objects.get(
-                    uniprot_id = uniprot_id,
-                    category__contabase = ContaBase.get_current(),
-                    )
+                uniprot_id=uniprot_id,
+                category__contabase=ContaBase.get_current())
         except ObjectDoesNotExist:
+            log.debug("Raise 404")
             raise Http404()
 
         response_data = contaminant.to_simple_dict()
@@ -219,21 +206,20 @@ class ContaminantView(TemplateView):
         return JsonResponse(response_data)
 
 
-class DetailedContaminantView(TemplateView):
-    """
-        Views accessible through api/detailed_contaminant
-    """
+class DetailedContaminantView(View):
+    """Views accessible through api/detailed_contaminant."""
+
     def get(self, request, uniprot_id):
-        """ Return the fields and packs of the given contaminant """
+        """Return the fields and packs of the given contaminant."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
             contaminant = Contaminant.objects.get(
-                    uniprot_id = uniprot_id,
-                    category__contabase = ContaBase.get_current(),
-                    )
+                uniprot_id=uniprot_id,
+                category__contabase=ContaBase.get_current())
         except ObjectDoesNotExist:
+            log.debug("Raise 404")
             raise Http404()
 
         response_data = contaminant.to_detailed_dict()
@@ -242,12 +228,11 @@ class DetailedContaminantView(TemplateView):
         return JsonResponse(response_data)
 
 
-class JobView(TemplateView):
-    """
-        Views accessible through api/job
-    """
+class JobView(View):
+    """Views accessible through api/job."""
+
     def post(self, request):
-        """ Create new job, submit it to the cluster and return job.id """
+        """Create new job, submit it to the cluster and return job.id."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
@@ -258,61 +243,56 @@ class JobView(TemplateView):
         else:
             status = 200
 
-        return JsonResponse(response_data, status = status)
-
         log.debug("Exit")
+        return JsonResponse(response_data, status=status)
 
 
-class JobStatusView(TemplateView):
-    """
-        Views accessbiel through api/job/status
-    """
+class JobStatusView(View):
+    """Views accessbiel through api/job/status."""
+
     def get(self, request, job_id):
-        """ Return the status of the job with the given job ID """
+        """Return the status of the job with the given job ID."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
-            job = Job.objects.get(id = job_id)
+            job = Job.objects.get(id=job_id)
         except ObjectDoesNotExist:
             raise Http404()
 
         if job.confidential:
             response_data = {
-                    'error': True,
-                    'message': 'You are not allowed to see this job',
-                    }
-            return JsonResponse(response_data, status = 403)
+                'error': True,
+                'message': 'You are not allowed to see this job'}
+            return JsonResponse(response_data, status=403)
 
         response_data = {
-                'id': job.id,
-                'status': job.get_status(),
-                }
+            'id': job.id,
+            'status': job.get_status()}
 
         log.debug("Exit")
         return JsonResponse(response_data)
 
 
-class SimpleResultsView(TemplateView):
-    """
-        Views accessible through api/job/result
-    """
+class SimpleResultsView(View):
+    """Views accessible through api/job/result."""
+
     def get(self, request, job_id):
-        """ Return the results of the job grouped by contaminant """
+        """Return the results of the job grouped by contaminant."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
-            job = Job.objects.get(id = job_id)
+            job = Job.objects.get(id=job_id)
         except ObjectDoesNotExist:
+            log.debug("Raise 404")
             raise Http404()
 
         if job.confidential:
             response_data = {
-                    'error': True,
-                    'message': 'You are not allowed to see this job',
-                    }
-            return JsonResponse(response_data, status = 403)
+                'error': True,
+                'message': 'You are not allowed to see this job'}
+            return JsonResponse(response_data, status=403)
 
         response_data = job.to_simple_dict()
 
@@ -320,26 +300,25 @@ class SimpleResultsView(TemplateView):
         return JsonResponse(response_data)
 
 
-class DetailedResultsView(TemplateView):
-    """
-        Views accessible through api/job/detailed_result
-    """
+class DetailedResultsView(View):
+    """Views accessible through api/job/detailed_result."""
+
     def get(self, request, job_id):
-        """ Return the results of the job for each single task """
+        """Return the results of the job for each single task."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         try:
-            job = Job.objects.get(id = job_id)
+            job = Job.objects.get(id=job_id)
         except ObjectDoesNotExist:
+            log.debug("Raise 404")
             raise Http404()
 
         if job.confidential:
             response_data = {
-                    'error': True,
-                    'message': 'You are not allowed to see this job',
-                    }
-            return JsonResponse(response_data, status = 403)
+                'error': True,
+                'message': 'You are not allowed to see this job'}
+            return JsonResponse(response_data, status=403)
 
         response_data = job.to_detailed_dict()
 
@@ -347,70 +326,69 @@ class DetailedResultsView(TemplateView):
         return JsonResponse(response_data)
 
 
-class GetFinalFilesView(TemplateView):
-    """
-        Views accessible through api/job/final{pdb,mtz}
-    """
+class GetFinalFilesView(View):
+    """Views accessible through api/job/final{pdb,mtz}."""
+
+    # pylint: disable=too-many-return-statements
     def get(self, request, file_format):
-        """ Return the final file with the specified format """
+        """Return the final file with the specified format."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         file_format = file_format.lower()
         if file_format not in ['pdb', 'mtz']:
             response_data = {
-                    'error': True,
-                    'message': 'Format file is not available',
-                    }
-            return JsonResponse(response_data, status = 404)
+                'error': True,
+                'message': 'Format file is not available'}
+            log.debug("Wrong file format")
+            return JsonResponse(response_data, status=404)
 
         if not all(k in request.GET for k in
-                ["id", "uniprot_id", "space_group", "pack_nb"]):
+                   ["id", "uniprot_id", "space_group", "pack_nb"]):
             log.warning("Bad request: " + str(request))
             response_data = {
-                    'error': True,
-                    'message': 'Bad request',
-                    }
-            return JsonResponse(response_data, status = 400)
+                'error': True,
+                'message': 'Bad request'}
+            log.debug("Bad request")
+            return JsonResponse(response_data, status=400)
 
         try:
-            job = Job.objects.get(id = request.GET['id'])
+            job = Job.objects.get(id=request.GET['id'])
         except ObjectDoesNotExist:
             response_data = {
-                    'error': True,
-                    'message': 'Job does not exist',
-                    }
-            return JsonResponse(response_data, status = 404)
+                'error': True,
+                'message': 'Job does not exist'}
+            log.debug("Job does not exist")
+            return JsonResponse(response_data, status=404)
 
         if job.confidential:
             response_data = {
-                    'error': True,
-                    'message': 'You are not allowed to see this job',
-                    }
-            return JsonResponse(response_data, status = 403)
+                'error': True,
+                'message': 'You are not allowed to see this job'}
+            log.debug("Permission denied")
+            return JsonResponse(response_data, status=403)
 
         try:
             task = Task.objects.get(
-                    job = job,
-                    pack__contaminant__uniprot_id = request.GET['uniprot_id'],
-                    pack__number = request.GET['pack_nb'],
-                    space_group = request.GET['space_group']
-                    )
+                job=job,
+                pack__contaminant__uniprot_id=request.GET['uniprot_id'],
+                pack__number=request.GET['pack_nb'],
+                space_group=request.GET['space_group'])
         except ObjectDoesNotExist:
             response_data = {
-                    'error': True,
-                    'message': 'Task does not exist',
-                    }
-            return JsonResponse(response_data, status = 404)
+                'error': True,
+                'message': 'Task does not exist'}
+            log.debug("Task does not exist")
+            return JsonResponse(response_data, status=404)
 
         if not task.status_complete or task.percent < 90:
             response_data = {
-                    'error': True,
-                    'message': 'File is not available',
-                    }
-            return JsonResponse(response_data, status = 404)
+                'error': True,
+                'message': 'File is not available'}
+            log.debug("File is not available")
+            return JsonResponse(response_data, status=404)
 
-        filename = task.get_final_filename(suffix = file_format)
+        filename = task.get_final_filename(suffix=file_format)
         url = settings.STATIC_URL + filename
 
         log.debug("Exit with: " + str(url))

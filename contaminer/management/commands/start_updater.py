@@ -16,36 +16,34 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    Add a command to manage.py to start the updating process for one or
-    several jobs
-"""
+"""Start the updating process for one or several jobs."""
+
+import logging
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 
 from contaminer.models.contaminer import Job
 
-import logging
 
 class Command(BaseCommand):
-    """
-        Call update_thread on non archived jobs
-    """
+    """Call update_thread on non archived jobs."""
 
     help = 'Start the updater process for the jobs with the given IDs. If no '\
             + 'ID is given, start a detached process to update all the non ' \
             + 'archived jobs.'
 
     def add_arguments(self, parser):
+        """Add job_id as optional argument."""
         parser.add_argument('job_id', nargs='?', type=int)
 
     def handle(self, *args, **options):
+        """Run one process per non archived job, or one process for job_id."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         if not options['job_id']:
-            jobs = Job.objects.filter(status_archived = False)
+            jobs = Job.objects.filter(status_archived=False)
             for job in jobs:
                 job.start_update_process()
 
@@ -53,14 +51,12 @@ class Command(BaseCommand):
             job_id = options['job_id']
 
             try:
-                job = Job.objects.get(id = job_id)
+                job = Job.objects.get(id=job_id)
             except Job.DoesNotExist:
-                raise CommandError(
-                        'Job "%s" does not exist.' % job_id)
+                raise CommandError('Job "%s" does not exist.' % job_id)
 
             if job.status_archived:
-                raise CommandError(
-                        'Job "%s" is archived.' % job_id)
+                raise CommandError('Job "%s" is archived.' % job_id)
 
             self.stdout.write("Periodically update job with ID: " \
                     + str(job_id))

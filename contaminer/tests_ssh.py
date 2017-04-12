@@ -230,6 +230,8 @@ class SSHChannelTestCase(TestCase):
     @mock.patch('contaminer.ssh_tools.SSHChannel.__exit__')
     def test_exec_command_raises_exception_with_stderr(self,
             mock_exit, mock_enter, mock_super):
+        sshChannel = SSHChannel()
+        mock_exit.return_value = None
         mock_ssh = mock.MagicMock()
         stdout = mock.MagicMock()
         stdout.read.return_value = "2"
@@ -238,7 +240,6 @@ class SSHChannelTestCase(TestCase):
         mock_ssh.exec_command.return_value = (0, stdout, stderr)
         mock_enter.return_value = mock_ssh
         mock_super.return_value = mock_ssh
-        sshChannel = SSHChannel()
         with self.assertRaisesMessage(RuntimeError, "3"):
             sshChannel.exec_command("foo")
 
@@ -246,6 +247,7 @@ class SSHChannelTestCase(TestCase):
     @mock.patch('contaminer.ssh_tools.SSHChannel.__exit__')
     def test_read_file_send_correct_command(self,
             mock_exit, mock_enter):
+        mock_exit.return_value = None
         mock_ssh = mock.MagicMock()
         stdout = mock.MagicMock()
         stdout.read.return_value = "2"
@@ -262,6 +264,7 @@ class SSHChannelTestCase(TestCase):
     @mock.patch('contaminer.ssh_tools.SSHChannel.__exit__')
     def test_read_file_gives_correct_output(self,
             mock_exit, mock_enter, mock_super):
+        mock_exit.return_value = None
         mock_ssh = mock.MagicMock()
         mock_ssh.exec_command.return_value = '2'
         mock_enter.return_value = mock_ssh

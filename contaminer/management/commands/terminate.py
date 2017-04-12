@@ -17,10 +17,11 @@
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-    Add command to manage.py to terminate one job
+Terminate a job.
+
+This command will be deprecated.
 """
 
-import re
 import logging
 
 from django.core.management.base import BaseCommand, CommandError
@@ -28,14 +29,16 @@ from contaminer.models.contaminer import Job
 
 
 class Command(BaseCommand):
-    """ Command available in manage.py """
+    """Terminate a job."""
 
     help = 'Retrieve information from the cluster to terminate a job'
 
     def add_arguments(self, parser):
+        """Add mandatory argument job_id."""
         parser.add_argument('job_id', nargs='+', type=int)
 
     def handle(self, *args, **options):
+        """Call job.update for each job_id."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
@@ -47,7 +50,7 @@ class Command(BaseCommand):
                 job.update()
             except (Job.DoesNotExist, RuntimeError):
                 raise CommandError(
-                'Job "%s" does not exist or is not completed.' % job_id)
+                    'Job "%s" does not exist or is not completed.' % job_id)
 
             log.info("Job " + str(job_id) + " complete")
             self.stdout.write('Successfully terminate job number "%s"' % job_id)

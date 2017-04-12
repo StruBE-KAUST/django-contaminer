@@ -16,11 +16,10 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    This module set what you see in the admin pages of Django
-"""
+"""This module set what you see in the admin pages of Django."""
 
 from django.contrib import admin
+
 from .models.contabase import Category
 from .models.contabase import Contaminant
 from .models.contabase import Pack

@@ -16,9 +16,7 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    This module provides the forms for the ContaMiner application
-"""
+"""This module provides the forms for the ContaMiner application."""
 
 import logging
 
@@ -27,7 +25,7 @@ from django.utils import text
 from django.core.exceptions import ObjectDoesNotExist
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Field, HTML, Fieldset
+from crispy_forms.layout import Layout, Field, Fieldset
 from crispy_forms.bootstrap import StrictButton, Tab, TabHolder
 
 from .models.contabase import ContaBase
@@ -36,18 +34,18 @@ from .models.contabase import Contaminant
 
 
 class SubmitJobForm(forms.Form):
-    """
-        Upload a mtz or cif file and select contaminants to test
-    """
-    name = forms.CharField(max_length = 50, required = False)
+    """Upload a mtz or cif file and select contaminants to test."""
+
+    name = forms.CharField(max_length=50, required=False)
     diffraction_data = forms.FileField()
     confidential = forms.BooleanField(
-            label = "Make your job confidential",
-            required = False)
+        label="Make your job confidential",
+        required=False)
 
     def __init__(self, *args, **kwargs):
+        """Create a new form."""
         log = logging.getLogger(__name__)
-        log.debug("Entering function")
+        log.debug("Enter")
 
         # Pop user if given
         user = None
@@ -58,43 +56,38 @@ class SubmitJobForm(forms.Form):
 
         self.helper = FormHelper()
         self.helper.layout = Layout(
-                TabHolder(
-                    Tab('File',
-                        Field(
-                            'name',
-                            'diffraction_data',
-                            'email_address'
-                        ),
-                    ),
-                    Tab('Contaminants',
-                    ),
-                ),
-                StrictButton(
-                    '<span class="ladda-label">Submit</span>',
-                    type="submit",
-                    css_class="btn btn-primary ladda-button submit_button",
-                    data_style="expand-right",
-                )
+            TabHolder(
+                Tab('File',
+                    Field(
+                        'name',
+                        'diffraction_data',
+                        'email_address'
+                    )),
+                Tab('Contaminants',),
+            ),
+            StrictButton(
+                '<span class="ladda-label">Submit</span>',
+                type="submit",
+                css_class="btn btn-primary ladda-button submit_button",
+                data_style="expand-right",
             )
+        )
 
         # Add confidential button and pre-fill e-mail if user if logged in
         if user and user.is_authenticated():
             self.helper.layout[0][0].append("confidential")
             self.fields['email_address'] = forms.EmailField(
-                    initial = user.email,
-                    required = True
-                    )
+                initial=user.email,
+                required=True)
         else:
             self.fields['email_address'] = forms.EmailField(
-                    required = True
-                    )
+                required=True)
 
         # Add contaminants selection to form
         try:
             contabase = ContaBase.get_current()
             categories = Category.objects.filter(
-                    contabase = contabase
-                    )
+                contabase=contabase)
         except ObjectDoesNotExist:
             categories = []
 
@@ -112,15 +105,15 @@ class SubmitJobForm(forms.Form):
                     + "</button></h3>"
 
             fields = []
-            for contaminant in Contaminant.objects.filter(category = category):
+            for contaminant in Contaminant.objects.filter(category=category):
                 self.fields[contaminant.uniprot_id] = forms.BooleanField(
-                        label = contaminant.short_name + " - " +\
-                                contaminant.long_name,
-                        required = False,
-                        initial = initial,
-                        )
+                    label=contaminant.short_name +" - "+ contaminant.long_name,
+                    required=False,
+                    initial=initial)
                 fields.append(contaminant.uniprot_id)
-            self.helper.layout[0][1].append(Fieldset(title,*fields,
+            self.helper.layout[0][1].append(Fieldset(
+                title,
+                *fields,
                 css_class=text.slugify(category)))
 
-        log.debug("Exiting function")
+        log.debug("Exit")

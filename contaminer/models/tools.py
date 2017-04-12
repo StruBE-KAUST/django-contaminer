@@ -17,34 +17,41 @@
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-    Miscalleneous models for ContaBase and ContaMiner
-    =================================================
+Additional fields for ContaBase and ContaMiner.
 
-    This module provides various custom models used in ContaBase and ContaMiner
-    models.
+This module provides various custom models used in ContaBase and ContaMiner
+models.
 """
 
 from django.db import models
 from django.core.exceptions import ValidationError
 
 class UpperCaseCharField(models.CharField):
+    """CharField limited to UpperCase characters."""
+
     description = "Upper case string"
 
     def __init__(self, *args, **kwargs):
+        """Create a new UpperCaseCharField."""
         super(UpperCaseCharField, self).__init__(*args, **kwargs)
 
     def pre_save(self, model_instance, add):
+        """Set the value in UPPERCASE before saving."""
         value = super(UpperCaseCharField, self).pre_save(model_instance, add)
         return value.upper()
 
 
 class PercentageField(models.IntegerField):
+    """IntegerField limited to 0 to 100."""
+
     description = "An integer between 0 and 100"
 
     def __init__(self, *args, **kwargs):
+        """Create a new PercentageField."""
         super(PercentageField, self).__init__(*args, **kwargs)
 
     def pre_save(self, model_instance, add):
+        """Check the validity of the field before saving."""
         value = super(PercentageField, self).pre_save(model_instance, add)
         if (value < 0 or value > 100) and value is not None:
             raise ValidationError("Invalid percentage: " + str(value))
