@@ -22,7 +22,6 @@ import logging
 
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-from django.core.exceptions import ValidationError
 
 from contaminer.models.contabase import ContaBase
 
@@ -40,7 +39,7 @@ class Command(BaseCommand):
 
         try:
             ContaBase.update()
-        except ValidationError as excep:
+        except Exception as excep:
             raise CommandError(
                 'Update failed. Here is the reason: ' + str(excep))
 

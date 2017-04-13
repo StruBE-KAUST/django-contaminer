@@ -148,6 +148,15 @@ class ContaBaseTestCase(TestCase):
         ContaBase.update()
         self.assertEqual(len(mock_category_update.mock_calls), 2)
 
+    @mock.patch('contaminer.models.contabase.Category.update')
+    @mock.patch('contaminer.models.contabase.SSHChannel.get_contabase')
+    def test_update_updates_raises_error_on_not_ready_CB(self,
+            mock_get_contabase, mock_category_update):
+        get_response = 'ContaBase is not ready\n'
+        mock_get_contabase.return_value = get_response
+        with self.assertRaises(RuntimeError):
+            ContaBase.update()
+
     def test_to_detailed_dict_gives_correct_result(self):
         ContaBase.objects.create()
         contabase = ContaBase.get_current()

@@ -96,7 +96,12 @@ class ContaBase(models.Model):
         new_contabase = ContaBase.get_current()
 
         parser = ET.XMLParser(remove_blank_text=True)
-        contabase = ET.XML(SSHChannel().get_contabase(), parser)
+        contabase_raw = SSHChannel().get_contabase()
+        try:
+            contabase = ET.XML(contabase_raw, parser)
+        except ET.XMLSyntaxError:
+            if "not ready" in contabase_raw:
+                raise RuntimeError(contabase_raw)
 
         for category in contabase.iter('category'):
             log.debug("Category found")
