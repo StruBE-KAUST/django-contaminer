@@ -157,6 +157,18 @@ class ContaBaseTestCase(TestCase):
         with self.assertRaises(RuntimeError):
             ContaBase.update()
 
+    @mock.patch('contaminer.models.contabase.Category.update')
+    @mock.patch('contaminer.models.contabase.SSHChannel.get_contabase')
+    def test_update_updates_does_not_make_obsolete_on_not_ready_CB(self,
+            mock_get_contabase, mock_category_update):
+        get_response = 'ContaBase is not ready\n'
+        ContaBase.objects.create()
+        mock_get_contabase.return_value = get_response
+        try:
+            ContaBase.objects.get(obsolete=False)
+        except Exception as e:
+            self.fail(e)
+
     def test_to_detailed_dict_gives_correct_result(self):
         ContaBase.objects.create()
         contabase = ContaBase.get_current()

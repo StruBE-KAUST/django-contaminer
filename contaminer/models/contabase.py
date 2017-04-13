@@ -88,13 +88,6 @@ class ContaBase(models.Model):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        cls.make_all_obsolete()
-
-        new_contabase = ContaBase()
-        new_contabase.obsolete = False
-        new_contabase.save()
-        new_contabase = ContaBase.get_current()
-
         parser = ET.XMLParser(remove_blank_text=True)
         contabase_raw = SSHChannel().get_contabase()
         try:
@@ -102,6 +95,13 @@ class ContaBase(models.Model):
         except ET.XMLSyntaxError:
             if "not ready" in contabase_raw:
                 raise RuntimeError(contabase_raw)
+
+        cls.make_all_obsolete()
+
+        new_contabase = ContaBase()
+        new_contabase.obsolete = False
+        new_contabase.save()
+        new_contabase = ContaBase.get_current()
 
         for category in contabase.iter('category'):
             log.debug("Category found")
