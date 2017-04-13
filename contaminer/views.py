@@ -57,7 +57,7 @@ class SubmitJobView(View):
             categories = {}
 
         if form is None:
-            form = SubmitJobForm(user=request.user)
+            form = SubmitJobForm(user=getattr(request, 'user', None))
 
         response_data = render(
             request,
