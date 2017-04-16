@@ -28,10 +28,8 @@ See models/contabase.py for the ContaBase related models.
 import os
 import re
 import datetime
-import time
 import logging
 import errno
-import subprocess
 
 from django.apps import apps
 from django.db import models
@@ -76,8 +74,6 @@ class Job(models.Model):
         null=True)
     email = models.EmailField(blank=True, null=True)
     confidential = models.BooleanField(default=False)
-
-    update_pid = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         """Write id (email)."""
@@ -182,9 +178,6 @@ class Job(models.Model):
         self.status_submitted = True
         self.save()
 
-        # Start updating scheduler
-        self.start_update_process()
-
         log.debug("Job " + str(self.id) + " submitted")
         log.debug("Exiting function")
 
@@ -283,44 +276,32 @@ class Job(models.Model):
 
         log.debug("Exit")
 
-    def update_process(self):
-        """Periodically update the job."""
-        app_config = apps.get_app_config('contaminer')
-        start_time = time.time()
+    @classmethod
+    def update_all(cls):
+        """Update all the non-archived and submitted jobs."""
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
 
-        while time.time() - start_time < app_config.update_timeout \
-                and not self.status_archived:
-            self.update()
-            time.sleep(app_config.update_interval)
-
-        if not self.status_archived:
-            self.status_error = True
-            self.save()
-
-        self.update_pid = None
-        self.save()
-
-    def start_update_process(self):
-        """Start update_process as a subprocess through manage.py."""
-        manage_location = os.path.join(
-            settings.BASE_DIR,
-            'manage.py')
-        if self.update_pid:
+        jobs = Job.objects.filter(
+            status_archived=False,
+            status_submitted=True)
+        for job in jobs:
+            log.debug("Update job: " + str(job))
             try:
-                os.kill(self.update_pid, 0)
-            except OSError:
-                self.update_pid = None
-            else:
-                return
+                job.update()
+            except RuntimeError as excep:
+                log.error("Job update interrupted with exception: " \
+                    + str(excep))
+                message = "Error when updating job: " + str(job) \
+                    + "\n" + str(excep)
+                send_mail(
+                    "Update error",
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [settings.DEFAULT_CONTACT])
 
-        fnull = open(os.devnull, 'w')
-        proc = subprocess.Popen(
-            ['python', manage_location, 'start_updater', str(self.id)],
-            stdout=fnull,
-            stderr=subprocess.STDOUT)
+        log.debug("Exit")
 
-        self.update_pid = proc.pid
-        self.save()
 
     def to_detailed_dict(self):
         """Return a dictionary of the fields."""

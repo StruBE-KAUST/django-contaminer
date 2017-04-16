@@ -32,9 +32,7 @@ import mock
 import timeout_decorator
 
 import lxml.etree as ET
-import json
 import datetime
-import time
 
 from .contabase import ContaBase
 from .contabase import Category
@@ -1491,12 +1489,6 @@ class JobTestCase(TestCase):
     """
         Test the Job model
     """
-    def setUp(self):
-        self.patcher = \
-            mock.patch('contaminer.models.contaminer.Job.update_process')
-        self.mock_update_process = self.patcher.start()
-        self.addCleanup(self.patcher.stop)
-
     @mock.patch('contaminer.models.contaminer.Job.update_status')
     def test_Job_is_well_displayed(self, mock__):
         job = Job.objects.create(
@@ -2003,12 +1995,11 @@ class JobTestCase(TestCase):
                 job.get_filename(),
                 "web_task_" + str(job.id))
 
-    @mock.patch('contaminer.models.contaminer.Job.start_update_process')
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_send_input_file(self, mock_sftpchannel, mock_remove,
-            mock_CMConfig, mock__):
+            mock_CMConfig):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -2027,12 +2018,11 @@ class JobTestCase(TestCase):
             "/local/dir/file.mtz",
             "/remote/dir")
 
-    @mock.patch('contaminer.models.contaminer.Job.start_update_process')
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_write_contaminants_list(self, mock_sftpchannel,
-            mock_remove, mock_CMConfig, mock__):
+            mock_remove, mock_CMConfig):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -2050,12 +2040,11 @@ class JobTestCase(TestCase):
         mock_client.write_file("/remote/dir/web_task_" + str(job.id) + ".txt",
             "cont1\ncont2\n")
 
-    @mock.patch('contaminer.models.contaminer.Job.start_update_process')
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_runs_contaminer(self, mock_sftpchannel, mock_remove,
-            mock_CMConfig, mock__):
+            mock_CMConfig):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -2075,34 +2064,11 @@ class JobTestCase(TestCase):
                 + '"web_task_' + str(job.id) + '.mtz" ' \
                 + '"web_task_' + str(job.id) + '.txt"')
 
-    @mock.patch('contaminer.models.contaminer.Job.start_update_process')
-    @mock.patch('contaminer.models.contaminer.apps.get_app_config')
-    @mock.patch('contaminer.models.contaminer.os.remove')
-    @mock.patch('contaminer.models.contaminer.SFTPChannel')
-    def test_submit_launches_background_updater(self, mock_sftpchannel, mock_remove,
-            mock_CMConfig, mock_start_update):
-        mock_config = mock.MagicMock()
-        mock_config.ssh_work_directory = "/remote/dir"
-        mock_config.ssh_contaminer_location = "/remote/CM"
-        mock_CMConfig.return_value = mock_config
-        mock_client = mock.MagicMock()
-        mock_client.exec_command.return_value = ("", "")
-        mock_sftpchannel.return_value = mock_client
-        job = Job()
-        job.create(
-                name = "test",
-                email = "me@example.com,",
-                )
-        job = Job.objects.get(name = "test")
-        job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
-        self.assertTrue(mock_start_update.called)
-
-    @mock.patch('contaminer.models.contaminer.Job.start_update_process')
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_remove_local_file(self, mock_sftpchannel, mock_remove,
-            mock_CMConfig, mock__):
+            mock_CMConfig):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -2119,12 +2085,11 @@ class JobTestCase(TestCase):
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         mock_remove.assert_called_with("/local/dir/file.mtz")
 
-    @mock.patch('contaminer.models.contaminer.Job.start_update_process')
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
     def test_submit_change_status_to_submitted(self, mock_sftpchannel,
-            mock_remove, mock_CMConfig, mock__):
+            mock_remove, mock_CMConfig):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
         mock_config.ssh_contaminer_location = "/remote/CM"
@@ -2224,146 +2189,52 @@ class JobTestCase(TestCase):
         with self.assertRaises(RuntimeError):
             job.update_status()
 
-    @timeout_decorator.timeout(1)
-    @mock.patch('contaminer.models.contaminer.time')
     @mock.patch('contaminer.models.contaminer.Job.update')
-    def test_update_process_stops_after_timeout(self, mock_update, mock_time):
-        mock_time.time.side_effect = [0,0,1,86401]
-        self.patcher.stop()
-        try:
-            job = Job.create(
-                    name = "test",
-                    email = "me@example.com",
-                    )
-            job.update_process()
-        finally:
-            self.mock_update_process = self.patcher.start()
-        self.assertEqual(mock_update.call_count, 2)
-
-    @timeout_decorator.timeout(1)
-    @mock.patch('contaminer.models.contaminer.time')
-    @mock.patch('contaminer.models.contaminer.Job.update')
-    def test_update_process_waits_interval(self, mock_update, mock_time):
-        mock_time.time.side_effect = [0,1,86401]
-        self.patcher.stop()
-        try:
-            job = Job.create(
-                    name = "test",
-                    email = "me@example.com",
-                    )
-            job.update_process()
-        finally:
-            self.mock_update_process = self.patcher.start()
-        mock_time.sleep.assert_called_with(120)
-
-    @timeout_decorator.timeout(1)
-    @mock.patch('contaminer.models.contaminer.time')
-    @mock.patch('contaminer.models.contaminer.Job.update')
-    def test_update_process_sets_error_if_timedout(self, mock_update, mock_time):
-        mock_time.time.side_effect = [0,1,86401]
-        self.patcher.stop()
-        try:
-            job = Job.create(
-                    name = "test",
-                    email = "me@example.com",
-                    )
-            job.update_process()
-        finally:
-            self.mock_update_process = self.patcher.start()
-        self.assertTrue(job.status_error)
-
-    def make_job_archived(self):
-        self.job.status_archived = True
-        self.job.save()
-
-    @timeout_decorator.timeout(1)
-    @mock.patch('contaminer.models.contaminer.time')
-    @mock.patch('contaminer.models.contaminer.Job.update')
-    def test_update_process_sets_no_error_if_not_timedout(self, mock_update, mock_time):
-        mock_update.side_effect = self.make_job_archived
-        mock_time.time.side_effect = [0,1,86401]
-        self.patcher.stop()
-        try:
-            self.job = Job.create(
-                    name = "test",
-                    email = "me@example.com",
-                    )
-            self.job.update_process()
-        finally:
-            self.mock_update_process = self.patcher.start()
-        self.assertFalse(self.job.status_error)
-
-    @timeout_decorator.timeout(1)
-    @mock.patch('contaminer.models.contaminer.time')
-    @mock.patch('contaminer.models.contaminer.Job.update')
-    def test_update_process_resets_pid_when_complete(self, mock_update, mock_time):
-        mock_time.time.side_effect = [0,1,86401]
-        self.patcher.stop()
-        try:
-            job = Job.create(
-                    name = "test",
-                    email = "me@example.com",
-                    )
-            job.update_process()
-        finally:
-            self.mock_update_process = self.patcher.start()
-        self.assertEqual(job.update_pid, None)
-
-    @timeout_decorator.timeout(1)
-    @mock.patch('contaminer.models.contaminer.time')
-    @mock.patch('contaminer.models.contaminer.Job.update')
-    def test_update_process_stops_when_job_archived(self, mock_update, mock_time):
-        mock_update.side_effect = self.make_job_archived
-        mock_time.time.side_effect = [0,0,1,86401]
-        self.patcher.stop()
-        try:
-            self.job = Job.create(
-                    name = "test",
-                    email = "me@example.com",
-                    )
-            self.job.update_process()
-        finally:
-            self.mock_update_process = self.patcher.start()
-        mock_update.assert_called_once()
-
-    @mock.patch('contaminer.models.contaminer.subprocess')
-    def test_start_update_process_calls_manage_py(self, mock_subprocess):
-        mock_proc = mock.MagicMock()
-        mock_proc.pid = 5
-        mock_subprocess.Popen.return_value = mock_proc
+    def test_update_all_updates_job(self, mock_update):
         job = Job.create(
                 name = "test",
-                email = "me@example.com",
+                email="me@example.com",
                 )
-        job.start_update_process()
-        self.assertTrue(mock_subprocess.Popen.called)
+        job.status_submitted = True
+        job.save()
+        Job.update_all()
+        self.assertTrue(mock_update.called)
 
-    @mock.patch('contaminer.models.contaminer.subprocess')
-    def test_start_update_process_uses_good_job_id(self, mock_subprocess):
-        mock_proc = mock.MagicMock()
-        mock_proc.pid = 5
-        mock_subprocess.Popen.return_value = mock_proc
+    @mock.patch('contaminer.models.contaminer.Job.update')
+    def test_update_all_not_update_archived(self, mock_update):
         job = Job.create(
                 name = "test",
-                email = "me@example.com",
+                email="me@example.com",
                 )
-        job.start_update_process()
-        self.assertEqual(mock_subprocess.Popen.call_args[0][0][3], str(job.id))
+        job.status_submitted = True
+        job.status_archived = True
+        job.save()
+        Job.update_all()
+        self.assertFalse(mock_update.called)
 
-    @mock.patch('contaminer.models.contaminer.os.kill')
-    @mock.patch('contaminer.models.contaminer.subprocess')
-    def test_start_update_process_start_only_one_proc(self, mock_subprocess,
-            mock_os):
-        mock_proc = mock.MagicMock()
-        mock_proc.pid = 5
-        mock_subprocess.Popen.return_value = mock_proc
+    @mock.patch('contaminer.models.contaminer.Job.update')
+    def test_update_all_not_update_not_submitted(self, mock_update):
         job = Job.create(
                 name = "test",
-                email = "me@example.com",
+                email="me@example.com",
                 )
-        job.start_update_process()
-        job.start_update_process()
-        mock_subprocess.Popen.assert_called_once()
+        job.status_submitted = False
+        job.save()
+        Job.update_all()
+        self.assertFalse(mock_update.called)
+
+    @mock.patch('contaminer.models.contaminer.Job.update')
+    @mock.patch('contaminer.models.contaminer.send_mail')
+    def test_update_send_mail_if_expcetion(self, mock_mail, mock_update):
+        mock_update.side_effect = RuntimeError
+        job = Job.create(
+                name = "test",
+                email="me@example.com",
+                )
+        job.status_submitted = True
+        job.save()
+        Job.update_all()
+        self.assertTrue(mock_mail.called)
 
     def make_job_complete(self):
         self.job.status_complete = True
