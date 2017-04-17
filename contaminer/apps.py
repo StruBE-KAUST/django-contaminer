@@ -72,8 +72,8 @@ class ContaminerConfig(AppConfig):
             log.error("Use config.template to create your config.ini")
             raise IOError
 
-        self.admin_mail = config.set("DEFAULT", "admin_mail")
-        self.noreply_mail = config.set("DEFAULT", "noreply_mail")
+        self.admin_mail = config.get("DEFAULT", "admin_mail")
+        self.noreply_mail = config.get("DEFAULT", "noreply_mail")
         self.threshold = int(config.get("THRESHOLDS", "positive"))
         self.bad_model_coverage_threshold = int(config.get(
             "THRESHOLDS",
