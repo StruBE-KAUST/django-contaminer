@@ -2234,8 +2234,8 @@ class JobTestCase(TestCase):
         self.assertFalse(mock_update.called)
 
     @mock.patch('contaminer.models.contaminer.Job.update')
-    @mock.patch('contaminer.models.contaminer.send_mail')
-    def test_update_send_mail_if_expcetion(self, mock_mail, mock_update):
+    @mock.patch('contaminer.models.contaminer.mail_admins')
+    def test_update_send_mail_if_exception(self, mock_mail, mock_update):
         mock_update.side_effect = RuntimeError
         job = Job.create(
                 name = "test",

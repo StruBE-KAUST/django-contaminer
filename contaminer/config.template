@@ -20,5 +20,4 @@ bad_model_coverage = 85
 bad_model_identity = 80
 
 [DEFAULT]
-admin_mail = admin@example.com
 noreply_mail = noreply@cbrc.kaust.edu.sa

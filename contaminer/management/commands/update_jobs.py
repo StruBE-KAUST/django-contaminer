@@ -33,7 +33,7 @@ class Command(BaseCommand):
             + 'archived jobs.'
 
     def handle(self, *args, **options):
-        """Update all the non-archived and submitted jobs every 5 minutes."""
+        """Update all the non-archived and submitted jobs."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 

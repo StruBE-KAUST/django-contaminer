@@ -35,6 +35,7 @@ from django.apps import apps
 from django.db import models
 from django.conf import settings
 from django.core.mail import send_mail
+from django.core.mail import mail_admins
 from django.template.loader import render_to_string
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
@@ -282,8 +283,6 @@ class Job(models.Model):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        app_config = apps.get_app_config('contaminer')
-
         jobs = Job.objects.filter(
             status_archived=False,
             status_submitted=True)
@@ -296,11 +295,9 @@ class Job(models.Model):
                     + str(excep))
                 message = "Error when updating job: " + str(job) \
                     + "\n" + str(excep)
-                send_mail(
+                mail_admins(
                     "Update error",
-                    message,
-                    app_config.noreply_mail,
-                    [app_config.admin_mail])
+                    message)
 
         log.debug("Exit")
 
