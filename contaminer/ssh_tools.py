@@ -108,6 +108,8 @@ class SSHChannel(paramiko.SSHClient):
         log = logging.getLogger(__name__)
         log.debug("Enter with args: " + str(args) + " " + str(kwargs))
 
+        log.info("Execute command: " + str(args[0]))
+
         with self as ssh_channel:
             (_, stdout, stderr) = super(SSHChannel, ssh_channel).exec_command(
                 *args,
@@ -116,8 +118,10 @@ class SSHChannel(paramiko.SSHClient):
             stderr = stderr.read()
 
         if stderr is not '':
+            log.error("Error when running command: " + str(stderr))
             raise RuntimeError(stderr)
 
+        log.info("Stdout: " + str(stdout))
         log.debug("Exit with arg: " + str(stdout))
         return stdout
 

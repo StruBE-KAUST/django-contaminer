@@ -170,7 +170,7 @@ class Job(models.Model):
             + str(os.path.basename(remote_contaminants)) + '"'
 
         log.debug("Execute command on remote host:\n" + command)
-        stdout = client.exec_command(command)
+        stdout = SSHChannel().exec_command(command)
 
         log.debug("stdout: " + str(stdout))
 

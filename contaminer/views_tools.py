@@ -136,7 +136,7 @@ def newjob_handler(request):
         ).start()
     job.status_submitted = True
     job.save()
-    log.info("New job submitted")
+    log.info("New job submitted: " + str(job))
 
     response_data = {
         'error': False,
