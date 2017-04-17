@@ -49,7 +49,7 @@ urlpatterns = [
     url(r'^detailed_contaminant/(?P<uniprot_id>.*)$',
         views_api.DetailedContaminantView.as_view(),
         name='detailed_contaminant'),
-    url(r'^job',
+    url(r'^job$',
         views_api.JobView.as_view(),
         name='job'),
     url(r'^job/status/(?P<job_id>[0-9]*)$',
