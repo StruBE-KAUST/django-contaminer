@@ -282,6 +282,8 @@ class Job(models.Model):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
+        app_config = apps.get_app_config('contaminer')
+
         jobs = Job.objects.filter(
             status_archived=False,
             status_submitted=True)
@@ -297,8 +299,8 @@ class Job(models.Model):
                 send_mail(
                     "Update error",
                     message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [settings.DEFAULT_CONTACT])
+                    app_config.noreply_mail,
+                    [app_config.admin_mail])
 
         log.debug("Exit")
 
@@ -449,13 +451,15 @@ class Job(models.Model):
             'result_link': result_url,
             'site_name': "ContaMiner"}
 
+        app_config = apps.get_app_config('contaminer')
+
         message = render_to_string(
             "ContaMiner/email/complete_message.html",
             ctx)
         send_mail(
             "Job complete",
             "",
-            settings.DEFAULT_FROM_EMAIL,
+            app_config.noreply_mail,
             [self.email],
             html_message=message)
         log.info("E-Mail sent to " + str(self.email))
