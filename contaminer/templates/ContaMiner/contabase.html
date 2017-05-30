@@ -1,0 +1,57 @@
+{% extends "ContaMiner/base.html" %}
+{% block app_name %}ContaBase{% endblock %}
+{% block content %}
+<h3>List of contaminants available</h3>
+<p>Did we miss a contaminant? Please <a href="{% url "contact" %}">send us</a> suggestions for additions, corrections and improvements of ContaBase.</p>
+{% load staticfiles %}
+<p>The ContaBase is available as a JSON file
+<a href="{% url "ContaMiner:contabase.json" %}">here</a>.</p>
+<dl>
+{% for category in contabase %}
+    <dt><span>{{ category.name }}</span></dt>
+    <dd><ul class="no-bullet">
+        {% for contaminant in category.contaminants %}
+        <li>
+        <a href="javascript://"
+           data-toggle="popover"
+           data-trigger="focus"
+           data-html="true"
+           data-content='
+<a href="http://www.uniprot.org/uniprot/{{ contaminant.uniprot_id }}">
+    Uniprot
+</a>
+<br/>
+{% for ref in contaminant.references %}
+<a href="http://www.ncbi.nlm.nih.gov/pubmed/
+{{ ref.pubmed_id }}">
+    Reference
+</a>
+<br/>
+{% endfor %}
+{% if contaminant.suggestions %}
+<strong>Suggested by:</strong>
+<br/>
+{% for sugg in contaminant.suggestions %}
+{{ sugg.name }}
+</br/>
+{% endfor %}
+{% endif %}
+            '>
+            {{ contaminant.short_name }} - {{ contaminant.long_name }} 
+            {% if contaminant.organism %}
+                (<em>{{ contaminant.organism }}</em>)
+                {% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul></dd>
+{% endfor %}
+</dl>
+{% endblock %}
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('[data-toggle="popover"]').popover();
+});
+</script>
+{% endblock %}

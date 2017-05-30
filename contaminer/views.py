@@ -1,4 +1,6 @@
-##    Copyright (C) 2016 Hungler Arnaud
+# -*- coding : utf-8 -*-
+
+##    Copyright (C) 2017 King Abdullah University of Science and Technology
 ##
 ##    This program is free software; you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
@@ -14,241 +16,185 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    ContaMiner views
-"""
+"""ContaMiner views."""
 
 import logging
-import os
-import re
-import errno
 
+from django.views.generic import View
 from django.shortcuts import render
-from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+from django.apps import apps
 
-from .forms import UploadStructure
-from .models import Contaminant
-from .models import Job
-from .models import Task
+from .forms import SubmitJobForm
+
+from .models.contabase import ContaBase
+from .models.contabase import Category
+from .models.contaminer import Job
+
+from .views_tools import newjob_handler
+from . import views_api
 
 
-def newjob(request):
-    """ Serve the form to submit a new job, or give the data to the handler """
-    log = logging.getLogger(__name__)
-    log.debug("Entering function")
+class SubmitJobView(View):
+    """Views to process the submitting form."""
 
-    if request.method == 'POST':
-        log.debug("POST request")
+    @staticmethod
+    def render_page(request, form=None):
+        """Render the page with the form."""
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
 
-        form = UploadStructure(request.POST,
-                request.FILES,
-                grouped_contaminants = Contaminant.get_all_by_category(),
-                request = request)
+        try:
+            contabase = ContaBase.get_current()
+            categories = Category.objects.filter(contabase=contabase)
+        except ObjectDoesNotExist:
+            messages.warning(request, "The ContaBase is empty. You should" \
+                    + " update the database before continuing by using" \
+                    + " manage.py update")
+            categories = {}
+
+        if form is None:
+            form = SubmitJobForm(user=getattr(request, 'user', None))
+
+        response_data = render(
+            request,
+            'ContaMiner/submit.html',
+            {
+                'form': form,
+                'categories': categories})
+
+        log.debug("Exit")
+        return response_data
+
+    def get(self, request):
+        """Serve the form to submit a new job."""
+        return self.render_page(request)
+
+    def post(self, request):
+        """If the form is valid, submit the job. Return the form otherwise."""
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            user = request.user
+        except AttributeError:
+            user = None
+
+        form = SubmitJobForm(
+            request.POST,
+            request.FILES,
+            user=user)
 
         if form.is_valid():
             log.debug("Valid form")
-            try:
-                newjob_handler(request)
-            except ValueError as e:
-                log.warning("Bad file submitted : " + str(e))
-                messages.error(request,
-                        "Bad input file. Please upload a valid cif or mtz\
-                        file.")
-            except Exception as e:
-                log.error("Error when submitting new job : " + str(e))
-                messages.error(request,
-                        "Something went wrong. Please try again later.")
+            response_data = newjob_handler(request)
+            if response_data['error']:
+                messages.error(request, response_data['message'])
+                response = self.render_page(request, form)
             else:
                 log.info("New job submitted")
                 messages.success(request, "File submitted")
+                # pylint: disable=redefined-variable-type
+                response = HttpResponseRedirect(reverse('ContaMiner:home'))
+        else:
+            log.debug("Invalid form")
+            messages.error(request, "Please check the form")
+            response = self.render_page(request, form)
 
-            result = HttpResponseRedirect(reverse('ContaMiner:home'))
+        log.debug("Exit")
+        return response
 
-            log.debug("Exiting function")
+
+class DisplayJobView(View):
+    """Views to see the results of a job."""
+
+    def get(self, request, job_id):
+        """Display the result of a job."""
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            job = Job.objects.get(pk=job_id)
+        except ObjectDoesNotExist:
+            messages.error(request, "This job does not exist.")
+            result = SubmitJobView().get(request)
+            result.status_code = 404
+            log.debug("Job not found")
             return result
 
-        # if form is not valid, the form is updated, then used after
-        # this else block
+        if job.confidential and request.user != job.author:
+            messages.error(request, "This job is confidential. You are not "\
+                    + "allowed to see the results.")
+            result = SubmitJobView().get(request)
+            result.status_code = 403
+            log.debug("Permission denied")
+            return result
 
-    else:
-        log.debug("Give the form")
-        form = UploadStructure(
-                grouped_contaminants = Contaminant.get_all_by_category(),
-                request = request
-                )
+        if not job.status_complete:
+            messages.warning(request, "This job is not yet complete.")
+            result = SubmitJobView().get(request)
+            log.debug("Job not complete")
+            log.debug(result)
+            return result
 
-    result = render(request, 'ContaMiner/newjob.html', {'form': form})
+        # Retrieve best tasks for this
+        best_tasks = job.get_best_tasks()
 
-    log.debug("Exiting function")
-    return result
+        app_config = apps.get_app_config('contaminer')
+        # If a positive result is found for a pack with low coverage or low
+        # identity display a message to encourage publication
+        for task in best_tasks:
+            if task.percent >= app_config.threshold:
+                coverage = task.pack.coverage
+                identity = task.pack.identity
 
+                if coverage < app_config.bad_model_coverage_threshold \
+                    or identity < app_config.bad_model_identity_threshold:
+                    messages.info(request, "Your dataset gives a positive "\
+                            + "result for a contaminant for which no "\
+                            + "identical model is available in the PDB.\nYou "\
+                            + "could deposit or publish this structure.")
 
-def newjob_handler(request):
-    """ Interface between the request and the Job model """
-    log = logging.getLogger(__name__)
-    log.debug("Entering function")
-
-    # Define user and confidentiality
-    user = None
-    confidential = False
-    if request.user is not None and request.user.is_authenticated():
-        user = request.user
-
-        # If choosen, define confidential
-        if request.POST.has_key('confidential'):
-            confidential = request.POST['confidential']
-
-    log.debug("User : " + str(user))
-    log.debug("Conf : " + str(confidential))
-
-    # Define job name
-    job_name = ""
-    if request.POST.has_key('job_name') and request.POST['job_name'] :
-        job_name = request.POST['job_name']
-    else:
-        for filename, file in request.FILES.iteritems():
-            job_name = file.name
-    log.debug("Job name : " + str(job_name))
-
-    # Define the file extension
-    suffix = ""
-    if re.match(".*\.cif$", request.FILES['structure_file'].name):
-        suffix = "cif"
-    elif re.match(".*\.mtz", request.FILES['structure_file'].name):
-        suffix = "mtz"
-    else:
-        raise ValueError
-    log.debug("Suffix : " + str(suffix))
-
-    # Define email
-    email = ""
-    if request.POST.has_key('email'):
-        email = request.POST['email']
-    log.debug("Email : " + str(email))
-
-    # Create job
-    newjob = Job()
-    newjob.create(
-            name = job_name,
-            author = user,
-            email = email,
-            confidential = confidential
-            )
-    log.debug("Job created")
-
-    # Save file in media path
-    filename = newjob.get_filename(suffix = suffix)
-    log.debug("Filename : " + str(filename))
-    file_path = os.path.join(settings.MEDIA_ROOT, filename)
-    try:
-        os.makedirs(settings.MEDIA_ROOT)
-    except OSError as e:
-        if e.errno == errno.EEXIST and os.path.isdir(settings.MEDIA_ROOT):
-            pass
-        else:
-            raise
-
-    with open(file_path, 'wb') as destination:
-        for chunk in request.FILES['structure_file']:
-            destination.write(chunk)
-    log.debug("Diffraction data file saved")
-
-    # Define list of contaminants
-    listname = newjob.get_filename(suffix='txt')
-    list_path = os.path.join(settings.MEDIA_ROOT, listname)
-    with open(list_path, 'wb') as destination:
-        for cont in Contaminant.get_all():
-            if request.POST.has_key(cont.uniprot_ID):
-                destination.write(cont.uniprot_ID + '\n')
-    log.debug("Contaminants list file saved")
-
-    # Submit job
-    newjob.submit(file_path, list_path)
-    log.debug("Job is submitted")
-
-    log.debug("Exiting function")
-
-
-def result(request, jobid):
-    """ Display the result of a job """
-    log = logging.getLogger(__name__)
-    log.debug("Entering function")
-
-    job = get_object_or_404(Job, pk = jobid)
-
-    if job.confidential and request.user != job.author:
-        messages.error(request, "This job is confidential. You are not "\
-                + "allowed to see the results.")
-        result = HttpResponseRedirect(reverse('ContaMiner:home'))
-        log.debug("Exiting function")
+        result = render(
+            request,
+            'ContaMiner/result.html',
+            {
+                'job': job,
+                'tasks': best_tasks,
+                'threshold': app_config.threshold})
+        log.debug("Exit")
         return result
 
-    if not job.finished:
-        messages.warning(request, "This job is not yet complete.")
-        result = HttpResponseRedirect(reverse('ContaMiner:home'))
-        log.debug("Exiting function")
+
+class ContaBaseView(View):
+    """Views accessible through contabase."""
+
+    def get(self, request):
+        """Display the list of registered contaminants."""
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        try:
+            contabase = ContaBase.get_current()
+            context = {'contabase': contabase.to_detailed_dict()['categories']}
+        except ObjectDoesNotExist:
+            messages.warning(request, "The ContaBase is empty. You should" \
+                    + " update the database before continuing by using" \
+                    + " manage.py update")
+            context = {'contabase': {}}
+
+        result = render(request, 'ContaMiner/contabase.html', context=context)
+
+        log.debug("Exit")
         return result
 
-    # Retrieve all tasks for this job
-    tasks = job.task_set.all()
 
-    # Keep only the best pack for each contaminant
-    best_tasks = []
-    for task in tasks:
-        # co_tasks are tasks for the same contaminant and same job
-        # (different pack and different space group)
-        co_tasks = [e_task
-                for e_task in best_tasks
-                if e_task.pack.contaminant == task.pack.contaminant]
-        if co_tasks:
-            # Can only be one pack
-            co_task = co_tasks[0]
-            if co_task.error or co_task.q_factor < task.q_factor:
-                task_index = best_tasks.index(co_task)
-                best_tasks[task_index] = task
+class ContaBaseJSONView(View):
+    """Views accessible through contabase.json."""
 
-        else:
-            best_tasks.append(task)
-
-    log.debug("Selected tasks : " + str(best_tasks))
-
-    # If a positive result is found for a pack with low coverage or low identity
-    # display a message to encourage publication
-    for task in best_tasks:
-        if task.percent > 95:
-            coverage = task.pack.coverage
-
-            models = task.pack.model_set.all()
-            identity = sum([model.identity for model in models]) / len(models)
-
-            if coverage < 85 or identity < 90:
-                messages.info(request, "Your dataset gives a positive result "\
-                        + "for a contaminant for which no identical "\
-                        + "model is available in the PDB.\nYou could deposit "\
-                        + "or publish this structure.")
-
-    result = render(request, 'ContaMiner/result.html',
-            {'job': job, 'tasks': best_tasks})
-    log.debug("Exiting function")
-    return result
-
-
-def list_contaminants(request):
-    """ Display the list of registered contaminants """
-    log = logging.getLogger(__name__)
-    log.debug("Entering function")
-
-    context = {'list_contaminants': Contaminant.get_all_by_category()}
-    result = render(request, 'ContaMiner/list.html', context = context)
-
-    log.debug("Exiting function")
-    return result
-
-def download(request):
-    """ Show how to download the ContaMiner application """
-    result = render(request, 'ContaMiner/download.html')
-    return result
+    def get(self, request):
+        """Return the contabase in JSON format."""
+        return views_api.ContaBaseView.as_view()(request)

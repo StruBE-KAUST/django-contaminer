@@ -1,6 +1,6 @@
 # -*- coding : utf-8 -*-
 
-##    Copyright (C) 2016 Hungler Arnaud
+##    Copyright (C) 2017 King Abdullah University of Science and Technology
 ##
 ##    This program is free software; you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
@@ -16,84 +16,104 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    This module provides the forms for the ContaMiner application
-"""
+"""This module provides the forms for the ContaMiner application."""
 
 import logging
 
 from django import forms
+from django.utils import text
+from django.core.exceptions import ObjectDoesNotExist
+
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Field, HTML
+from crispy_forms.layout import Layout, Field, Fieldset
 from crispy_forms.bootstrap import StrictButton, Tab, TabHolder
 
-class UploadStructure(forms.Form):
-    """ Form to upload a mtz or cif file """
+from .models.contabase import ContaBase
+from .models.contabase import Category
+from .models.contabase import Contaminant
 
-    job_name = forms.CharField(max_length = 50, required = False)
-    structure_file = forms.FileField()
+
+class SubmitJobForm(forms.Form):
+    """Upload a mtz or cif file and select contaminants to test."""
+
+    name = forms.CharField(max_length=50, required=False)
+    diffraction_data = forms.FileField()
     confidential = forms.BooleanField(
-            label = "Make your job confidential",
-            required = False)
+        label="Make your job confidential",
+        required=False)
 
     def __init__(self, *args, **kwargs):
+        """Create a new form."""
         log = logging.getLogger(__name__)
-        log.debug("Entering function")
+        log.debug("Enter")
 
-        request = kwargs.pop("request")
+        # Pop user if given
+        user = None
+        if "user" in kwargs:
+            user = kwargs.pop("user")
 
-        grouped_contaminants = {}
-        if kwargs.has_key("grouped_contaminants"):
-            log.debug("List of contaminants is provided")
-            grouped_contaminants = kwargs.pop("grouped_contaminants")
-
-        super(UploadStructure, self).__init__(*args, **kwargs)
+        super(SubmitJobForm, self).__init__(*args, **kwargs)
 
         self.helper = FormHelper()
         self.helper.layout = Layout(
-                TabHolder(
-                    Tab('File',
-                        Field(
-                            'job_name',
-                            'structure_file',
-                            'email'
-                        ),
-                    ),
-                    Tab('Contaminants',
-                    ),
-                ),
-                StrictButton(
-                    '<span class="ladda-label">Submit</span>',
-                    type="submit",
-                    css_class="btn btn-primary ladda-button submit_button",
-                    data_style="expand-right",
-                )
+            TabHolder(
+                Tab('File',
+                    Field(
+                        'name',
+                        'diffraction_data',
+                        'email_address'
+                    )),
+                Tab('Contaminants',),
+            ),
+            StrictButton(
+                '<span class="ladda-label">Submit</span>',
+                type="submit",
+                css_class="btn btn-primary ladda-button submit_button",
+                data_style="expand-right",
             )
+        )
 
-        if request.user.is_authenticated():
+        # Add confidential button and pre-fill e-mail if user if logged in
+        if user and user.is_authenticated():
             self.helper.layout[0][0].append("confidential")
-            self.fields['email'] = forms.EmailField(
-                    initial = request.user.email,
-                    required = True
-                    )
+            self.fields['email_address'] = forms.EmailField(
+                initial=user.email,
+                required=True)
         else:
-            self.fields['email'] = forms.EmailField(
-                    required = True
-                    )
+            self.fields['email_address'] = forms.EmailField(
+                required=True)
 
-        for category in grouped_contaminants.keys():
+        # Add contaminants selection to form
+        try:
+            contabase = ContaBase.get_current()
+            categories = Category.objects.filter(
+                contabase=contabase)
+        except ObjectDoesNotExist:
+            categories = []
+
+        for category in categories:
             log.debug("Category found : " + str(category))
 
-            self.helper.layout[0][1].append(HTML("<h3>" + str(category) +
-            "</h3>"))
+            initial = (category.selected_by_default)
 
-            for contaminant in grouped_contaminants[category]:
-                initial = (category.selected_by_default)
-                self.fields[contaminant.uniprot_ID] = forms.BooleanField(
-                        label = contaminant.short_name + " - " +\
-                                contaminant.long_name,
-                        required = False,
-                        initial = initial)
-                self.helper.layout[0][1].append(contaminant.uniprot_ID)
+            title = "<h3 onclick=\"toggle_all('" \
+                    + text.slugify(category) + "')\">" \
+                    + category.name \
+                    + " <button type=\"button\" class=\"btn btn-primary "\
+                    + "btn-xs\">" \
+                    + "Toggle all" \
+                    + "</button></h3>"
 
-        log.debug("Exiting function")
+            fields = []
+            for contaminant in Contaminant.objects.filter(category=category):
+                self.fields[contaminant.uniprot_id] = forms.BooleanField(
+                    label=contaminant.short_name +" - "+ contaminant.long_name,
+                    required=False,
+                    initial=initial)
+                fields.append(contaminant.uniprot_id)
+            self.helper.layout[0][1].append(Fieldset(
+                title,
+                *fields,
+                css_class=text.slugify(category)))
+
+        log.debug("Exit")

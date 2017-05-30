@@ -1,6 +1,6 @@
 #!/bin/sh
 
-##    Copyright (C) 2016 Hungler Arnaud
+##    Copyright (C) 2017 King Abdullah University of Science and Technology
 ##
 ##    This program is free software; you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
@@ -16,14 +16,9 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-## This script communicates with the script finish.sh on the webserver to 
-## complete a job.
+# Switch to virtual environment stored in ven, then update all non-archived and
+# submitted jobs.
 
-# Copy this script to the ContaMiner installation on the cluster, overwrite 
-# existing finish.sh script, and change the path to the finish_webserver.sh
-# script
-path_terminate="webserver/contaminer/finish_webserver.sh"
-
-job_name=$(basename $(dirname "$1"))
-job_id=$(echo "$job_name" | sed 's/contaminer_\([0-9]*\)/\1/')
-ssh webserver "sh $path_terminate $job_id"
+BASE_DIR="$(dirname "$(readlink -f "$0")")"/../../StruBE-website
+. "$BASE_DIR"/venv/bin/activate
+python "$BASE_DIR/manage.py" update_jobs

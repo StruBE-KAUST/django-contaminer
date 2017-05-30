@@ -1,6 +1,6 @@
 # -*- coding : utf-8 -*-
 
-##    Copyright (C) 2016 Hungler Arnaud
+##    Copyright (C) 2017 King Abdullah University of Science and Technology
 ##
 ##    This program is free software; you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
@@ -16,16 +16,30 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    URL configuration for contaminer
-"""
+"""URL configuration for contaminer."""
 
 from django.conf.urls import url
+from django.conf.urls import include
+from django.views.generic.base import RedirectView
+from django.views.generic import TemplateView
 from . import views
 
 urlpatterns = [
-        url(r'^$', views.newjob, name='home'),
-        url(r'^(?P<jobid>\d+)$', views.result, name='result'),
-        url(r'^contaminants$', views.list_contaminants, name='contaminants'),
-        url(r'^download$', views.download, name='download'),
+    url(r'^api/', include('contaminer.urls_api', namespace="API")),
+    url(r'^contabase.json$', views.ContaBaseJSONView.as_view(),
+        name='contabase.json'),
+    url(r'^contabase$', views.ContaBaseView.as_view(),
+        name='contabase'),
+    url(r'^submit$', views.SubmitJobView.as_view(),
+        name='submit'),
+    url(r'^$', RedirectView.as_view(
+        pattern_name='ContaMiner:submit',
+        permanent=False,
+        ),
+        name='home'),
+    url(r'^display/(?P<job_id>\d+)$', views.DisplayJobView.as_view(),
+        name='display'),
+    url(r'^download$', TemplateView.as_view(
+        template_name="ContaMiner/download.html"),
+        name='download'),
 ]

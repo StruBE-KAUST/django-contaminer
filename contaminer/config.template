@@ -1,6 +1,6 @@
 # Copy this file on config.ini
 [SSH]
-hostname = cluster.exmaple.com
+hostname = cluster.example.com
 port = 22
 username = you
 password = no need if an identityfile is given
@@ -13,3 +13,11 @@ work_directory = /data/contaminer
 [LOCAL]
 tmp_dir = /tmp
 website_dir = /home/django/website/
+
+[THRESHOLDS]
+positive = 95
+bad_model_coverage = 85
+bad_model_identity = 80
+
+[DEFAULT]
+noreply_mail = noreply@cbrc.kaust.edu.sa

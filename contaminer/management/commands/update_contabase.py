@@ -16,43 +16,32 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-Terminate a job.
-
-This command will be deprecated.
-"""
+"""Update the ContaBase."""
 
 import logging
 
-from django.core.management.base import BaseCommand, CommandError
-from contaminer.models.contaminer import Job
+from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
 
+from contaminer.models.contabase import ContaBase
 
 class Command(BaseCommand):
-    """Terminate a job."""
+    """Update the ContaBase."""
 
-    help = 'Retrieve information from the cluster to terminate a job'
-
-    def add_arguments(self, parser):
-        """Add mandatory argument job_id."""
-        parser.add_argument('job_id', nargs='+', type=int)
+    help = 'Synchronize the ContaBase with the remote ContaMiner installation'
 
     def handle(self, *args, **options):
-        """Call job.update for each job_id."""
+        """Call ContaBase.update."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        for job_id in options['job_id']:
-            log.info("Complete job : " + str(job_id))
+        self.stdout.write("Update ContaBase. Please wait a minute...")
 
-            try:
-                job = Job.objects.get(pk=job_id)
-                job.update()
-            except (Job.DoesNotExist, RuntimeError):
-                raise CommandError(
-                    'Job "%s" does not exist or is not completed.' % job_id)
-
-            log.info("Job " + str(job_id) + " complete")
-            self.stdout.write('Successfully terminate job number "%s"' % job_id)
+        try:
+            ContaBase.update()
+        except Exception as excep:
+            raise CommandError(
+                'Update failed. Here is the reason: ' + str(excep))
 
         log.debug("Exit")
+        self.stdout.write('The ContaBase has been updated.')

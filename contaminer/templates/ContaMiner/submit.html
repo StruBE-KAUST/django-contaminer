@@ -5,7 +5,7 @@
 <p>ContaMiner is a rapid automated large-scale detection of contaminant
 crystals.</p>
 <p>Protein contaminants, from the expression host, purification buffers or from
-the affinity tags used, may cristallise instead of a protein of interest.
+the affinity tags used, may crystallise instead of a protein of interest.
 Unfortunately, this only becomes clear once the crystal structure has been
 determined...</p>
 <p>ContaMiner allows rapid screening of X-ray diffraction data against the most
@@ -17,9 +17,10 @@ likely proteins contaminants.</p>
     "https://en.wikipedia.org/wiki/Crystallographic_Information_File">cif</a>
 data file, ContaMiner uses an optimized molecular replacement procedure, based
 on the <a href= "http://www.biomexsolutions.co.uk/morda/">MoRDa</a> automatic
-molecular replacement pipeline. Contaminants tested include 33 E. coli
-contaminants, 8 protein tags and 5 proteins often added during purification.
-The full list is available <a href="{% url "ContaMiner:contaminants" %}">here</a>. Any
+molecular replacement pipeline. Contaminants tested include
+{% for category in categories %}{% if forloop.last %} and {% else %}{% if not forloop.first %},
+{% endif %}{% endif %}{{ category.count_contaminants }} {{ category.name }}{% endfor %}.
+The full list is available <a href="{% url "ContaMiner:contabase" %}">here</a>. Any
 additional suggestions or comments? -- Please
 <a href="{% url "contact" %}">let us know</a>.</p>
 <h3>Why should I use it ?</h3>
@@ -42,7 +43,7 @@ paper does not report, in fact, another structure of MBP.</p>
 The ouput is easy to read. Names refer to <a
 href="http://www.uniprot.org/">Uniprot</a> identifiers. Click on the
 identifiers to obtain MoRDa statistics.</p>
-<p>Colour code :
+<p>Colour code:
 {% load staticfiles %}
 <ul class="no-bullet">
     <li>
@@ -51,17 +52,24 @@ Contaminant highly likely
     </li>
     <li>
 <img src="{% static "images/warning.png" %}" style="height:1em;" />
-Possibly, but not likely, a contaminant
+Contaminant unlikely
     </li>
     <li>
 <img src="{% static "images/false.png" %}" style="height:1em;" />
-Not a contaminant
+Definitively not a contaminant
     </li>
 </ul></p>
-If ContaMiner gives you a positive result, you are encouraged to check if the submitted dataset is of significantly higher resolution as the currently available MR template. This case might justify deposition of you model and data at the PDB.
-<!-- After publication : If ContaMiner was useful, please cite : -->
+<p>
+If ContaMiner gives you a positive result, you are encouraged to check if the submitted dataset is of significantly higher resolution as the currently available MR template. This case might justify deposition of you model and data at the PDB.</p>
+<br/>
+<p>To cite ContaMiner and/or ContaBase, please use:<br/>
+Hungler A, Momin A, Diederichs K, Arold ST (2016)<br/>
+ContaMiner and ContaBase: a web server and database for early identification of unwantedly
+crystallized protein contaminants<br/>
+J. Appl. Cryst. 2016, 49:2252-2258<br/>
+<a href="http://scripts.iucr.org/cgi-bin/paper?ei5009">Read it here</a></p>
 
-<h3>It's your turn !</h3>
+<h3>It's your turn</h3>
 <div class="row">
     <div class="col-md-8">
         {% load crispy_forms_tags %}
@@ -72,4 +80,13 @@ If ContaMiner gives you a positive result, you are encouraged to check if the su
 <h3>Do it by yourself</h3>
 If you want to run ContaMiner on your own cluster, you can download it <a
          href="{% url "ContaMiner:download" %}">here</a>.
+{% endblock %}
+{% block scripts %}
+<script type="text/javascript">
+function toggle_all(category){
+    $('.' + category + ' input[type="checkbox"]').each(function() {
+        this.checked = !this.checked;
+    });
+}
+</script>
 {% endblock %}

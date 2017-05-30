@@ -16,43 +16,27 @@
 ##    with this program; if not, write to the Free Software Foundation, Inc.,
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-Terminate a job.
-
-This command will be deprecated.
-"""
+"""Start the updating process for one or several jobs."""
 
 import logging
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
+
 from contaminer.models.contaminer import Job
 
 
 class Command(BaseCommand):
-    """Terminate a job."""
+    """Call update_thread on non archived jobs."""
 
-    help = 'Retrieve information from the cluster to terminate a job'
-
-    def add_arguments(self, parser):
-        """Add mandatory argument job_id."""
-        parser.add_argument('job_id', nargs='+', type=int)
+    help = 'Start the updater process for the jobs with the given IDs. If no '\
+            + 'ID is given, start a detached process to update all the non ' \
+            + 'archived jobs.'
 
     def handle(self, *args, **options):
-        """Call job.update for each job_id."""
+        """Update all the non-archived and submitted jobs."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        for job_id in options['job_id']:
-            log.info("Complete job : " + str(job_id))
-
-            try:
-                job = Job.objects.get(pk=job_id)
-                job.update()
-            except (Job.DoesNotExist, RuntimeError):
-                raise CommandError(
-                    'Job "%s" does not exist or is not completed.' % job_id)
-
-            log.info("Job " + str(job_id) + " complete")
-            self.stdout.write('Successfully terminate job number "%s"' % job_id)
+        Job.update_all()
 
         log.debug("Exit")
