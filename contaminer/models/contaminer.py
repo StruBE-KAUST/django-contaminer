@@ -327,11 +327,9 @@ class Job(models.Model):
             result_data = {}
             result_data['uniprot_id'] = uniprot_id
 
-            contaminant = Contaminant.objects.get(
-                uniprot_id=uniprot_id,
-                category__contabase=ContaBase.get_current())
-
-            tasks = Task.objects.filter(job=self, pack__contaminant=contaminant)
+            tasks = Task.objects.filter(
+                    job=self,
+                    pack__contaminant__uniprot_id=uniprot_id)
 
             error = True # All tasks are in error
             complete = True # All tasks are complete
