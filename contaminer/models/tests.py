@@ -899,17 +899,13 @@ class PackTestCase(TestCase):
         Test the Pack model
     """
     def setUp(self):
-        ContaBase.objects.create()
-        contabase = ContaBase.objects.all()[0]
-        Category.objects.create(
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
                 number = 1,
                 name="Protein in E.Coli",
                 contabase = contabase,
                 )
-        category = Category.objects.get(
-                name="Protein in E.Coli",
-                )
-        Contaminant.objects.create(
+        contaminant = Contaminant.objects.create(
                 uniprot_id = "P0ACJ8",
                 category = category,
                 short_name = "CRP_ECOLI",
@@ -917,10 +913,7 @@ class PackTestCase(TestCase):
                 sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
                 organism = "Escherichia coli",
                 )
-        contaminant = Contaminant.objects.get(
-                uniprot_id = "P0ACJ8",
-                )
-        Pack.objects.create(
+        self.pack = Pack.objects.create(
                 contaminant = contaminant,
                 number = 1,
                 structure = "2-mer",
@@ -946,6 +939,16 @@ class PackTestCase(TestCase):
                     number = 1,
                     structure = "2-mer",
                     )
+
+    def test_Pack_can_save_if_already_exist(self):
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                )
+        self.pack.structure = "3-mer"
+        try:
+            self.pack.save()
+        except ValidationError:
+            self.fail("Cannot save an existing pack")
 
     def test_Pack_structure_is_valid_structure(self):
         contaminant = Contaminant.objects.get(
