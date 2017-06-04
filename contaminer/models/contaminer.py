@@ -521,11 +521,15 @@ class Task(models.Model):
         uniprot_id, pack_number, space_group = pack.split('_')
 
         # Parse time
-        hours, minutes, seconds = re.split(' +', elapsed_time)
-        hours = int(hours[:-1])
-        minutes = int(minutes[:-1])
-        seconds = int(seconds[:-1])
-        elapsed_seconds = ((hours * 60) + minutes) * 60 + seconds
+        try:
+            hours, minutes, seconds = re.split(' +', elapsed_time)
+        except ValueError:
+            elapsed_seconds=0
+        else:
+            hours = int(hours[:-1])
+            minutes = int(minutes[:-1])
+            seconds = int(seconds[:-1])
+            elapsed_seconds = ((hours * 60) + minutes) * 60 + seconds
 
         result = {
             'uniprot_id': uniprot_id,
@@ -574,17 +578,18 @@ class Task(models.Model):
             task.pack = pack
             task.space_group = parsed_line['space_group']
 
-        if parsed_line['scores'] == "cancelled":
+        if parsed_line['scores'] in ["cancelled", "error"]:
             task.percent = 0
             task.q_factor = 0.
 
-        task.status_complete = (not parsed_line['scores'] == "cancelled")
+        task.status_complete = \
+            (not parsed_line['scores'] in ["cancelled", "error"])
 
         task.status_error = (parsed_line['scores'] == "error")
 
         if task.status_complete and not task.status_error:
             log.debug("Task complete")
-            if parsed_line['scores'] == "nosolution":
+            if parsed_line['scores'] in ["nosolution", "aborted"]:
                 task.percent = 0
                 task.q_factor = 0.
             else:

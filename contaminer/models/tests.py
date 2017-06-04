@@ -2863,6 +2863,26 @@ class TaskTestCase(TestCase):
         self.assertTrue(task.status_error)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 3661))
 
+    def test_update_works_on_error(self):
+        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:error:")
+        self.assertEqual(task.job, self.job)
+        self.assertEqual(task.pack, self.pack)
+        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertFalse(task.status_complete)
+        self.assertTrue(task.status_error)
+        self.assertEqual(task.percent, 0)
+        self.assertEqual(task.q_factor, 0)
+
+    def test_update_works_on_aborted(self):
+        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:aborted:")
+        self.assertEqual(task.job, self.job)
+        self.assertEqual(task.pack, self.pack)
+        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertTrue(task.status_complete)
+        self.assertFalse(task.status_error)
+        self.assertEqual(task.percent, 0)
+        self.assertEqual(task.q_factor, 0)
+
     @mock.patch('contaminer.models.contaminer.Task.get_final_files')
     def test_update_gets_final_on_high_percentage(self, mock_get):
         task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-89:1h 26m  9s")
