@@ -2921,11 +2921,11 @@ class TaskTestCase(TestCase):
 
         mock_client.download_from_contaminer.assert_any_call(
                 "web_task_" + str(job.id) \
-                + "/P0ACJ8_1_P-1-2-1/final.pdb",
+                + "/P0ACJ8_1_P-1-2-1/results_solve/final.pdb",
                 "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
         mock_client.download_from_contaminer.assert_any_call(
                 "web_task_" + str(job.id) \
-                + "/P0ACJ8_1_P-1-2-1/final.mtz",
+                + "/P0ACJ8_1_P-1-2-1/results_solve/final.mtz",
                 "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.mtz")
 
     @mock.patch('contaminer.models.contaminer.os.path.isdir')
