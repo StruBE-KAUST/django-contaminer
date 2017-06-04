@@ -899,17 +899,13 @@ class PackTestCase(TestCase):
         Test the Pack model
     """
     def setUp(self):
-        ContaBase.objects.create()
-        contabase = ContaBase.objects.all()[0]
-        Category.objects.create(
+        contabase = ContaBase.objects.create()
+        category = Category.objects.create(
                 number = 1,
                 name="Protein in E.Coli",
                 contabase = contabase,
                 )
-        category = Category.objects.get(
-                name="Protein in E.Coli",
-                )
-        Contaminant.objects.create(
+        contaminant = Contaminant.objects.create(
                 uniprot_id = "P0ACJ8",
                 category = category,
                 short_name = "CRP_ECOLI",
@@ -917,10 +913,7 @@ class PackTestCase(TestCase):
                 sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
                 organism = "Escherichia coli",
                 )
-        contaminant = Contaminant.objects.get(
-                uniprot_id = "P0ACJ8",
-                )
-        Pack.objects.create(
+        self.pack = Pack.objects.create(
                 contaminant = contaminant,
                 number = 1,
                 structure = "2-mer",
@@ -946,6 +939,16 @@ class PackTestCase(TestCase):
                     number = 1,
                     structure = "2-mer",
                     )
+
+    def test_Pack_can_save_if_already_exist(self):
+        contaminant = Contaminant.objects.get(
+                uniprot_id = 'P0ACJ8',
+                )
+        self.pack.structure = "3-mer"
+        try:
+            self.pack.save()
+        except ValidationError:
+            self.fail("Cannot save an existing pack")
 
     def test_Pack_structure_is_valid_structure(self):
         contaminant = Contaminant.objects.get(
@@ -2605,6 +2608,49 @@ class JobTestCase(TestCase):
         best_task = job.get_best_task(pack.contaminant)
         self.assertEqual(best_task, task2)
 
+    def test_get_best_task_works_on_obsolete_contabase(self):
+        (job_obsolete, pack_obsolete) = self.create_pack()
+        ContaBase.make_all_obsolete()
+        (job_new, pack_new) = self.create_pack()
+
+        Model.objects.create(
+                pdb_code = 'TEST',
+                chain = 'A',
+                domain = '1',
+                nb_residues = 20,
+                identity = 99,
+                pack = pack_obsolete,
+                )
+        task = Task.objects.create(
+                job = job_obsolete,
+                pack = pack_obsolete,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+        Model.objects.create(
+                pdb_code = 'TEST',
+                chain = 'A',
+                domain = '1',
+                nb_residues = 20,
+                identity = 99,
+                pack = pack_new,
+                )
+        task = Task.objects.create(
+                job = job_new,
+                pack = pack_new,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+
+        best_task = job_obsolete.get_best_task(pack_new.contaminant)
+        self.assertTrue(best_task)
+
     def test_get_best_tasks_gives_empty_list_if_no_task(self):
         (job, pack) = self.create_pack()
         best_tasks = job.get_best_tasks()
@@ -2875,11 +2921,11 @@ class TaskTestCase(TestCase):
 
         mock_client.download_from_contaminer.assert_any_call(
                 "web_task_" + str(job.id) \
-                + "/P0ACJ8_1_P-1-2-1/final.pdb",
+                + "/P0ACJ8_1_P-1-2-1/results_solve/final.pdb",
                 "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
         mock_client.download_from_contaminer.assert_any_call(
                 "web_task_" + str(job.id) \
-                + "/P0ACJ8_1_P-1-2-1/final.mtz",
+                + "/P0ACJ8_1_P-1-2-1/results_solve/final.mtz",
                 "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.mtz")
 
     @mock.patch('contaminer.models.contaminer.os.path.isdir')

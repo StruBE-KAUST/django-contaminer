@@ -327,11 +327,9 @@ class Job(models.Model):
             result_data = {}
             result_data['uniprot_id'] = uniprot_id
 
-            contaminant = Contaminant.objects.get(
-                uniprot_id=uniprot_id,
-                category__contabase=ContaBase.get_current())
-
-            tasks = Task.objects.filter(job=self, pack__contaminant=contaminant)
+            tasks = Task.objects.filter(
+                    job=self,
+                    pack__contaminant__uniprot_id=uniprot_id)
 
             error = True # All tasks are in error
             complete = True # All tasks are complete
@@ -395,7 +393,8 @@ class Job(models.Model):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        tasks = Task.objects.filter(job=self, pack__contaminant=contaminant)
+        tasks = Task.objects.filter(job=self,
+                pack__contaminant__uniprot_id=contaminant.uniprot_id)
 
         valid_tasks = [
             task for task in tasks
@@ -632,8 +631,8 @@ class Task(models.Model):
 
         task_dir = self.get_final_filename()
 
-        remote_mtz = os.path.join(task_dir, "final.mtz")
-        remote_pdb = os.path.join(task_dir, "final.pdb")
+        remote_mtz = os.path.join(task_dir, "results_solve/final.mtz")
+        remote_pdb = os.path.join(task_dir, "results_solve/final.pdb")
 
         local_mtz = os.path.join(
             settings.STATIC_ROOT,
@@ -643,10 +642,10 @@ class Task(models.Model):
             self.get_final_filename(suffix="pdb"))
 
         try:
-            os.makedirs(os.path.basename(local_mtz))
+            os.makedirs(os.path.dirname(local_mtz))
         except OSError as excep:
             if excep.errno == errno.EEXIST \
-                    and os.path.isdir(os.path.basename(local_mtz)):
+                    and os.path.isdir(os.path.dirname(local_mtz)):
                 pass
             else:
                 raise

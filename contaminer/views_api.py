@@ -26,6 +26,8 @@ from django.http import Http404
 from django.views.generic import View
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 from .models.contabase import ContaBase
 from .models.contabase import Category
@@ -231,6 +233,7 @@ class DetailedContaminantView(View):
 class JobView(View):
     """Views accessible through api/job."""
 
+    @method_decorator(csrf_exempt)
     def post(self, request):
         """Create new job, submit it to the cluster and return job.id."""
         log = logging.getLogger(__name__)

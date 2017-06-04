@@ -33,10 +33,10 @@
 {% if task.percent >= threshold %}
     <dt>Files</dt>
     <dd>
-        <a href="{% static "" %}contaminer_{{ job.id }}/{{ task.name }}.pdb">PDB</a>
+        <a href="{% static "" %}web_task_{{ job.id }}/{{ task.name }}.pdb">PDB</a>
     </dd>
     <dd>
-        <a href="{% static "" %}contaminer_{{ job.id }}/{{ task.name }}.mtz">MTZ</a>
+        <a href="{% static "" %}web_task_{{ job.id }}/{{ task.name }}.mtz">MTZ</a>
     </dd>
 {% endif %}
 </dl>

@@ -415,10 +415,13 @@ class Pack(models.Model):
             raise ValidationError("structure is not valid")
 
         # (contaminant, number) pair must be unique
-        pack = Pack.objects.filter(
+        similar_packs = Pack.objects.filter(
             contaminant=self.contaminant,
-            number=self.number)
-        if len(pack) != 0 or (len(pack) == 1 and pack[0].pk != self.pk):
+            number=self.number,
+            ).exclude(
+                pk=self.pk
+            )
+        if similar_packs:
             log.error("This pack number already exists for this contaminant")
             raise ValidationError("Pack already registered in database")
 
