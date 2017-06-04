@@ -16,7 +16,7 @@ website_dir = /home/django/website/
 
 [THRESHOLDS]
 positive = 95
-bad_model_coverage = 85
+bad_model_coverage = 60
 bad_model_identity = 80
 
 [DEFAULT]
