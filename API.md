@@ -404,13 +404,10 @@ See GET contabase
 ```
 
 ## GET detailed_category
-> Parameters: (int) id
+> Parameters: (int) category ID
 > Returns the category with the given ID, with the included contaminants
 
 ### Example Request
-> GET https://{domain}/api/detailed_category?id=2
-
-### Example Alternative Request
 > GET https://{domain}/api/detaild_category/2
 
 ### Example Response
@@ -573,13 +570,10 @@ See GET contabase
 ```
 
 ## GET contaminant
-> Parameters: (string) uniprot_ID
+> Parameters: (string) uniprot ID
 > Returns the contaminant with the given uniprot ID
 
 ### Example Request
-> GET https://{domain}/api/contaminant?uniprot_id=P0AA25
-
-### Example Alternative Request
 > GET https://{domain}/api/containant/P0AA25
 
 ### Example Response
@@ -594,14 +588,11 @@ See GET contabase
 ```
 
 ## GET detailed_contaminant
-> Parameters: (string) uniprot_id
+> Parameters: (string) uniprot ID
 > Returns the contaminant with the given uniprot ID,
 > with the packs and references
 
 ### Example Request
-> GET https://{domain}/contaminer/api/contaminant?uniprot_id=P0AA25
-
-### Example Aternative Request
 > GET https://{domain}/contaminer/api/contaminant/P0AA25
 
 ### Example Response
@@ -702,7 +693,7 @@ $_FILES['diffraction_data'] = An invalid diffraction file
 ```
 
 ## GET job/status
-> Parameters: (int) id
+> Parameters: (int) job ID
 > Returns the current status of the job with the given job ID
 The returned status can be:
 * "submitted": when the file is uploaded to the server and
@@ -712,9 +703,6 @@ the tasks are queued
 * "error": when an error has been encountered
 
 ### Example Request
-> GET https://{domain}/api/job?id=165
-
-### Example Alternative Request
 > GET https://{domain}/api/job/165
 
 Example Response
@@ -726,15 +714,12 @@ Example Response
 ```
 
 ## GET job/result
-> Parameters: (int) id
+> Parameters: (int) job ID
 > Returns the resuls for the job with the given ID.
 > Returns an error if the job is not yet complete
 Use `GET status` to know the current state of the job
 
 ### Example Request
-> GET https://{domain}/api/result?id=166
-
-### Example Alternative Request
 > GET https://{domain}/api/result/166
 
 ### Example Response
@@ -746,9 +731,6 @@ Use `GET status` to know the current state of the job
 ```
 
 ### Example Request
-> GET https://{domain}/api/job/result?id=165
-
-### Example Alternative Request
 > GET https://{domain}/api/job/result/165
 
 ### Example Response
@@ -779,16 +761,13 @@ Use `GET status` to know the current state of the job
 ```
 
 ## GET job/detailed_result
-> Parameters: (int) id
+> Parameters: (int) job ID
 > Returns the results for the job with the given ID,
 > with the result for each space_group and pack pairs
 > Returns an error if the job is not yet complete
 Use `GET status` to know the current state of the job
 
 ### Example Request
-> GET https://{domain}/api/job/detailed_result?id=166
-
-### Example Alternative Request
 > GET https://{domain}/api/job/detailed_result/166
 
 ### Example Response
@@ -800,9 +779,6 @@ Use `GET status` to know the current state of the job
 ```
 
 ### Example Request
-> GET https://{domain}/api/job/detailed_result?id=164
-
-### Example Alternative Request
 > GET https://{domain}/api/job/detailed_result/164
 
 ### Example Response
