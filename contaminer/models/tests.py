@@ -1330,7 +1330,7 @@ class ModelTestCase(TestCase):
                 identity = 20,
                 pack = pack
                 )
-        self.assertAlmostEqual(pack.coverage, float(22)/26)
+        self.assertAlmostEqual(pack.coverage, float(22)/26*100)
 
     def test_coverage_gives_good_result_on_domains(self):
         pack = Pack.objects.create(
@@ -1354,7 +1354,7 @@ class ModelTestCase(TestCase):
                 identity = 20,
                 pack = pack
                 )
-        self.assertAlmostEqual(pack.coverage, float(22)/26)
+        self.assertAlmostEqual(pack.coverage, float(22)/26*100)
 
     def test_coverage_gives_good_result_on_multimer(self):
         pack = Pack.objects.create(
@@ -1370,7 +1370,7 @@ class ModelTestCase(TestCase):
                 identity = 20,
                 pack = pack
                 )
-        self.assertAlmostEqual(pack.coverage, float(20)/26)
+        self.assertAlmostEqual(pack.coverage, float(20)/26*100)
 
 
 class ReferenceTestCase(TestCase):

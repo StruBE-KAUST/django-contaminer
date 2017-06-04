@@ -368,7 +368,7 @@ class Pack(models.Model):
             # structure has the form n-mer
             nb_structure = int(self.structure.split('-')[0])
             models_length /= nb_structure
-        return float(models_length) / cont_length
+        return float(models_length) / cont_length * 100
 
     @property
     def identity(self):
