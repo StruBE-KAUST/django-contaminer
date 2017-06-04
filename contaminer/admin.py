@@ -33,7 +33,11 @@ admin.site.register(Category)
 admin.site.register(Contaminant)
 admin.site.register(Pack)
 admin.site.register(Model)
-admin.site.register(Job)
+
+class JobAdmin(admin.ModelAdmin):
+    readonly_fields = ("submission_date",)
+
+admin.site.register(Job, JobAdmin)
 admin.site.register(Task)
 admin.site.register(Reference)
 admin.site.register(Suggestion)

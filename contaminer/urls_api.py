@@ -64,4 +64,7 @@ urlpatterns = [
     url(r'^job/final_(?P<file_format>\w+)$',
         views_api.GetFinalFilesView.as_view(),
         name='get_final'),
+    url(r'^.*$',
+        views_api.custom404,
+        name='404'),
 ]

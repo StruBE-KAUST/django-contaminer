@@ -400,3 +400,16 @@ class GetFinalFilesView(View):
 
         log.debug("Exit with: " + str(url))
         return HttpResponseRedirect(url)
+
+
+"""Custom 404 result for API"""
+def custom404(request):
+    """Return a basic JSON result with the error"""
+    log = logging.getLogger(__name__)
+    log.warning("Page not found: " + str(request))
+
+    return JsonResponse({
+        'error': True,
+        'message': 'Resource not found'
+        },
+        status=404)
