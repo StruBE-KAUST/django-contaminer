@@ -2608,6 +2608,49 @@ class JobTestCase(TestCase):
         best_task = job.get_best_task(pack.contaminant)
         self.assertEqual(best_task, task2)
 
+    def test_get_best_task_works_on_obsolete_contabase(self):
+        (job_obsolete, pack_obsolete) = self.create_pack()
+        ContaBase.make_all_obsolete()
+        (job_new, pack_new) = self.create_pack()
+
+        Model.objects.create(
+                pdb_code = 'TEST',
+                chain = 'A',
+                domain = '1',
+                nb_residues = 20,
+                identity = 99,
+                pack = pack_obsolete,
+                )
+        task = Task.objects.create(
+                job = job_obsolete,
+                pack = pack_obsolete,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+        Model.objects.create(
+                pdb_code = 'TEST',
+                chain = 'A',
+                domain = '1',
+                nb_residues = 20,
+                identity = 99,
+                pack = pack_new,
+                )
+        task = Task.objects.create(
+                job = job_new,
+                pack = pack_new,
+                space_group = "P 2 2 2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+
+        best_task = job_obsolete.get_best_task(pack_new.contaminant)
+        self.assertTrue(best_task)
+
     def test_get_best_tasks_gives_empty_list_if_no_task(self):
         (job, pack) = self.create_pack()
         best_tasks = job.get_best_tasks()

@@ -393,7 +393,8 @@ class Job(models.Model):
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
-        tasks = Task.objects.filter(job=self, pack__contaminant=contaminant)
+        tasks = Task.objects.filter(job=self,
+                pack__contaminant__uniprot_id=contaminant.uniprot_id)
 
         valid_tasks = [
             task for task in tasks
