@@ -30,7 +30,7 @@ urlpatterns = [
         name='categories'),
     url(r'^detailed_categories',
         views_api.DetailedCategoriesView.as_view(),
-        name='categories'),
+        name='detailed_categories'),
     url(r'^category/(?P<category_id>.*)$',
         views_api.CategoryView.as_view(),
         name='category'),
