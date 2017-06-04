@@ -524,7 +524,7 @@ class Task(models.Model):
         try:
             hours, minutes, seconds = re.split(' +', elapsed_time)
         except ValueError:
-            elapsed_seconds=0
+            elapsed_seconds = 0
         else:
             hours = int(hours[:-1])
             minutes = int(minutes[:-1])
