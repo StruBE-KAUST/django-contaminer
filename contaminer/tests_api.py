@@ -1779,3 +1779,30 @@ class GetFinalFilesViewTestCase(TestCase):
                      'message': 'You are not allowed to see this job',
                  })
         self.assertEqual(response.status_code, 403)
+
+    def test_bad_request_gives_400_not_500(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': 'a',
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-1-2-1',
+                    'pack_nb': 1,
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertEqual(response.status_code, 400)
+
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': self.job.id,
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-1-2-1',
+                    'pack_nb': 'a',
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertEqual(response.status_code, 400)
