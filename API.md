@@ -241,8 +241,8 @@ Here is the list of available functions.
 - [GET job/status](#get-jobstatus)
 - [GET job/result](#get-jobresult)
 - [GET job/detailed_result](#get-jobdetailed_result)
-- [GET job/final_pdb](#get-final_pdb)
-- [GET job/final_mtz](#get-final_mtz)
+- [GET job/final_pdb](#get-jobfinal_pdb)
+- [GET job/final_mtz](#get-jobfinal_mtz)
 
 
 ## GET contabase
