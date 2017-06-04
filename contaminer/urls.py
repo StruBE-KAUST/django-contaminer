@@ -30,6 +30,9 @@ urlpatterns = [
         name='contabase.json'),
     url(r'^contabase$', views.ContaBaseView.as_view(),
         name='contabase'),
+    url(r'^contaminants$', RedirectView.as_view(
+        pattern_name='ContaMiner:contabase',
+        permanent=True),),
     url(r'^submit$', views.SubmitJobView.as_view(),
         name='submit'),
     url(r'^$', RedirectView.as_view(
