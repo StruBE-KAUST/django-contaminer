@@ -346,8 +346,12 @@ class GetFinalFilesView(View):
             log.debug("Wrong file format")
             return JsonResponse(response_data, status=404)
 
-        if not all(k in request.GET for k in
-                   ["id", "uniprot_id", "space_group", "pack_nb"]):
+        try:
+            id = int(request.GET['id'])
+            uniprot_id = request.GET['uniprot_id']
+            space_group = request.GET['space_group']
+            pack_nb = int(request.GET['pack_nb'])
+        except (KeyError, ValueError):
             log.warning("Bad request: " + str(request))
             response_data = {
                 'error': True,
@@ -356,7 +360,7 @@ class GetFinalFilesView(View):
             return JsonResponse(response_data, status=400)
 
         try:
-            job = Job.objects.get(id=request.GET['id'])
+            job = Job.objects.get(id=id)
         except ObjectDoesNotExist:
             response_data = {
                 'error': True,
@@ -374,9 +378,9 @@ class GetFinalFilesView(View):
         try:
             task = Task.objects.get(
                 job=job,
-                pack__contaminant__uniprot_id=request.GET['uniprot_id'],
-                pack__number=request.GET['pack_nb'],
-                space_group=request.GET['space_group'])
+                pack__contaminant__uniprot_id=uniprot_id,
+                pack__number=pack_nb,
+                space_group=space_group)
         except ObjectDoesNotExist:
             response_data = {
                 'error': True,
