@@ -19,6 +19,7 @@
 """ContaMiner views to access the API."""
 
 import logging
+import os
 
 from django.http import JsonResponse
 from django.http import HttpResponseRedirect
@@ -388,14 +389,16 @@ class GetFinalFilesView(View):
             log.debug("Task does not exist")
             return JsonResponse(response_data, status=404)
 
-        if not task.status_complete or task.percent < 90:
+        filename = task.get_final_filename(suffix=file_format)
+        file_location = settings.STATIC_ROOT + filename
+
+        if not os.path.isfile(file_location):
             response_data = {
                 'error': True,
                 'message': 'File is not available'}
             log.debug("File is not available")
             return JsonResponse(response_data, status=404)
 
-        filename = task.get_final_filename(suffix=file_format)
         url = settings.STATIC_URL + filename
 
         log.debug("Exit with: " + str(url))
