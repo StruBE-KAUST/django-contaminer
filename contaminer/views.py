@@ -168,6 +168,21 @@ class DisplayJobView(View):
         log.debug("Exit")
         return result
 
+class UglymolView(View):
+    """Views to display the morda output in Uglymol"""
+
+    def get(self, request, job_id, task_desc):
+        context = {
+            'job_id': job_id,
+            'task_desc': task_desc,
+            }
+        result = render(
+            request,
+            'ContaMiner/uglymol.html',
+            context=context,
+            )
+        return result
+
 
 class ContaBaseView(View):
     """Views accessible through contabase."""

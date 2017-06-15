@@ -1,0 +1,19 @@
+{% extends "ContaMiner/base.html" %}
+{% block head %}
+    <script
+src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js">
+    </script>
+    <script
+        src="https://uglymol.github.io/uglymol.js">
+    </script>
+{% endblock %}
+{% block content %}<h1>ContaMiner</h1>
+{% load staticfiles %}
+<h3>Results visualizer</h3>
+<div id="viewer" style="width: 70vw; height: 70vw"></div>
+<script>
+    V = new UM.Viewer({viewer: "viewer"});
+    V.load_pdb("{% static "" %}web_task_{{ job_id }}/{{ task_desc }}.pdb");
+</script>
+<p>This page uses <a href="https://github.com/uglymol/uglymol">Uglymol</a>.</p>
+{% endblock %}

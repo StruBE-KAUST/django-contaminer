@@ -38,6 +38,9 @@
     <dd>
         <a href="{% static "" %}web_task_{{ job.id }}/{{ task.name }}.mtz">MTZ</a>
     </dd>
+    <dd>
+    <a href="{% url "ContaMiner:uglymol" job_id=job.id task_desc=task.name %}">Uglymol (beta)</a>
+    </dd>
 {% endif %}
 </dl>
 {% endif %}
