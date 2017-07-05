@@ -625,7 +625,7 @@ class Task(models.Model):
         return os.path.join(self.job.get_filename(), filename)
 
     def get_final_files(self):
-        """Download the final PDB and MTZ files for this task."""
+        """Download the final PDB, MTZ and MAP files for this task."""
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
@@ -638,6 +638,8 @@ class Task(models.Model):
 
         remote_mtz = os.path.join(task_dir, "results_solve/final.mtz")
         remote_pdb = os.path.join(task_dir, "results_solve/final.pdb")
+        remote_map = os.path.join(task_dir, "results_solve/final.map")
+        remote_map_diff = os.path.join(task_dir, "results_solve/final.diff.map")
 
         local_mtz = os.path.join(
             settings.STATIC_ROOT,
@@ -645,6 +647,12 @@ class Task(models.Model):
         local_pdb = os.path.join(
             settings.STATIC_ROOT,
             self.get_final_filename(suffix="pdb"))
+        local_map = os.path.join(
+            settings.STATIC_ROOT,
+            self.get_final_filename(suffix="map"))
+        local_map_diff = os.path.join(
+            settings.STATIC_ROOT,
+            self.get_final_filename(suffix="diff.map"))
 
         try:
             os.makedirs(os.path.dirname(local_mtz))
@@ -659,6 +667,8 @@ class Task(models.Model):
         try:
             client.download_from_contaminer(remote_mtz, local_mtz)
             client.download_from_contaminer(remote_pdb, local_pdb)
+            client.download_from_contaminer(remote_map, local_map)
+            client.download_from_contaminer(remote_map_diff, local_map_diff)
         except (OSError, IOError) as excep:
             log.error("Error when downloading files from cluster: " \
                 + str(excep))
