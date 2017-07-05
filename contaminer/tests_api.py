@@ -1743,7 +1743,9 @@ class GetFinalFilesViewTestCase(TestCase):
         response = GetFinalFilesView.as_view()(request, 'PDB')
         self.assertEqual(response.status_code, 400)
 
-    def test_return_good_url_redirect(self):
+    @mock.patch('contaminer.views_api.os.path.isfile')
+    def test_return_good_url_redirect(self, mock_isfile):
+        mock_isfile.return_value = True
         request = self.factory.get(
                 reverse('ContaMiner:API:get_final', args = ['PDB']),
                 {
@@ -1758,6 +1760,27 @@ class GetFinalFilesViewTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url,
             "/static/web_task_" + str(self.job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
+
+    @mock.patch('contaminer.views_api.os.path.isfile')
+    def test_return_404_on_missing_file(self, mock_isfile):
+        mock_isfile.return_value = False
+        request = self.factory.get(
+                reverse('ContaMiner:API:get_final', args = ['PDB']),
+                {
+                    'id': self.job.id,
+                    'uniprot_id': 'P0ACJ8',
+                    'space_group': 'P-1-2-1',
+                    'pack_nb': 1,
+                },
+                follow = False,
+            )
+        response = GetFinalFilesView.as_view()(request, 'PDB')
+        self.assertEqual(response.status_code, 404)
+        self.assertJSONEqual(response.content,
+                {
+                    'error': True,
+                    'message': 'File is not available'
+                })
 
     def test_do_not_display_if_confidential(self):
         request = self.factory.get(
@@ -1776,8 +1799,8 @@ class GetFinalFilesViewTestCase(TestCase):
         self.assertJSONEqual(response.content,
                 {
                     'error': True,
-                     'message': 'You are not allowed to see this job',
-                 })
+                    'message': 'You are not allowed to see this job',
+                })
         self.assertEqual(response.status_code, 403)
 
     def test_bad_request_gives_400_not_500(self):
