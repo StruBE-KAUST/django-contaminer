@@ -1,5 +1,7 @@
 {% extends "ContaMiner/base.html" %}
 {% block head %}
+    {% load staticfiles %}
+    <link rel="stylesheet" href="{% static "ContaMiner/css/uglymol.css" %}"/>
     <script
 src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js">
     </script>
@@ -10,9 +12,20 @@ src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js">
 {% block content %}<h1>ContaMiner</h1>
 {% load staticfiles %}
 <h3>Results visualizer</h3>
-<div id="viewer" style="width: 70vw; height: 70vw"></div>
+<div id="viewer">
+    <div
+        id="hud"
+        onmousedown="event.stopPropagation()"
+        ondbclick="event.stopPropagation()">
+        <a href="#"
+            onclick="V.toggle_help(); return false;">
+            H shows help.
+        </a>
+    </div>
+    <div id="help"></div>
+</div>
 <script>
-    V = new UM.Viewer({viewer: "viewer"});
+    V = new UM.Viewer({viewer: "viewer", hud: "hud", help: "help"});
     V.load_pdb("{% static "" %}web_task_{{ job_id }}/{{ task_desc }}.pdb");
     V.load_ccp4_maps(
         "{% static "" %}web_task_{{ job_id }}/{{ task_desc }}.map",
