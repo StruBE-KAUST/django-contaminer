@@ -157,6 +157,7 @@ class DisplayJobView(View):
                             + "result for a contaminant for which no "\
                             + "identical model is available in the PDB.\nYou "\
                             + "could deposit or publish this structure.")
+                    break
 
         result = render(
             request,
