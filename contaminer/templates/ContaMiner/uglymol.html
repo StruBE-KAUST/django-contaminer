@@ -1,0 +1,36 @@
+{% extends "ContaMiner/base.html" %}
+{% block head %}
+    {% load staticfiles %}
+    <link rel="stylesheet" href="{% static "ContaMiner/css/uglymol.css" %}"/>
+    <script
+src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js">
+    </script>
+    <script
+        src="https://uglymol.github.io/uglymol.js">
+    </script>
+{% endblock %}
+{% block content %}<h1>ContaMiner</h1>
+{% load staticfiles %}
+<h3>Results visualizer</h3>
+<div id="viewer">
+    <div
+        id="hud"
+        onmousedown="event.stopPropagation()"
+        ondbclick="event.stopPropagation()">
+        <a href="#"
+            onclick="V.toggle_help(); return false;">
+            H shows help.
+        </a>
+    </div>
+    <div id="help"></div>
+</div>
+<script>
+    V = new UM.Viewer({viewer: "viewer", hud: "hud", help: "help"});
+    V.toggle_help();
+    V.load_pdb("{{ task.pdb_filename }}");
+    V.load_ccp4_maps(
+        "{{ task.map_filename }}",
+        "{{ task.diff_map_filename }}");
+</script>
+<p>This page uses <a href="https://github.com/uglymol/uglymol">Uglymol</a>.</p>
+{% endblock %}

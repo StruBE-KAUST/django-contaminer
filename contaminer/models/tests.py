@@ -2388,7 +2388,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 status_complete = True,
                 status_error = True,
                 )
@@ -2401,7 +2401,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 status_complete = False,
                 status_error = False,
                 )
@@ -2414,7 +2414,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 status_complete = False,
                 status_error = True,
                 )
@@ -2427,7 +2427,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2436,7 +2436,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 21 2 2",
+                space_group = "P-21-2-2",
                 percent = 0,
                 q_factor = 0,
                 status_complete = True,
@@ -2451,7 +2451,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = False,
@@ -2460,7 +2460,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 21 2 2",
+                space_group = "P-21-2-2",
                 percent = 0,
                 q_factor = 0,
                 status_complete = True,
@@ -2475,7 +2475,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2484,7 +2484,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 21 2 2",
+                space_group = "P-21-2-2",
                 percent = 0,
                 q_factor = 1,
                 status_complete = True,
@@ -2499,7 +2499,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 0.8,
                 status_complete = True,
@@ -2508,7 +2508,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 21 2 2",
+                space_group = "P-21-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2544,7 +2544,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2553,7 +2553,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack2,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2589,7 +2589,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2598,7 +2598,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack2,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2624,7 +2624,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job_obsolete,
                 pack = pack_obsolete,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2641,7 +2641,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job_new,
                 pack = pack_new,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2740,11 +2740,77 @@ class TaskTestCase(TestCase):
                 number = 5,
                 )
 
+    def test_task_from_name_gives_good_task(self):
+        task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-2-2-2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        self.assertEqual(
+                Task.from_name(self.job, "P0ACJ8_5_P-2-2-2"),
+                task)
+
+    def test_task_works_with_multiple_existing_tasks(self):
+        task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-2-2-2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        # != space_group
+        Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-2-2-21",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        # != pack_number
+        pack = Pack.objects.create(
+                contaminant=self.contaminant,
+                number=4,
+                structure='5-mer',
+                )
+        Task.objects.create(
+                job = self.job,
+                pack = pack,
+                space_group = "P-2-2-2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        # != contaminant
+        contaminant = Contaminant.objects.create(
+                uniprot_id="P03303",
+                category=self.category,
+                short_name="short",
+                long_name="long",
+                sequence="ABCDEF",
+                organism="yo",
+                )
+        pack = Pack.objects.create(
+                contaminant=contaminant,
+                number=5,
+                structure='5-mer',
+                )
+        Task.objects.create(
+                job = self.job,
+                pack = pack,
+                space_group = "P-2-2-2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        self.assertEqual(
+                Task.from_name(self.job, "P0ACJ8_5_P-2-2-2"),
+                task)
+
     def test_get_status_gives_good_result(self):
         task = Task.objects.create(
                 job = self.job,
                 pack = self.pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 99,
                 q_factor = 0.9,
                 )
@@ -2759,20 +2825,20 @@ class TaskTestCase(TestCase):
         task = Task.objects.create(
                 job = self.job,
                 pack = self.pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 99,
                 q_factor = 0.9,
                 )
         self.assertEqual(str(task), str(self.job.id) \
                 + " (me@example.com) New / P0ACJ8 - CRP_ECOLI - 5 (5-mer)"\
-                + " / P 2 2 2 / New")
+                + " / P-2-2-2 / New")
 
     def test_Task_percent_is_valid_percentage(self):
         with self.assertRaises(ValidationError):
             task = Task.objects.create(
                     job = self.job,
                     pack = self.pack,
-                    space_group = "P 2 2 2",
+                    space_group = "P-2-2-2",
                     percent = 101,
                     q_factor = 0.9,
                     )
@@ -2780,7 +2846,7 @@ class TaskTestCase(TestCase):
             task = Task.objects.create(
                     job = self.job,
                     pack = self.pack,
-                    space_group = "P 2 2 2",
+                    space_group = "P-2-2-2",
                     percent = -1,
                     q_factor = 0.9,
                     )
@@ -2789,7 +2855,7 @@ class TaskTestCase(TestCase):
         task = Task.objects.create(
                 job = self.job,
                 pack = self.pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                  )
 
     def test_Task_get_final_filename_gives_good_result(self):
@@ -2894,7 +2960,7 @@ class TaskTestCase(TestCase):
     @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.settings')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
-    def test_get_final_files_get_good_files_writes_STATIC(self, mock_channel, mock_settings,
+    def test_get_final_files_get_good_files_writes_MEDIA(self, mock_channel, mock_settings,
             mock_CMConfig, mock_makedirs):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
@@ -2902,7 +2968,7 @@ class TaskTestCase(TestCase):
         mock_client = mock.MagicMock()
         mock_channel.return_value = mock_client
 
-        mock_settings.STATIC_ROOT = "/static"
+        mock_settings.MEDIA_ROOT = "/media"
 
         contabase = ContaBase.objects.create()
         category = Category.objects.create(
@@ -2942,11 +3008,11 @@ class TaskTestCase(TestCase):
         mock_client.download_from_contaminer.assert_any_call(
                 "web_task_" + str(job.id) \
                 + "/P0ACJ8_1_P-1-2-1/results_solve/final.pdb",
-                "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
+                "/media/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
         mock_client.download_from_contaminer.assert_any_call(
                 "web_task_" + str(job.id) \
                 + "/P0ACJ8_1_P-1-2-1/results_solve/final.mtz",
-                "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.mtz")
+                "/media/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.mtz")
 
     @mock.patch('contaminer.models.contaminer.os.path.isdir')
     @mock.patch('contaminer.models.contaminer.os.makedirs')
@@ -2961,7 +3027,7 @@ class TaskTestCase(TestCase):
         mock_client = mock.MagicMock()
         mock_channel.return_value = mock_client
 
-        mock_settings.STATIC_ROOT = "/static"
+        mock_settings.MEDIA_ROOT = "/media"
 
         contabase = ContaBase.objects.create()
         category = Category.objects.create(
@@ -3015,7 +3081,7 @@ class TaskTestCase(TestCase):
         mock_client = mock.MagicMock()
         mock_channel.return_value = mock_client
 
-        mock_settings.STATIC_ROOT = "/static"
+        mock_settings.MEDIA_ROOT = "/media"
 
         contabase = ContaBase.objects.create()
         category = Category.objects.create(

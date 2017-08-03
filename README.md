@@ -3,7 +3,7 @@
 This repository is a Django application to interface a website with ContaMiner.
 You can find ContaMiner [here](https://github.com/StruBE-KAUST/ContaMiner)
 This application is used on the [StruBE
-website](https://strube.cbrc.kasut.edu.sa/contaminer).
+website](https://strube.cbrc.kaust.edu.sa/contaminer).
 
 # How to install it ?
 You need libffi-dev as a dependancy of paramiko, a website using

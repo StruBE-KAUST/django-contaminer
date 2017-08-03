@@ -139,7 +139,7 @@ class SSHChannel(paramiko.SSHClient):
 
 
 class SFTPChannel(SSHChannel):
-    """An SFTP connection to the cluster or supercomputeri."""
+    """An SFTP connection to the cluster or supercomputer."""
 
     def __init__(self):
         """Create a new SFTP connection."""

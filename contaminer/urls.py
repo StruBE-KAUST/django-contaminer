@@ -45,4 +45,7 @@ urlpatterns = [
     url(r'^download$', TemplateView.as_view(
         template_name="ContaMiner/download.html"),
         name='download'),
+    url(r'^uglymol/(?P<job_id>\d+)/(?P<task_desc>.*)$',
+        views.UglymolView.as_view(),
+        name='uglymol'),
 ]
