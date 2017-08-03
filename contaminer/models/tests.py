@@ -2388,7 +2388,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 status_complete = True,
                 status_error = True,
                 )
@@ -2401,7 +2401,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 status_complete = False,
                 status_error = False,
                 )
@@ -2414,7 +2414,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 status_complete = False,
                 status_error = True,
                 )
@@ -2427,7 +2427,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2436,7 +2436,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 21 2 2",
+                space_group = "P-21-2-2",
                 percent = 0,
                 q_factor = 0,
                 status_complete = True,
@@ -2451,7 +2451,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = False,
@@ -2460,7 +2460,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 21 2 2",
+                space_group = "P-21-2-2",
                 percent = 0,
                 q_factor = 0,
                 status_complete = True,
@@ -2475,7 +2475,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2484,7 +2484,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 21 2 2",
+                space_group = "P-21-2-2",
                 percent = 0,
                 q_factor = 1,
                 status_complete = True,
@@ -2499,7 +2499,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 0.8,
                 status_complete = True,
@@ -2508,7 +2508,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 21 2 2",
+                space_group = "P-21-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2544,7 +2544,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2553,7 +2553,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack2,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2589,7 +2589,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job,
                 pack = pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2598,7 +2598,7 @@ class JobTestCase(TestCase):
         task2 = Task.objects.create(
                 job = job,
                 pack = pack2,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2624,7 +2624,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job_obsolete,
                 pack = pack_obsolete,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2641,7 +2641,7 @@ class JobTestCase(TestCase):
         task = Task.objects.create(
                 job = job_new,
                 pack = pack_new,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 100,
                 q_factor = 1,
                 status_complete = True,
@@ -2810,7 +2810,7 @@ class TaskTestCase(TestCase):
         task = Task.objects.create(
                 job = self.job,
                 pack = self.pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 99,
                 q_factor = 0.9,
                 )
@@ -2825,20 +2825,20 @@ class TaskTestCase(TestCase):
         task = Task.objects.create(
                 job = self.job,
                 pack = self.pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                 percent = 99,
                 q_factor = 0.9,
                 )
         self.assertEqual(str(task), str(self.job.id) \
                 + " (me@example.com) New / P0ACJ8 - CRP_ECOLI - 5 (5-mer)"\
-                + " / P 2 2 2 / New")
+                + " / P-2-2-2 / New")
 
     def test_Task_percent_is_valid_percentage(self):
         with self.assertRaises(ValidationError):
             task = Task.objects.create(
                     job = self.job,
                     pack = self.pack,
-                    space_group = "P 2 2 2",
+                    space_group = "P-2-2-2",
                     percent = 101,
                     q_factor = 0.9,
                     )
@@ -2846,7 +2846,7 @@ class TaskTestCase(TestCase):
             task = Task.objects.create(
                     job = self.job,
                     pack = self.pack,
-                    space_group = "P 2 2 2",
+                    space_group = "P-2-2-2",
                     percent = -1,
                     q_factor = 0.9,
                     )
@@ -2855,7 +2855,7 @@ class TaskTestCase(TestCase):
         task = Task.objects.create(
                 job = self.job,
                 pack = self.pack,
-                space_group = "P 2 2 2",
+                space_group = "P-2-2-2",
                  )
 
     def test_Task_get_final_filename_gives_good_result(self):
