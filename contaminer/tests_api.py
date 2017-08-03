@@ -1759,7 +1759,7 @@ class GetFinalFilesViewTestCase(TestCase):
         response = GetFinalFilesView.as_view()(request, 'PDB')
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url,
-            "/static/web_task_" + str(self.job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
+            "/media/web_task_" + str(self.job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
 
     @mock.patch('contaminer.views_api.os.path.isfile')
     def test_return_404_on_missing_file(self, mock_isfile):

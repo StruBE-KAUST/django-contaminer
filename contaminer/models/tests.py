@@ -2960,7 +2960,7 @@ class TaskTestCase(TestCase):
     @mock.patch('contaminer.ssh_tools.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.settings')
     @mock.patch('contaminer.models.contaminer.SFTPChannel')
-    def test_get_final_files_get_good_files_writes_STATIC(self, mock_channel, mock_settings,
+    def test_get_final_files_get_good_files_writes_MEDIA(self, mock_channel, mock_settings,
             mock_CMConfig, mock_makedirs):
         mock_config = mock.MagicMock()
         mock_config.ssh_work_directory = "/remote/dir"
@@ -2968,7 +2968,7 @@ class TaskTestCase(TestCase):
         mock_client = mock.MagicMock()
         mock_channel.return_value = mock_client
 
-        mock_settings.STATIC_ROOT = "/static"
+        mock_settings.MEDIA_ROOT = "/media"
 
         contabase = ContaBase.objects.create()
         category = Category.objects.create(
@@ -3008,11 +3008,11 @@ class TaskTestCase(TestCase):
         mock_client.download_from_contaminer.assert_any_call(
                 "web_task_" + str(job.id) \
                 + "/P0ACJ8_1_P-1-2-1/results_solve/final.pdb",
-                "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
+                "/media/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.pdb")
         mock_client.download_from_contaminer.assert_any_call(
                 "web_task_" + str(job.id) \
                 + "/P0ACJ8_1_P-1-2-1/results_solve/final.mtz",
-                "/static/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.mtz")
+                "/media/web_task_" + str(job.id) + "/P0ACJ8_1_P-1-2-1.mtz")
 
     @mock.patch('contaminer.models.contaminer.os.path.isdir')
     @mock.patch('contaminer.models.contaminer.os.makedirs')
@@ -3027,7 +3027,7 @@ class TaskTestCase(TestCase):
         mock_client = mock.MagicMock()
         mock_channel.return_value = mock_client
 
-        mock_settings.STATIC_ROOT = "/static"
+        mock_settings.MEDIA_ROOT = "/media"
 
         contabase = ContaBase.objects.create()
         category = Category.objects.create(
@@ -3081,7 +3081,7 @@ class TaskTestCase(TestCase):
         mock_client = mock.MagicMock()
         mock_channel.return_value = mock_client
 
-        mock_settings.STATIC_ROOT = "/static"
+        mock_settings.MEDIA_ROOT = "/media"
 
         contabase = ContaBase.objects.create()
         category = Category.objects.create(

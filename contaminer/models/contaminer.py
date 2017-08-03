@@ -654,16 +654,16 @@ class Task(models.Model):
         remote_map_diff = os.path.join(task_dir, "results_solve/final.diff.map")
 
         local_mtz = os.path.join(
-            settings.STATIC_ROOT,
+            settings.MEDIA_ROOT,
             self.get_final_filename(suffix="mtz"))
         local_pdb = os.path.join(
-            settings.STATIC_ROOT,
+            settings.MEDIA_ROOT,
             self.get_final_filename(suffix="pdb"))
         local_map = os.path.join(
-            settings.STATIC_ROOT,
+            settings.MEDIA_ROOT,
             self.get_final_filename(suffix="map"))
         local_map_diff = os.path.join(
-            settings.STATIC_ROOT,
+            settings.MEDIA_ROOT,
             self.get_final_filename(suffix="diff.map"))
 
         try:

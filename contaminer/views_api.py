@@ -390,7 +390,7 @@ class GetFinalFilesView(View):
             return JsonResponse(response_data, status=404)
 
         filename = task.get_final_filename(suffix=file_format)
-        file_location = settings.STATIC_ROOT + filename
+        file_location = settings.MEDIA_ROOT + filename
 
         if not os.path.isfile(file_location):
             response_data = {
@@ -399,7 +399,7 @@ class GetFinalFilesView(View):
             log.debug("File is not available")
             return JsonResponse(response_data, status=404)
 
-        url = settings.STATIC_URL + filename
+        url = settings.MEDIA_URL + filename
 
         log.debug("Exit with: " + str(url))
         return HttpResponseRedirect(url)
