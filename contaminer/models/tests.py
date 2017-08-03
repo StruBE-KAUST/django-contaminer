@@ -2740,6 +2740,72 @@ class TaskTestCase(TestCase):
                 number = 5,
                 )
 
+    def test_task_from_name_gives_good_task(self):
+        task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-2-2-2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        self.assertEqual(
+                Task.from_name(self.job, "P0ACJ8_5_P-2-2-2"),
+                task)
+
+    def test_task_works_with_multiple_existing_tasks(self):
+        task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-2-2-2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        # != space_group
+        Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-2-2-21",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        # != pack_number
+        pack = Pack.objects.create(
+                contaminant=self.contaminant,
+                number=4,
+                structure='5-mer',
+                )
+        Task.objects.create(
+                job = self.job,
+                pack = pack,
+                space_group = "P-2-2-2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        # != contaminant
+        contaminant = Contaminant.objects.create(
+                uniprot_id="P03303",
+                category=self.category,
+                short_name="short",
+                long_name="long",
+                sequence="ABCDEF",
+                organism="yo",
+                )
+        pack = Pack.objects.create(
+                contaminant=contaminant,
+                number=5,
+                structure='5-mer',
+                )
+        Task.objects.create(
+                job = self.job,
+                pack = pack,
+                space_group = "P-2-2-2",
+                percent = 99,
+                q_factor = 0.9,
+                )
+        self.assertEqual(
+                Task.from_name(self.job, "P0ACJ8_5_P-2-2-2"),
+                task)
+
     def test_get_status_gives_good_result(self):
         task = Task.objects.create(
                 job = self.job,

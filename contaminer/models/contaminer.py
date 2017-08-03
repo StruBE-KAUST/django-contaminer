@@ -301,7 +301,6 @@ class Job(models.Model):
 
         log.debug("Exit")
 
-
     def to_detailed_dict(self):
         """Return a dictionary of the fields."""
         response_data = {}
@@ -511,6 +510,19 @@ class Task(models.Model):
                 + space_group
 
         return name
+
+    @classmethod
+    def from_name(cls, job, task_name):
+        """Return the task with the given name"""
+        uniprot_id, pack_number, space_group = task_name.split('_')
+
+        task = cls.objects.get(
+            job=job,
+            pack__number=pack_number,
+            pack__contaminant__uniprot_id=uniprot_id,
+            space_group=space_group)
+
+        return task
 
     @staticmethod
     def parse_line(line):
