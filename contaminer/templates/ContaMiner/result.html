@@ -30,13 +30,13 @@
     <dd>{{ task.q_factor }}</dd>
     <dt>Space group</dt>
     <dd>{{ task.space_group }}</dd>
-{% if task.percent >= threshold %}
+{% if task.pdb_filename %}
     <dt>Files</dt>
     <dd>
-        <a href="{% static "" %}web_task_{{ job.id }}/{{ task.name }}.pdb">PDB</a>
+        <a href="{{ task.pdb_filename }}">PDB</a>
     </dd>
     <dd>
-        <a href="{% static "" %}web_task_{{ job.id }}/{{ task.name }}.mtz">MTZ</a>
+        <a href="{{ task.mtz_filename }}">MTZ</a>
     </dd>
     <dd>
     <a href="{% url "ContaMiner:uglymol" job_id=job.id task_desc=task.name %}">Uglymol (beta)</a>

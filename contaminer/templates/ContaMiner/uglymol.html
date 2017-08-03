@@ -27,10 +27,10 @@ src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js">
 <script>
     V = new UM.Viewer({viewer: "viewer", hud: "hud", help: "help"});
     V.toggle_help();
-    V.load_pdb("{% static "" %}web_task_{{ job_id }}/{{ task_desc }}.pdb");
+    V.load_pdb("{{ task.pdb_filename }}");
     V.load_ccp4_maps(
-        "{% static "" %}web_task_{{ job_id }}/{{ task_desc }}.map",
-        "{% static "" %}web_task_{{ job_id }}/{{ task_desc }}.diff.map");
+        "{{ task.map_filename }}",
+        "{{ task.diff_map_filename }}");
 </script>
 <p>This page uses <a href="https://github.com/uglymol/uglymol">Uglymol</a>.</p>
 {% endblock %}

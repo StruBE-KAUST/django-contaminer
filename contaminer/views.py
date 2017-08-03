@@ -23,16 +23,19 @@ import logging
 from django.views.generic import View
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
+from django.http import Http404
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from django.apps import apps
+from django.conf import settings
 
 from .forms import SubmitJobForm
 
 from .models.contabase import ContaBase
 from .models.contabase import Category
 from .models.contaminer import Job
+from .models.contaminer import Task
 
 from .views_tools import newjob_handler
 from . import views_api
@@ -144,20 +147,27 @@ class DisplayJobView(View):
         best_tasks = job.get_best_tasks()
 
         app_config = apps.get_app_config('contaminer')
-        # If a positive result is found for a pack with low coverage or low
-        # identity display a message to encourage publication
+        added_message = False
         for task in best_tasks:
             if task.percent >= app_config.threshold:
+                # Add PDB and MTZ filename
+                task.pdb_filename = settings.MEDIA_URL \
+                    + task.get_final_filename("pdb")
+                task.mtz_filename = settings.MEDIA_URL \
+                    + task.get_final_filename("mtz")
+
+                # If a positive result is found for a pack with low coverage or low
+                # identity display a message to encourage publication
                 coverage = task.pack.coverage
                 identity = task.pack.identity
-
-                if coverage < app_config.bad_model_coverage_threshold \
-                    or identity < app_config.bad_model_identity_threshold:
+                if not added_message \
+                    and (coverage < app_config.bad_model_coverage_threshold \
+                    or identity < app_config.bad_model_identity_threshold):
                     messages.info(request, "Your dataset gives a positive "\
                             + "result for a contaminant for which no "\
                             + "identical model is available in the PDB.\nYou "\
                             + "could deposit or publish this structure.")
-                    break
+                    added_message = True
 
         result = render(
             request,
@@ -165,7 +175,8 @@ class DisplayJobView(View):
             {
                 'job': job,
                 'tasks': best_tasks,
-                'threshold': app_config.threshold})
+                'threshold': app_config.threshold
+            })
         log.debug("Exit")
         return result
 
@@ -173,9 +184,23 @@ class UglymolView(View):
     """Views to display the morda output in Uglymol"""
 
     def get(self, request, job_id, task_desc):
+        # Find corresponding task
+        job = Job.objects.get(pk = job_id)
+        try:
+            task = Task.from_name(job, task_desc)
+        except ObjectDoesNotExist:
+            raise Http404()
+
+        task.pdb_filename = settings.MEDIA_URL \
+            + task.get_final_filename(suffix='pdb')
+        task.map_filename = settings.MEDIA_URL \
+            + task.get_final_filename(suffix='map')
+        task.diff_map_filename = settings.MEDIA_URL \
+            + task.get_final_filename(suffix='diff.map')
+
         context = {
             'job_id': job_id,
-            'task_desc': task_desc,
+            'task': task
             }
         result = render(
             request,

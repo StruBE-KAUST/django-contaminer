@@ -725,3 +725,66 @@ class DisplayJobViewTestCase(TestCase):
                 )
         messages = response.context['messages']
         self.assertEqual(len(messages), 1)
+
+
+class UglymolViewTestCase(TestCase):
+    """Test the Uglymol view"""
+    def setUp(self):
+        self.client = Client()
+        self.factory = RequestFactory()
+
+        self.contabase = ContaBase.objects.create()
+        self.category = Category.objects.create(
+                contabase = self.contabase,
+                number = 1,
+                name = "Protein in E.Coli",
+                )
+        self.contaminant = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = self.category,
+                short_name = "CRP_ECOLI",
+                long_name = "cAMP-activated global transcriptional regulator",
+                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                organism = "Escherichia coli",
+                )
+        self.pack = Pack.objects.create(
+                contaminant = self.contaminant,
+                number = 5,
+                structure= '5-mer',
+                )
+        self.model = Model.objects.create(
+                pdb_code = "ACBD",
+                chain = "A",
+                domain = "1",
+                nb_residues = 1,
+                identity = 2,
+                pack = self.pack,
+                )
+        self.job = Job.create(
+                name = "test",
+                email = "me@example.com",
+                )
+        self.task = Task.objects.create(
+                job = self.job,
+                pack = self.pack,
+                space_group = "P-1-2-1",
+                status_complete = True,
+                percent = 40,
+                q_factor = 0.53,
+                )
+
+    def test_smoke(self):
+        self.job.status_complete = True
+        self.job.save()
+        response = self.client.get(
+                reverse('ContaMiner:uglymol',
+                    args = [self.job.id, self.task.name()]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_return_404_if_task_not_found(self):
+        self.job.status_complete = True
+        self.job.save()
+        response = self.client.get(
+                reverse('ContaMiner:uglymol',
+                    args = [self.job.id, self.task.name() + '1']))
+        self.assertEqual(response.status_code, 404)
