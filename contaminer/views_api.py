@@ -231,10 +231,10 @@ class DetailedContaminantView(View):
         return JsonResponse(response_data)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class JobView(View):
     """Views accessible through api/job."""
 
-    @method_decorator(csrf_exempt)
     def post(self, request):
         """Create new job, submit it to the cluster and return job.id."""
         log = logging.getLogger(__name__)
