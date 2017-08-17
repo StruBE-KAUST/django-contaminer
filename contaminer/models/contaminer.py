@@ -67,6 +67,7 @@ class Job(models.Model):
     status_archived = models.BooleanField(default=False)
 
     submission_date = models.DateField(auto_now_add=True)
+    mail_sent = models.BooleanField(default=False)
 
     name = models.CharField(max_length=50, blank=True, null=True)
     author = models.ForeignKey(
@@ -458,6 +459,9 @@ class Job(models.Model):
             [self.email],
             html_message=message)
         log.info("E-Mail sent to " + str(self.email))
+
+        self.mail_sent = True
+        self.save()
 
         log.debug("Exiting function")
 
