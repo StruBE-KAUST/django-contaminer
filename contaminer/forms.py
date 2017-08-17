@@ -36,7 +36,10 @@ from .models.contabase import Contaminant
 class SubmitJobForm(forms.Form):
     """Upload a mtz or cif file and select contaminants to test."""
 
-    name = forms.CharField(max_length=50, required=False)
+    name = forms.CharField(
+            label="Job name",
+            max_length=50,
+            required=False)
     diffraction_data = forms.FileField()
     confidential = forms.BooleanField(
         label="Make your job confidential",
