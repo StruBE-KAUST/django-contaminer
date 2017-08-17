@@ -18,6 +18,3 @@ website_dir = /home/django/website/
 positive = 95
 bad_model_coverage = 60
 bad_model_identity = 80
-
-[DEFAULT]
-noreply_mail = noreply@cbrc.kaust.edu.sa

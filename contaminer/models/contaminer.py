@@ -446,7 +446,7 @@ class Job(models.Model):
             'result_link': result_url,
             'site_name': "ContaMiner"}
 
-        app_config = apps.get_app_config('contaminer')
+        exp_mail = settings.DEFAULT_MAIL_FROM
 
         message = render_to_string(
             "ContaMiner/email/complete_message.html",
@@ -454,7 +454,7 @@ class Job(models.Model):
         send_mail(
             "Job complete",
             "",
-            app_config.noreply_mail,
+            exp_mail,
             [self.email],
             html_message=message)
         log.info("E-Mail sent to " + str(self.email))
