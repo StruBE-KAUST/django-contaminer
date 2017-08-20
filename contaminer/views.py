@@ -19,6 +19,7 @@
 """ContaMiner views."""
 
 import logging
+import os
 
 from django.views.generic import View
 from django.shortcuts import render
@@ -150,11 +151,19 @@ class DisplayJobView(View):
         added_message = False
         for task in best_tasks:
             if task.percent >= app_config.threshold:
-                # Add PDB and MTZ filename
-                task.pdb_filename = settings.MEDIA_URL \
-                    + task.get_final_filename("pdb")
-                task.mtz_filename = settings.MEDIA_URL \
-                    + task.get_final_filename("mtz")
+                pdb_filename = os.path.join( \
+                    settings.MEDIA_ROOT, \
+                    task.get_final_filename("pdb"))
+                mtz_filename = os.path.join( \
+                    settings.MEDIA_ROOT, \
+                    task.get_final_filename("mtz"))
+                if (os.path.exists(pdb_filename) \
+                    and os.path.exists(mtz_filename)):
+                    # Add PDB and MTZ filename
+                    task.pdb_filename = settings.MEDIA_URL \
+                        + task.get_final_filename("pdb")
+                    task.mtz_filename = settings.MEDIA_URL \
+                        + task.get_final_filename("mtz")
 
                 # If a positive result is found for a pack with low coverage or low
                 # identity display a message to encourage publication

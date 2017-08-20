@@ -726,6 +726,46 @@ class DisplayJobViewTestCase(TestCase):
         messages = response.context['messages']
         self.assertEqual(len(messages), 1)
 
+    @mock.patch('contaminer.views.os.path.exists')
+    def test_gives_final_files_if_available(self, mock_exists):
+        self.job.status_complete = True
+        self.job.save()
+        self.task.percent = 99
+        self.task.save()
+
+        # Create files
+        mock_exists.return_value = True
+
+        response = self.client.get(
+                reverse('ContaMiner:display', args = [self.job.id]),
+                )
+
+        self.assertTrue("/media/web_task_1/P0ACJ8_5_P-1-2-1" \
+            in mock_exists.call_args[0][0])
+        self.assertTrue(
+            "<a href=\"/media/web_task_1/P0ACJ8_5_P-1-2-1.pdb\">PDB</a>" \
+            in response.content)
+
+    @mock.patch('contaminer.views.os.path.exists')
+    def test_not_gives_final_files_if_not_available(self, mock_exists):
+        self.job.status_complete = True
+        self.job.save()
+        self.task.percent = 99
+        self.task.save()
+
+        # Files do not exist
+        mock_exists.return_value = False
+
+        response = self.client.get(
+                reverse('ContaMiner:display', args = [self.job.id]),
+                )
+
+        self.assertTrue("/media/web_task_1/P0ACJ8_5_P-1-2-1" \
+            in mock_exists.call_args[0][0])
+        self.assertFalse(
+            "<a href=\"/media/web_task_1/P0ACJ8_5_P-1-2-1.pdb\">PDB</a>" \
+            in response.content)
+
 
 class UglymolViewTestCase(TestCase):
     """Test the Uglymol view"""
