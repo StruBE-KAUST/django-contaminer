@@ -30,10 +30,12 @@ from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from django.apps import apps
 from django.conf import settings
+from django.urls import reverse
 
 from .forms import SubmitJobForm
 
 from .models.contabase import ContaBase
+from .models.contabase import Contaminant
 from .models.contabase import Category
 from .models.contaminer import Job
 from .models.contaminer import Task
@@ -137,54 +139,38 @@ class DisplayJobView(View):
             log.debug("Permission denied")
             return result
 
-        if not job.status_complete:
-            messages.warning(request, "This job is not yet complete.")
-            result = SubmitJobView().get(request)
-            log.debug("Job not complete")
-            log.debug(result)
-            return result
+        # Provide skeleton page. Population will be done by javascript
+        contaminants = \
+            Contaminant.objects.filter(pack__task__job=job).distinct()
+        categories = set([c.category for c in contaminants])
 
-        # Retrieve best tasks for this
-        best_tasks = job.get_best_tasks()
+        for category in categories:
+            category.contaminants = \
+                    [c for c in contaminants if c.category == category]
 
         app_config = apps.get_app_config('contaminer')
-        added_message = False
-        for task in best_tasks:
-            if task.percent >= app_config.threshold:
-                pdb_filename = os.path.join( \
-                    settings.MEDIA_ROOT, \
-                    task.get_final_filename("pdb"))
-                mtz_filename = os.path.join( \
-                    settings.MEDIA_ROOT, \
-                    task.get_final_filename("mtz"))
-                if (os.path.exists(pdb_filename) \
-                    and os.path.exists(mtz_filename)):
-                    # Add PDB and MTZ filename
-                    task.pdb_filename = settings.MEDIA_URL \
-                        + task.get_final_filename("pdb")
-                    task.mtz_filename = settings.MEDIA_URL \
-                        + task.get_final_filename("mtz")
-
-                # If a positive result is found for a pack with low coverage or low
-                # identity display a message to encourage publication
-                coverage = task.pack.coverage
-                identity = task.pack.identity
-                if not added_message \
-                    and (coverage < app_config.bad_model_coverage_threshold \
-                    or identity < app_config.bad_model_identity_threshold):
-                    messages.info(request, "Your dataset gives a positive "\
-                            + "result for a contaminant for which no "\
-                            + "identical model is available in the PDB.\nYou "\
-                            + "could deposit or publish this structure.")
-                    added_message = True
+#                # If a positive result is found for a pack with low coverage or low
+#                # identity display a message to encourage publication
+#                coverage = task.pack.coverage
+#                identity = task.pack.identity
+#                if not added_message \
+#                    and (coverage < app_config.bad_model_coverage_threshold \
+#                    or identity < app_config.bad_model_identity_threshold):
+#                    messages.info(request, "Your dataset gives a positive "\
+#                            + "result for a contaminant for which no "\
+#                            + "identical model is available in the PDB.\nYou "\
+#                            + "could deposit or publish this structure.")
+#                    added_message = True
 
         result = render(
             request,
             'ContaMiner/result.html',
             {
                 'job': job,
-                'tasks': best_tasks,
-                'threshold': app_config.threshold
+                'categories': categories,
+                'threshold': app_config.threshold,
+                'api_url': reverse('ContaMiner:API:job'),
+                'uglymol_url': reverse('ContaMiner:uglymol', args=(job.id, "")),
             })
         log.debug("Exit")
         return result

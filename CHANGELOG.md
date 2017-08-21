@@ -7,6 +7,8 @@ All notables changes to this project will be documented in this file.
   to get the best percent and `q_factor`.
 - The API call `GET job/simple_result` and `GET job/detailed_results` now gives
   the availability status of the final files.
+- The results page is now available as soon as the job is submitted (even if
+  not complete)
 
 ## v1 04-06-2017
 ### Added
