@@ -349,19 +349,23 @@ class Job(models.Model):
 
             if error: # All in error, or no task
                 result_data['status'] = "Error"
-            elif complete: # Safe access to best_task
-                result_data['status'] = "Complete"
-                result_data['percent'] = best_task.percent
-                result_data['q_factor'] = best_task.q_factor
-                result_data['pack_number'] = best_task.pack.number
-                result_data['space_group'] = best_task.space_group
             else:
-                result_data['status'] = "Running"
                 if best_task:
                     result_data['percent'] = best_task.percent
                     result_data['q_factor'] = best_task.q_factor
                     result_data['pack_number'] = best_task.pack.number
                     result_data['space_group'] = best_task.space_group
+
+                    final_files_path = os.path.join(\
+                        settings.MEDIA_ROOT,
+                        best_task.get_final_filename("pdb"))
+                    result_data['files_available'] = \
+                        str(os.path.exists(final_files_path))
+
+                if complete: # Safe access to best_task
+                    result_data['status'] = "Complete"
+                else:
+                    result_data['status'] = "Running"
 
             results.append(result_data)
 
@@ -650,7 +654,10 @@ class Task(models.Model):
         return os.path.join(self.job.get_filename(), filename)
 
     def get_final_files(self):
-        """Download the final PDB, MTZ and MAP files for this task."""
+        """
+        Download the final PDB, MTZ and MAP files for this task from the
+        supercomputer.
+        """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
@@ -711,5 +718,11 @@ class Task(models.Model):
         if self.status_complete and not self.status_error:
             response_data['percent'] = self.percent
             response_data['q_factor'] = self.q_factor
+
+        final_files_path = os.path.join(\
+            settings.MEDIA_ROOT,
+            self.get_final_filename("pdb"))
+        result_data['files_available'] = \
+            str(os.path.exists(final_files_path))
 
         return response_data

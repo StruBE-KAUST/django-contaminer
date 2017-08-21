@@ -3,8 +3,10 @@ All notables changes to this project will be documented in this file.
 
 ## Unrelease
 ### Changed
-- The API call `GET job.simple_dict` now gives the pack and space group used to
-  get the best percent and `q_factor`.
+- The API call `GET job/simple_result` now gives the pack and space group used
+  to get the best percent and `q_factor`.
+- The API call `GET job/simple_result` and `GET job/detailed_results` now gives
+  the availability status of the final files.
 
 ## v1 04-06-2017
 ### Added
