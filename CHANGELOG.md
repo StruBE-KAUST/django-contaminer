@@ -1,6 +1,11 @@
 # Changelog
 All notables changes to this project will be documented in this file.
 
+## Unrelease
+### Changed
+- The API call `GET job.simple_dict` now gives the pack and space group used to
+  get the best percent and `q_factor`.
+
 ## v1 04-06-2017
 ### Added
 - Shell command to update the local contabase according to the one stored on

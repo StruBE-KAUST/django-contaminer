@@ -333,38 +333,35 @@ class Job(models.Model):
 
             error = True # All tasks are in error
             complete = True # All tasks are complete
-            percent = 0
-            q_factor = 0
+            best_task = None
 
             for task in tasks:
                 status = task.get_status()
                 if status == 'New':
-                    complete = False
-                    error = False
+                    complete = False # At least one is not in error
+                    error = False # At least one is not complete
                     continue
                 if status == 'Error':
                     continue
                 if status == 'Complete':
-                    error = False
-                    if task.percent > percent:
-                        percent = task.percent
-                        q_factor = task.q_factor
-                    elif task.percent == percent:
-                        if task.q_factor > q_factor:
-                            percent = task.percent
-                            q_factor = task.q_factor
+                    error = False # At least one is not in error
+                    best_task = max(task, best_task)
 
-            if error:
+            if error: # All in error, or no task
                 result_data['status'] = "Error"
-            elif complete:
+            elif complete: # Safe access to best_task
                 result_data['status'] = "Complete"
-                result_data['percent'] = percent
-                result_data['q_factor'] = q_factor
+                result_data['percent'] = best_task.percent
+                result_data['q_factor'] = best_task.q_factor
+                result_data['pack_number'] = best_task.pack.number
+                result_data['space_group'] = best_task.space_group
             else:
                 result_data['status'] = "Running"
-                if percent != 0:
-                    result_data['percent'] = percent
-                    result_data['q_factor'] = q_factor
+                if best_task:
+                    result_data['percent'] = best_task.percent
+                    result_data['q_factor'] = best_task.q_factor
+                    result_data['pack_number'] = best_task.pack.number
+                    result_data['space_group'] = best_task.space_group
 
             results.append(result_data)
 
@@ -403,28 +400,7 @@ class Job(models.Model):
         if valid_tasks == []:
             return None
 
-        max_percent = max([task.percent for task in valid_tasks])
-        max_tasks = [
-            task for task in valid_tasks
-            if task.percent == max_percent]
-
-        max_q_factor = max([task.q_factor for task in max_tasks])
-        max2_tasks = [
-            task for task in max_tasks
-            if task.q_factor == max_q_factor]
-
-        max_coverage = max([task.pack.coverage for task in max2_tasks])
-        max3_tasks = [
-            task for task in max2_tasks
-            if task.pack.coverage == max_coverage]
-
-        max_identity = max([task.pack.identity for task in max3_tasks])
-        max4_tasks = [
-            task for task in max3_tasks
-            if task.pack.identity == max_identity]
-
-        log.debug("Exit")
-        return max4_tasks[0]
+        return max(valid_tasks)
 
     def send_complete_mail(self):
         """If an address is available, send an email."""
@@ -497,6 +473,39 @@ class Task(models.Model):
                 + " / " + str(self.pack)\
                 + " / " + str(self.space_group)\
                 + " / " + self.get_status()
+
+    def __cmp__(self, other):
+        """
+        Compare the scores of the two tasks.
+
+        The greatest has the highest percentage, then q_factor, then coverage,
+        then identity.
+        /!\ Does not override __eq__ from django models /!\
+        """
+        if not isinstance(other, Task):
+            return NotImplemented
+
+        if self.percent > other.percent:
+            return 1
+        elif self.percent < other.percent:
+            return -1
+
+        if self.q_factor > other.q_factor:
+            return 1
+        elif self.q_factor < other.q_factor:
+            return -1
+
+        if self.pack.coverage > other.pack.coverage:
+            return 1
+        elif self.pack.coverage > other.pack.coverage:
+            return -1
+
+        if self.pack.identity > other.pack.identity:
+            return 1
+        elif self.pack.identity > other.pack.identity:
+            return -1
+
+        return 0
 
     def get_status(self):
         """Return the status as a string."""

@@ -1496,7 +1496,9 @@ class SimpleResultsViewTestCase(TestCase):
                             'uniprot_id': "P0ACJ8",
                             'status': 'Complete',
                             'percent': 50,
-                            'q_factor': 0.60
+                            'q_factor': 0.60,
+                            'pack_number': 1,
+                            'space_group': "P-1-2-1",
                         },
                     ]
                 })
