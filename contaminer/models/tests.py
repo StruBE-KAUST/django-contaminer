@@ -1492,66 +1492,83 @@ class JobTestCase(TestCase):
     """
         Test the Job model
     """
+    def setUp(self):
+        self.contabase = ContaBase.objects.create()
+        self.category = Category.objects.create(
+            contabase = self.contabase,
+            number = 1,
+            name = "Protein in E.Coli",
+            )
+        self.contaminant = Contaminant.objects.create(
+            uniprot_id = "P0ACJ8",
+            category = self.category,
+            short_name = "CRP_ECOLI",
+            long_name = "cAMP-activated global transcriptional regulator",
+            sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            organism = "Escherichia coli",
+            )
+        self.pack1 = Pack.objects.create(
+            contaminant = self.contaminant,
+            number = 1,
+            structure= '5-mer',
+            )
+        self.pack2 = Pack.objects.create(
+            contaminant = self.contaminant,
+            number = 2,
+            structure= '5-mer',
+            )
+        self.job = Job.create(
+            name = "test",
+            email = "me@example.com",
+            )
+
     @mock.patch('contaminer.models.contaminer.Job.update_status')
     def test_Job_is_well_displayed(self, mock__):
-        job = Job.objects.create(
-                name = "test",
-                email = "me@example.com",
-                )
-        id = job.id
-        self.assertEqual(str(job), str(id) + ' (me@example.com) New')
+        id = self.job.id
+        self.assertEqual(str(self.job), str(id) + ' (me@example.com) New')
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
     def test_Job_does_not_connect_to_cluster(self, mock_update):
         # Avoid the connection when displaying for performance purpose
-        job = Job.objects.create(
-                name = "test",
-                email = "me@example.com",
-                )
-        id = job.id
-        s = str(job)
+        s = str(self.job)
         self.assertFalse(mock_update.called)
 
     @mock.patch('contaminer.models.contaminer.Job.update_status')
     def test_status_gives_good_result(self, mock__):
-        job = Job.objects.create(
-                name = "test",
-                email = "me@example.com,",
-                )
-        self.assertEqual(job.get_status(), "New")
-        job.status_submitted = True
-        self.assertEqual(job.get_status(), "Submitted")
-        job.status_running = True
-        self.assertEqual(job.get_status(), "Running")
-        job.status_complete = True
-        self.assertEqual(job.get_status(), "Complete")
-        job.status_error = True
-        self.assertEqual(job.get_status(), "Error")
+        self.assertEqual(self.job.get_status(), "New")
+        self.job.status_submitted = True
+        self.assertEqual(self.job.get_status(), "Submitted")
+        self.job.status_running = True
+        self.assertEqual(self.job.get_status(), "Running")
+        self.job.status_complete = True
+        self.assertEqual(self.job.get_status(), "Complete")
+        self.job.status_error = True
+        self.assertEqual(self.job.get_status(), "Error")
 
     def test_create_Job_saves_in_DB(self):
         Job.objects.create(
-                name = "test",
+                name = "new_job",
                 email = "me@example.com,",
                 )
         try:
-            job = Job.objects.get(name = "test")
+            job = Job.objects.get(name = "new_job")
         except ObjectDoesNotExist:
             self.fail("Job has not been saved in DB")
 
     def test_create_Job_returns_job(self):
         job = Job.create(
-                name = "test",
-                email = "me@example.com,",
-                )
+            name = "test",
+            email = "me@example.com,",
+            )
         self.assertTrue(job is not None)
 
     def test_custom_create_Job_saves_in_DB(self):
         Job.create(
-                name = "test",
+                name = "new_job2",
                 email = "me@example.com,",
                 )
         try:
-            job = Job.objects.get(name = "test")
+            job = Job.objects.get(name = "new_job2")
         except ObjectDoesNotExist:
             self.fail("Job has not been saved in DB")
 
@@ -1564,431 +1581,283 @@ class JobTestCase(TestCase):
             self.fail("Empty email address should not raise an error.")
 
     def test_to_detailed_dict_gives_correct_result(self):
-        contabase = ContaBase.objects.create()
-        category = Category.objects.create(
-                contabase = contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
-        contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
-        pack = Pack.objects.create(
-                contaminant = contaminant,
-                number = 5,
-                structure= '5-mer',
-                )
-        job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
-        Task.objects.create(
-                job = job,
-                pack = pack,
-                space_group = "P-1-2-1",
-                percent = 40,
-                q_factor = 0.53,
-                ).save()
-        Task.objects.create(
-                job = job,
-                pack = pack,
-                space_group = "P-1-2-2",
-                percent = 40,
-                q_factor = 0.53,
-                status_complete = True,
-                ).save()
+        task1 = Task.objects.create(
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_complete = False,
+            )
+        task2 = Task.objects.create(
+            job = self.job,
+            pack = self.pack2,
+            space_group = "P-1-2-2",
+            percent = 40,
+            q_factor = 0.70,
+            status_complete = True,
+            )
 
-        response_dict = job.to_detailed_dict()
+        response_dict = self.job.to_detailed_dict()
         response_expected = {
-                'id': job.id,
-                'results': [
-                    {
-                        'uniprot_id': "P0ACJ8",
-                        'pack_nb': 5,
-                        'space_group': "P-1-2-1",
-                        'status': 'New',
-                    },
-                    {
-                        'uniprot_id': "P0ACJ8",
-                        'pack_nb': 5,
-                        'space_group': "P-1-2-2",
-                        'status': 'Complete',
-                        'percent': 40,
-                        'q_factor': 0.53,
-                    },
-                ]
-            }
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'pack_nb': 1,
+                    'space_group': "P-1-2-1",
+                    'status': 'New',
+                    'files_available': "False",
+                },
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'pack_nb': 2,
+                    'space_group': "P-1-2-2",
+                    'status': 'Complete',
+                    'percent': 40,
+                    'q_factor': 0.70,
+                    'files_available': "False",
+                },
+            ]
+        }
         self.assertEqual(response_dict, response_expected)
 
     def test_to_simple_dict_gives_running_tasks_new(self):
-        contabase = ContaBase.objects.create()
-        category = Category.objects.create(
-                contabase = contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
-        contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
-        pack1 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
-        pack2 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 2,
-                structure= '5-mer',
-                )
-        job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
-        Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 40,
-                q_factor = 0.53,
-                ).save()
-        Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 40,
-                q_factor = 0.53,
-                ).save()
-
-        response_dict = job.to_simple_dict()
+        task1 = Task.objects.create(
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_complete = False,
+            )
+        task2 = Task.objects.create(
+            job = self.job,
+            pack = self.pack2,
+            space_group = "P-1-2-1",
+            percent = 40,
+            q_factor = 0.70,
+            status_complete = True,
+            )
+        response_dict = self.job.to_simple_dict()
         response_expected = {
-                'id': job.id,
-                'results': [
-                    {
-                        'uniprot_id': "P0ACJ8",
-                        'status': 'Running',
-                    },
-                ]
-            }
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'status': 'Running',
+                    'pack_number': 2,
+                    'space_group': "P-1-2-1",
+                    'percent': 40,
+                    'q_factor': 0.70,
+                    'files_available': "False",
+                },
+            ]
+        }
         self.assertEqual(response_dict, response_expected)
 
     def test_to_simple_dict_gives_running_score_tasks_new_complete(self):
-        self.maxDiff = None
-        contabase = ContaBase.objects.create()
-        category = Category.objects.create(
-                contabase = contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
-        contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
-        pack1 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
-        pack2 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 2,
-                structure= '5-mer',
-                )
-        job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 50,
-                q_factor = 0.60,
-                ).save()
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            ).save()
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 40,
-                q_factor = 0.53,
-                status_complete = True,
-                ).save()
+            job = self.job,
+            pack = self.pack2,
+            space_group = "P-1-2-1",
+            percent = 40,
+            q_factor = 0.53,
+            status_complete = True,
+            ).save()
 
-        response_dict = job.to_simple_dict()
+        response_dict = self.job.to_simple_dict()
         response_expected = {
-                'id': job.id,
-                'results': [
-                    {
-                        'uniprot_id': "P0ACJ8",
-                        'status': 'Running',
-                        'percent': 40,
-                        'q_factor': 0.53,
-                        'pack_number': 1,
-                        'space_group': "P-1-2-1",
-                    },
-                ]
-            }
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'status': 'Running',
+                    'percent': 40,
+                    'q_factor': 0.53,
+                    'pack_number': 2,
+                    'space_group': "P-1-2-1",
+                    'files_available': "False",
+                },
+            ]
+        }
         self.assertEqual(response_dict, response_expected)
 
     def test_to_simple_dict_gives_running_tasks_new_error(self):
-        contabase = ContaBase.objects.create()
-        category = Category.objects.create(
-                contabase = contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
-        contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
-        pack1 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
-        pack2 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 2,
-                structure= '5-mer',
-                )
-        job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 50,
-                q_factor = 0.60,
-                ).save()
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            ).save()
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 40,
-                q_factor = 0.53,
-                status_error = True,
-                ).save()
+            job = self.job,
+            pack = self.pack2,
+            space_group = "P-1-2-1",
+            percent = 40,
+            q_factor = 0.53,
+            status_error = True,
+            ).save()
 
-        response_dict = job.to_simple_dict()
+        response_dict = self.job.to_simple_dict()
         response_expected = {
-                'id': job.id,
-                'results': [
-                    {
-                        'uniprot_id': "P0ACJ8",
-                        'status': 'Running',
-                    },
-                ]
-            }
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'status': 'Running',
+                },
+            ]
+        }
         self.assertEqual(response_dict, response_expected)
 
     def test_to_simple_dict_gives_complete_scores_tasks_complete(self):
-        contabase = ContaBase.objects.create()
-        category = Category.objects.create(
-                contabase = contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
-        contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
-        pack1 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
-        pack2 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 2,
-                structure= '5-mer',
-                )
-        job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 50,
-                q_factor = 0.60,
-                status_complete = True,
-                ).save()
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_complete = True,
+            ).save()
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 40,
-                q_factor = 0.70,
-                status_complete = True,
-                ).save()
+            job = self.job,
+            pack = self.pack2,
+            space_group = "P-1-2-1",
+            percent = 40,
+            q_factor = 0.70,
+            status_complete = True,
+            ).save()
 
-        response_dict = job.to_simple_dict()
+        response_dict = self.job.to_simple_dict()
         response_expected = {
-                'id': job.id,
-                'results': [
-                    {
-                        'uniprot_id': "P0ACJ8",
-                        'status': 'Complete',
-                        'percent': 50,
-                        'q_factor': 0.60,
-                        'pack_number': 1,
-                        'space_group': "P-1-2-1",
-                    },
-                ]
-            }
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'status': 'Complete',
+                    'percent': 50,
+                    'q_factor': 0.60,
+                    'pack_number': 1,
+                    'space_group': "P-1-2-1",
+                    'files_available': "False",
+                },
+            ]
+        }
         self.assertEqual(response_dict, response_expected)
 
     def test_to_simple_dict_gives_complete_scores_tasks_complete_error(self):
-        contabase = ContaBase.objects.create()
-        category = Category.objects.create(
-                contabase = contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
-        contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
-        pack1 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
-        pack2 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 2,
-                structure= '5-mer',
-                )
-        job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 50,
-                q_factor = 0.60,
-                status_error = True,
-                ).save()
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_error = True,
+            ).save()
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 40,
-                q_factor = 0.70,
-                status_complete = True,
-                ).save()
+            job = self.job,
+            pack = self.pack2,
+            space_group = "P-1-2-1",
+            percent = 40,
+            q_factor = 0.70,
+            status_complete = True,
+            ).save()
 
-        response_dict = job.to_simple_dict()
+        response_dict = self.job.to_simple_dict()
         response_expected = {
-                'id': job.id,
-                'results': [
-                    {
-                        'uniprot_id': "P0ACJ8",
-                        'status': 'Complete',
-                        'percent': 40,
-                        'q_factor': 0.70,
-                        'pack_number': 1,
-                        'space_group': "P-1-2-1",
-                    },
-                ]
-            }
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'status': 'Complete',
+                    'percent': 40,
+                    'q_factor': 0.70,
+                    'pack_number': 2,
+                    'space_group': "P-1-2-1",
+                    'files_available': "False",
+                },
+            ]
+        }
         self.assertEqual(response_dict, response_expected)
 
     def test_to_simple_dict_gives_error_tasks_error(self):
-        contabase = ContaBase.objects.create()
-        category = Category.objects.create(
-                contabase = contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
-        contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
-        pack1 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
-        pack2 = Pack.objects.create(
-                contaminant = contaminant,
-                number = 2,
-                structure= '5-mer',
-                )
-        job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 50,
-                q_factor = 0.60,
-                status_error = True,
-                ).save()
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_error = True,
+            ).save()
         Task.objects.create(
-                job = job,
-                pack = pack1,
-                space_group = "P-1-2-1",
-                percent = 40,
-                q_factor = 0.70,
-                status_error = True,
-                ).save()
+            job = self.job,
+            pack = self.pack2,
+            space_group = "P-1-2-1",
+            percent = 40,
+            q_factor = 0.70,
+            status_error = True,
+            ).save()
 
-        response_dict = job.to_simple_dict()
+        response_dict = self.job.to_simple_dict()
         response_expected = {
-                'id': job.id,
-                'results': [
-                    {
-                        'uniprot_id': "P0ACJ8",
-                        'status': 'Error',
-                    },
-                ]
-            }
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'status': 'Error',
+                },
+            ]
+        }
         self.assertEqual(response_dict, response_expected)
+
+    @mock.patch('contaminer.models.contaminer.os.path.exists')
+    def test_to_simple_dict_gives_available_files(self, mock_exists):
+        task1 = Task.objects.create(
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_complete = True,
+            )
+
+        mock_exists.return_value = True
+        response_dict = self.job.to_simple_dict()
+        response_expected = {
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'status': 'Complete',
+                    'percent': 50,
+                    'q_factor': 0.60,
+                    'pack_number': 1,
+                    'space_group': "P-1-2-1",
+                    'files_available': "True",
+                },
+            ]
+        }
+        self.assertEqual(response_dict, response_expected)
+        self.assertTrue(
+            "/media/web_task_" + str(self.job.id) + "/P0ACJ8_1_P-1-2-1" \
+            in mock_exists.call_args[0][0])
 
     def test_get_filename_gives_good_output(self):
         job = Job()
         job.create(
-                name = "test",
+                name = "New job 3",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
+        job = Job.objects.get(name = "New job 3")
         self.assertEqual(
                 job.get_filename(suffix = "txt"),
                 "web_task_" + str(job.id) + ".txt")
@@ -1996,10 +1865,10 @@ class JobTestCase(TestCase):
     def test_get_filename_gives_mtz_default(self):
         job = Job()
         job.create(
-                name = "test",
+                name = "New job 3",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
+        job = Job.objects.get(name = "New job 3")
         self.assertEqual(
                 job.get_filename(),
                 "web_task_" + str(job.id))
@@ -2020,10 +1889,10 @@ class JobTestCase(TestCase):
         mock_sshchannel.return_value = mock_client
         job = Job()
         job.create(
-                name = "test",
+                name = "New job 3",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
+        job = Job.objects.get(name = "New job 3")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         mock_client.send_file.assert_called_with(
             "/local/dir/file.mtz",
@@ -2045,10 +1914,10 @@ class JobTestCase(TestCase):
         mock_sshchannel.return_value = mock_client
         job = Job()
         job.create(
-                name = "test",
+                name = "New job 3",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
+        job = Job.objects.get(name = "New job 3")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         mock_client.write_file("/remote/dir/web_task_" + str(job.id) + ".txt",
             "cont1\ncont2\n")
@@ -2069,10 +1938,10 @@ class JobTestCase(TestCase):
         mock_sshchannel.return_value = mock_client
         job = Job()
         job.create(
-                name = "test",
+                name = "New job 3",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
+        job = Job.objects.get(name = "New job 3")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         mock_client.exec_command.assert_called_with(
                 'cd "/remote/dir" && /remote/CM/contaminer solve ' \
@@ -2095,10 +1964,10 @@ class JobTestCase(TestCase):
         mock_sshchannel.return_value = mock_client
         job = Job()
         job.create(
-                name = "test",
+                name = "New job 3",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
+        job = Job.objects.get(name = "New job 3")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         mock_remove.assert_called_with("/local/dir/file.mtz")
 
@@ -2118,10 +1987,10 @@ class JobTestCase(TestCase):
         mock_sshchannel.return_value = mock_client
         job = Job()
         job.create(
-                name = "test",
+                name = "New job 3",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
+        job = Job.objects.get(name = "New job 3")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
         self.assertEqual(job.status_submitted, True)
 
@@ -2138,10 +2007,10 @@ class JobTestCase(TestCase):
         mock_sshchannel.return_value = mock_client
         job = Job()
         job.create(
-                name = "test",
+                name = "New job 3",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
+        job = Job.objects.get(name = "New job 3")
         job.update_status()
         mock_client.exec_command.assert_called_with(
                 '/remote/CM/contaminer job_status /remote/dir/web_task_' \
@@ -2159,10 +2028,10 @@ class JobTestCase(TestCase):
         mock_sshchannel.return_value = mock_client
         job = Job()
         job.create(
-                name = "test",
+                name = "New job 3",
                 email = "me@example.com,",
                 )
-        job = Job.objects.get(name = "test")
+        job = Job.objects.get(name = "New job 3")
 
         mock_client.exec_command.return_value = "Job does not exist\n"
         job.update_status()
@@ -2658,17 +2527,15 @@ class JobTestCase(TestCase):
         self.assertTrue(best_task)
 
     def test_get_best_tasks_gives_empty_list_if_no_task(self):
-        (job, pack) = self.create_pack()
-        best_tasks = job.get_best_tasks()
+        best_tasks = self.job.get_best_tasks()
         self.assertEqual(best_tasks, [])
 
     @mock.patch('contaminer.models.contaminer.Job.get_best_task')
     def test_get_best_tasks_gives_as_many_as_contaminants(self, mock_task):
         mock_task.return_value = None
-        (job, pack) = self.create_pack()
         contaminant2 = Contaminant.objects.create(
                 uniprot_id = "P0AA25",
-                category = pack.contaminant.category,
+                category = self.category,
                 short_name = "CRP_ECOLI",
                 long_name = "cAMP-activated global transcriptional regulator",
                 sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -2679,10 +2546,19 @@ class JobTestCase(TestCase):
                 number = 5,
                 structure= '5-mer',
                 )
-        best_tasks = job.get_best_tasks()
+        task = Task.objects.create(
+                job = self.job,
+                pack = pack2,
+                space_group = "P-2-2-2",
+                percent = 100,
+                q_factor = 1,
+                status_complete = True,
+                status_error = False,
+                )
+        best_tasks = self.job.get_best_tasks()
         self.assertEqual(len(best_tasks), 0)
         self.assertEqual(mock_task.call_count, 2)
-        mock_task.assert_any_call(pack.contaminant)
+        mock_task.assert_any_call(pack2.contaminant)
         mock_task.assert_any_call(contaminant2)
 
     @mock.patch('contaminer.models.contaminer.send_mail')
@@ -3251,6 +3127,7 @@ class TaskTestCase(TestCase):
                 'pack_nb': 5,
                 'space_group': "P-1-2-1",
                 'status': 'New',
+                'files_available': "False",
             }
         self.assertEqual(response_dict, response_expected)
 
@@ -3263,6 +3140,7 @@ class TaskTestCase(TestCase):
                 'status': 'Complete',
                 'percent': 40,
                 'q_factor': 0.53,
+                'files_available': "False",
             }
         self.assertEqual(response_dict, response_expected)
 
@@ -3273,5 +3151,6 @@ class TaskTestCase(TestCase):
                 'pack_nb': 5,
                 'space_group': "P-1-2-1",
                 'status': 'Error',
+                'files_available': "False",
             }
         self.assertEqual(response_dict, response_expected)

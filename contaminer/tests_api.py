@@ -1499,6 +1499,7 @@ class SimpleResultsViewTestCase(TestCase):
                             'q_factor': 0.60,
                             'pack_number': 1,
                             'space_group': "P-1-2-1",
+                            'files_available': "False",
                         },
                     ]
                 })
@@ -1583,7 +1584,8 @@ class DetailedResultsViewTestCase(TestCase):
                             'space_group': "P-1-2-1",
                             'status': 'Complete',
                             'percent': 50,
-                            'q_factor': 0.60
+                            'q_factor': 0.60,
+                            'files_available': "False",
                         },
                     ]
                 })

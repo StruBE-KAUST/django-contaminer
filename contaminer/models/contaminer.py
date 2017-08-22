@@ -328,8 +328,8 @@ class Job(models.Model):
             result_data['uniprot_id'] = uniprot_id
 
             tasks = Task.objects.filter(
-                    job=self,
-                    pack__contaminant__uniprot_id=uniprot_id)
+                job=self,
+                pack__contaminant__uniprot_id=uniprot_id)
 
             error = True # All tasks are in error
             complete = True # All tasks are complete
@@ -722,7 +722,7 @@ class Task(models.Model):
         final_files_path = os.path.join(\
             settings.MEDIA_ROOT,
             self.get_final_filename("pdb"))
-        result_data['files_available'] = \
+        response_data['files_available'] = \
             str(os.path.exists(final_files_path))
 
         return response_data
