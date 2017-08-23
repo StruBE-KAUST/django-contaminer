@@ -317,6 +317,7 @@ class Job(models.Model):
         """Return the results compiled per contaminant."""
         response_data = {}
         response_data['id'] = self.id
+        messages = None
 
         tasks = Task.objects.filter(job=self)
         uniprot_ids = [task.pack.contaminant.uniprot_id for task in tasks]

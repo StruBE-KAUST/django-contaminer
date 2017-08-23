@@ -19,6 +19,7 @@ function remove(elem) {
 function update_tasks(response) {
     var response = JSON.parse(response);
     var results = response['results'];
+    // Update symbols
     for (var i = 0; i < results.length; i++){
         var uniprot_id = results[i].uniprot_id;
         var li = document.querySelector("#li_" + uniprot_id);
@@ -76,29 +77,37 @@ function update_tasks(response) {
             li.querySelector("a").setAttribute("data-content", popover_content);
         }
     }
+
     // Test if messages is emmpty
     if ('messages' in response) {
         var messages = response['messages'];
         var pl_messages = document.querySelector('#messages_placeholder');
         for (var m in messages) {
             if (messages.hasOwnProperty(m)) {
-                var div = document.createElement("div");
-                div.setAttribute("class", "alert alert-info fade in");
-                var a = document.createElement("a");
-                a.setAttribute("href", "#");
-                a.setAttribute("class", "close");
-                a.setAttribute("data-dismiss", "alert");
-                a.setAttribute("aria-label", "close");
-                a.innerHTML = "&times";
+                var message_id = "message_" + m;
+                var previous_message = document.querySelector("#" + message_id);
 
-                var strong = document.createElement("strong");
-                strong.innerHTML = "Info! ";
+                console.log(previous_message);
+                if (previous_message == null) {
+                    var div = document.createElement("div");
+                    div.setAttribute("class", "alert alert-info fade in");
+                    div.setAttribute("id", message_id);
+                    var a = document.createElement("a");
+                    a.setAttribute("href", "#");
+                    a.setAttribute("class", "close");
+                    a.setAttribute("data-dismiss", "alert");
+                    a.setAttribute("aria-label", "close");
+                    a.innerHTML = "&times";
 
-                div.append(a);
-                div.append(strong);
-                div.append(messages[m]);
+                    var strong = document.createElement("strong");
+                    strong.innerHTML = "Info! ";
 
-                pl_messages.append(div);
+                    div.append(a);
+                    div.append(strong);
+                    div.append(messages[m]);
+
+                    pl_messages.append(div);
+                }
             }
         }
     }
