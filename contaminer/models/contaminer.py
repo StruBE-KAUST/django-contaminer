@@ -268,8 +268,8 @@ class Job(models.Model):
             log.warning("Archived. No modification will be recorded.")
             return
 
-        self.update_status()
         self.update_tasks()
+        self.update_status()
 
         if self.status_complete:
             self.status_archived = True
