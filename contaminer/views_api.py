@@ -293,7 +293,7 @@ class SimpleResultsView(View):
             return custom404(request)
 
         if job.confidential and \
-            ('user' not in request or request.user != job.author):
+            (not hasattr(request, 'user') or request.user != job.author):
             response_data = {
                 'error': True,
                 'message': 'You are not allowed to see this job'}

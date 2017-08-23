@@ -25,6 +25,8 @@
 
 from django.test import TestCase
 from django.test import RequestFactory
+from django.test import Client
+from django.contrib.auth.models import User
 from django.urls import reverse
 from django.http import Http404
 import mock
@@ -1518,20 +1520,78 @@ class SimpleResultsViewTestCase(TestCase):
                     ]
                 })
 
-    def test_simpleresult_do_not_display_confidential_job(self):
+    def test_simpleresult_do_not_display_confidential_job_if_logged_out(self):
         request = self.factory.get(
-                reverse('ContaMiner:API:result', args = [25])
-                )
+            reverse('ContaMiner:API:result', args = [self.job.id])
+            )
+        user = User.objects.create_user(
+            username='SpongeBob',
+            email='bob@sea.com',
+            password='squarepants',
+            )
         self.job.confidential = True
+        self.job.author = user
         self.job.save()
         response = SimpleResultsView.as_view()(request, self.job.id)
 
         self.assertJSONEqual(response.content,
-                {
-                    'error': True,
-                    'message': 'You are not allowed to see this job',
-                })
+            {
+                'error': True,
+                'message': 'You are not allowed to see this job',
+            })
         self.assertEqual(response.status_code, 403)
+
+    def test_simpleresult_do_not_display_confidential_job_if_wrong_user(self):
+        user = User.objects.create_user(
+            username='SpongeBob',
+            email='bob@sea.com',
+            password='squarepants',
+            )
+        self.job.author = user
+        self.job.confidential = True
+        self.job.save()
+
+        user2 = User.objects.create_user(
+            username='Alice',
+            email='alice@example.com',
+            password='password',
+            )
+
+        client = Client()
+        client.login(username='Alice', password='password')
+        response = client.get(
+            reverse('ContaMiner:API:result', args = [self.job.id]),
+            )
+
+        self.assertJSONEqual(response.content,
+            {
+                'error': True,
+                'message': 'You are not allowed to see this job',
+            })
+        self.assertEqual(response.status_code, 403)
+
+    def test_simpleresult_do_display_confidential_job_if_good_user(self):
+        user = User.objects.create_user(
+            username='SpongeBob',
+            email='bob@sea.com',
+            password='squarepants',
+            )
+        self.job.author = user
+        self.job.confidential = True
+        self.job.save()
+
+        client = Client()
+        client.login(username='SpongeBob', password='squarepants')
+        response = client.get(
+            reverse('ContaMiner:API:result', args = [self.job.id]),
+            )
+
+        self.assertJSONNotEqual(response.content,
+            {
+                'error': True,
+                'message': 'You are not allowed to see this job',
+            })
+        self.assertEqual(response.status_code, 200)
 
     def test_simpleresult_gives_message_when_bad_coverage(self):
         self.model.nb_residues = 1

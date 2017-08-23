@@ -596,17 +596,17 @@ class DisplayJobViewTestCase(TestCase):
     def test_do_not_show_confidential_job(self):
         self.job.confidential = True
         user = User.objects.create_user(
-                username = 'SpongeBob',
-                email = 'bob@sea.com',
-                password = 'squarepants',
-                )
+            username = 'SpongeBob',
+            email = 'bob@sea.com',
+            password = 'squarepants',
+            )
         self.job.author = user
         self.job.save()
 
         response = self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                follow = True,
-                )
+            reverse('ContaMiner:display', args = [self.job.id]),
+            follow = True,
+            )
         messages = response.context['messages']
         self.assertTrue(len(messages) >= 1)
         self.assertTrue(any(['confidential' in str(e) for e in messages]))
@@ -632,23 +632,23 @@ class DisplayJobViewTestCase(TestCase):
     def test_no_show_confidential_if_logged_in_wrong_user(self):
         self.job.confidential = True
         user = User.objects.create_user(
-                username = 'SpongeBob',
-                email = 'bob@sea.com',
-                password = 'squarepants',
-                )
+            username = 'SpongeBob',
+            email = 'bob@sea.com',
+            password = 'squarepants',
+            )
         user2 = User.objects.create_user(
-                username = 'Alice',
-                email = 'alice@example.com',
-                password = 'password',
-                )
+            username = 'Alice',
+            email = 'alice@example.com',
+            password = 'password',
+            )
         self.job.author = user
         self.job.save()
 
         self.client.login(username = 'Alice', password = 'password')
         response= self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                follow = True,
-                )
+            reverse('ContaMiner:display', args = [self.job.id]),
+            follow = True,
+            )
 
         messages = response.context['messages']
         self.assertTrue(len(messages) >= 1)
