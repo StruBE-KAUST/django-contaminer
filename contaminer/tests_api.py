@@ -1486,10 +1486,16 @@ class SimpleResultsViewTestCase(TestCase):
 
     def test_simpleresult_returns_404_on_wrong_id(self):
         request = self.factory.get(
-                reverse('ContaMiner:API:result', args = [25])
-                )
-        with self.assertRaises(Http404):
-            response = SimpleResultsView.as_view()(request, 25)
+            reverse('ContaMiner:API:result', args = [25])
+            )
+
+        response = SimpleResultsView.as_view()(request, 25)
+        self.assertEqual(response.status_code, 404)
+        self.assertJSONEqual(response.content,
+            {
+                "error": True,
+                "message": "Resource not found",
+            })
 
     def test_simpleresult_returns_good_status(self):
         request = self.factory.get(
@@ -1636,10 +1642,16 @@ class DetailedResultsViewTestCase(TestCase):
 
     def test_detailedresult_returns_404_on_wrong_id(self):
         request = self.factory.get(
-                reverse('ContaMiner:API:detailed_result', args = [25])
-                )
-        with self.assertRaises(Http404):
-            response = DetailedResultsView.as_view()(request, 25)
+            reverse('ContaMiner:API:detailed_result', args = [25])
+            )
+
+        response = DetailedResultsView.as_view()(request, 25)
+        self.assertEqual(response.status_code, 404)
+        self.assertJSONEqual(response.content,
+            {
+                "error": True,
+                "message": "Resource not found",
+            })
 
     def test_detailedresult_returns_good_status(self):
         request = self.factory.get(

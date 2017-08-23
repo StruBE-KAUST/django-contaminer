@@ -290,9 +290,10 @@ class SimpleResultsView(View):
             job = Job.objects.get(id=job_id)
         except ObjectDoesNotExist:
             log.debug("Raise 404")
-            raise Http404()
+            return custom404(request)
 
-        if job.confidential:
+        if job.confidential and \
+            ('user' not in request or request.user != job.author):
             response_data = {
                 'error': True,
                 'message': 'You are not allowed to see this job'}
@@ -316,7 +317,7 @@ class DetailedResultsView(View):
             job = Job.objects.get(id=job_id)
         except ObjectDoesNotExist:
             log.debug("Raise 404")
-            raise Http404()
+            return custom404(request)
 
         if job.confidential:
             response_data = {
