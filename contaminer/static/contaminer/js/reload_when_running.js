@@ -19,4 +19,4 @@ function refreshIfReady(response) {
 
 window.setInterval(function(){
     loadResults();
-}, 10000)
+}, 60000)
