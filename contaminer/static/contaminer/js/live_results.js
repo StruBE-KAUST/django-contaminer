@@ -11,7 +11,9 @@ function loadResults() {
 }
 
 function remove(elem) {
-    return elem.parentNode.removeChild(elem);
+    if (elem != null) {
+        return elem.parentNode.removeChild(elem);
+    }
 }
 
 function update_tasks(response) {
@@ -103,3 +105,7 @@ function update_tasks(response) {
 }
 
 loadResults();
+
+window.setInterval(function(){
+    loadResults();
+}, 60000)
