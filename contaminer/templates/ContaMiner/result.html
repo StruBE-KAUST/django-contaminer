@@ -2,6 +2,7 @@
 {% block content %}<h1>ContaMiner</h1>
 {% load staticfiles %}
 <h3>{{ job.name }}</h3>
+<div id="messages_placeholder"></div>
 <dl>
     {% for category in categories %}
     <dt><span>{{ category.name }}</span></dt>

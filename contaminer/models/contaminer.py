@@ -323,9 +323,14 @@ class Job(models.Model):
         unique_uniprot_ids = list(set(uniprot_ids))
 
         results = []
+        app_config = apps.get_app_config('contaminer')
+        coverage_threshold = app_config.bad_model_coverage_threshold
+        identity_threshold = app_config.bad_model_identity_threshold
+
         for uniprot_id in unique_uniprot_ids:
             result_data = {}
             result_data['uniprot_id'] = uniprot_id
+            messages = {}
 
             tasks = Task.objects.filter(
                 job=self,
@@ -362,12 +367,25 @@ class Job(models.Model):
                     result_data['files_available'] = \
                         str(os.path.exists(final_files_path))
 
+                    coverage = best_task.pack.coverage
+                    identity = best_task.pack.identity
+                    if coverage < coverage_threshold \
+                        or identity < identity_threshold:
+                        messages['bad_model'] = \
+                            "Your dataset gives a positive result for a "\
+                            + "contaminant for which no identical model is "\
+                            + "available in the PDB.\nYou could deposit or "\
+                            + "publish this structure."
+
                 if complete: # Safe access to best_task
                     result_data['status'] = "Complete"
                 else:
                     result_data['status'] = "Running"
 
             results.append(result_data)
+
+        if messages:
+            response_data['messages'] = messages
 
         response_data['results'] = results
         return response_data

@@ -547,43 +547,43 @@ class DisplayJobViewTestCase(TestCase):
 
         self.contabase = ContaBase.objects.create()
         self.category = Category.objects.create(
-                contabase = self.contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
+            contabase = self.contabase,
+            number = 1,
+            name = "Protein in E.Coli",
+            )
         self.contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = self.category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
+            uniprot_id = "P0ACJ8",
+            category = self.category,
+            short_name = "CRP_ECOLI",
+            long_name = "cAMP-activated global transcriptional regulator",
+            sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            organism = "Escherichia coli",
+            )
         self.pack = Pack.objects.create(
-                contaminant = self.contaminant,
-                number = 5,
-                structure= '5-mer',
-                )
+            contaminant = self.contaminant,
+            number = 5,
+            structure= '5-mer',
+            )
         self.model = Model.objects.create(
-                pdb_code = "ACBD",
-                chain = "A",
-                domain = "1",
-                nb_residues = 1,
-                identity = 2,
-                pack = self.pack,
-                )
+            pdb_code = "ACBD",
+            chain = "A",
+            domain = "1",
+            nb_residues = 1,
+            identity = 2,
+            pack = self.pack,
+            )
         self.job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
+            name = "test",
+            email = "me@example.com",
+            )
         self.task = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-1-2-1",
-                status_complete = True,
-                percent = 40,
-                q_factor = 0.53,
-                )
+            job = self.job,
+            pack = self.pack,
+            space_group = "P-1-2-1",
+            status_complete = True,
+            percent = 40,
+            q_factor = 0.53,
+            )
 
     def test_smoke(self):
         self.job.status_complete = True
@@ -660,111 +660,14 @@ class DisplayJobViewTestCase(TestCase):
                 )
         self.assertEqual(response.status_code, 404)
 
-    def test_no_display_if_non_complete(self):
+    def test_display_even_if_non_complete(self):
         self.job.status_complete = False
         self.job.save()
         response = self.client.get(
                 reverse('ContaMiner:display', args = [self.job.id]),
                 follow = True,
                 )
-        messages = response.context['messages']
-        self.assertTrue(len(messages) >= 1)
-        self.assertTrue(any(['complete' in str(e) for e in messages]))
-
-    def test_display_message_if_bad_coverage_positive_result(self):
-        self.job.status_complete = True
-        self.job.save()
-        self.task.percent = 99
-        self.task.save()
-        response = self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                follow = True,
-                )
-        messages = response.context['messages']
-        self.assertTrue(len(messages) >= 1)
-
-    def test_display_only_one_message_if_multiple_positive(self):
-        self.job.status_complete = True
-        self.job.save()
-        self.task.percent = 99
-        self.task.save()
-
-        contaminant2 = Contaminant.objects.create(
-                uniprot_id = "P0ACJ9",
-                category = self.category,
-                short_name = "CRP_ECOLI2",
-                long_name = "cAMP-activated global transcriptional regulator2",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
-        pack2 = Pack.objects.create(
-                contaminant = contaminant2,
-                number = 5,
-                structure= '5-mer',
-                )
-        model2 = Model.objects.create(
-                pdb_code = "ACBD",
-                chain = "A",
-                domain = "1",
-                nb_residues = 1,
-                identity = 2,
-                pack = pack2,
-                )
-        task2 = Task.objects.create(
-                job = self.job,
-                pack = pack2,
-                space_group = "P-1-2-1",
-                status_complete = True,
-                percent = 99,
-                q_factor = 0.53,
-                )
-
-        response = self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                follow = True,
-                )
-        messages = response.context['messages']
-        self.assertEqual(len(messages), 1)
-
-    @mock.patch('contaminer.views.os.path.exists')
-    def test_gives_final_files_if_available(self, mock_exists):
-        self.job.status_complete = True
-        self.job.save()
-        self.task.percent = 99
-        self.task.save()
-
-        # Create files
-        mock_exists.return_value = True
-
-        response = self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                )
-
-        self.assertTrue("/media/web_task_1/P0ACJ8_5_P-1-2-1" \
-            in mock_exists.call_args[0][0])
-        self.assertTrue(
-            "<a href=\"/media/web_task_1/P0ACJ8_5_P-1-2-1.pdb\">PDB</a>" \
-            in response.content)
-
-    @mock.patch('contaminer.views.os.path.exists')
-    def test_not_gives_final_files_if_not_available(self, mock_exists):
-        self.job.status_complete = True
-        self.job.save()
-        self.task.percent = 99
-        self.task.save()
-
-        # Files do not exist
-        mock_exists.return_value = False
-
-        response = self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                )
-
-        self.assertTrue("/media/web_task_1/P0ACJ8_5_P-1-2-1" \
-            in mock_exists.call_args[0][0])
-        self.assertFalse(
-            "<a href=\"/media/web_task_1/P0ACJ8_5_P-1-2-1.pdb\">PDB</a>" \
-            in response.content)
+        self.assertEqual(response.status_code, 200)
 
 
 class UglymolViewTestCase(TestCase):

@@ -15,7 +15,9 @@ function remove(elem) {
 }
 
 function update_tasks(content) {
-    results = JSON.parse(content)['results'];
+    content = JSON.parse(content)
+    messages = content['messages'];
+    var results = content['results'];
     for (var i = 0; i < results.length; i++){
         var uniprot_id = results[i].uniprot_id;
         var li = document.querySelector("#li_" + uniprot_id);
@@ -71,6 +73,31 @@ function update_tasks(content) {
             }
             popover_content += "</dl>";
             li.querySelector("a").setAttribute("data-content", popover_content);
+        }
+    }
+    // Test if messages is emmpty
+    if (! (Object.keys(messages).length === 0 && messages.constructor === Object)) {
+        var pl_messages = document.querySelector('#messages_placeholder');
+        for (var m in messages) {
+            if (messages.hasOwnProperty(m)) {
+                var div = document.createElement("div");
+                div.setAttribute("class", "alert alert-info fade in");
+                var a = document.createElement("a");
+                a.setAttribute("href", "#");
+                a.setAttribute("class", "close");
+                a.setAttribute("data-dismiss", "alert");
+                a.setAttribute("aria-label", "close");
+                a.innerHTML = "&times";
+
+                var strong = document.createElement("strong");
+                strong.innerHTML = "Info! ";
+
+                div.append(a);
+                div.append(strong);
+                div.append(messages[m]);
+
+                pl_messages.append(div);
+            }
         }
     }
 }

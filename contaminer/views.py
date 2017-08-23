@@ -149,18 +149,6 @@ class DisplayJobView(View):
                     [c for c in contaminants if c.category == category]
 
         app_config = apps.get_app_config('contaminer')
-#                # If a positive result is found for a pack with low coverage or low
-#                # identity display a message to encourage publication
-#                coverage = task.pack.coverage
-#                identity = task.pack.identity
-#                if not added_message \
-#                    and (coverage < app_config.bad_model_coverage_threshold \
-#                    or identity < app_config.bad_model_identity_threshold):
-#                    messages.info(request, "Your dataset gives a positive "\
-#                            + "result for a contaminant for which no "\
-#                            + "identical model is available in the PDB.\nYou "\
-#                            + "could deposit or publish this structure.")
-#                    added_message = True
 
         result = render(
             request,

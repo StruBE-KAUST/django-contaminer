@@ -1510,12 +1510,28 @@ class JobTestCase(TestCase):
         self.pack1 = Pack.objects.create(
             contaminant = self.contaminant,
             number = 1,
-            structure= '5-mer',
+            structure= '1-mer',
             )
         self.pack2 = Pack.objects.create(
             contaminant = self.contaminant,
             number = 2,
-            structure= '5-mer',
+            structure= '1-mer',
+            )
+        self.model1 = Model.objects.create(
+            pdb_code="ABCD",
+            chain="A",
+            domain=1,
+            nb_residues=26,
+            identity=100,
+            pack=self.pack1,
+            )
+        self.model2 = Model.objects.create(
+            pdb_code="ABCD",
+            chain="A",
+            domain=1,
+            nb_residues=26,
+            identity=100,
+            pack=self.pack2,
             )
         self.job = Job.create(
             name = "test",

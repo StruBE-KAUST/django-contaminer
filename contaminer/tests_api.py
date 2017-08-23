@@ -1445,35 +1445,43 @@ class SimpleResultsViewTestCase(TestCase):
 
         self.contabase = ContaBase.objects.create()
         self.category = Category.objects.create(
-                contabase = self.contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
+            contabase = self.contabase,
+            number = 1,
+            name = "Protein in E.Coli",
+            )
         self.contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = self.category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
+            uniprot_id = "P0ACJ8",
+            category = self.category,
+            short_name = "CRP_ECOLI",
+            long_name = "cAMP-activated global transcriptional regulator",
+            sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            organism = "Escherichia coli",
+            )
         self.pack = Pack.objects.create(
-                contaminant = self.contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
+            contaminant = self.contaminant,
+            number = 1,
+            structure= '1-mer',
+            )
+        self.model = Model.objects.create(
+            pdb_code="ABCD",
+            chain="A",
+            domain=1,
+            nb_residues=26,
+            identity=100,
+            pack=self.pack,
+            )
         self.job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
+            name = "test",
+            email = "me@example.com",
+            )
         self.task = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-1-2-1",
-                percent = 50,
-                q_factor = 0.60,
-                status_complete = True,
-                )
+            job = self.job,
+            pack = self.pack,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_complete = True,
+            )
         self.task.save()
 
     def test_simpleresult_returns_404_on_wrong_id(self):
@@ -1519,6 +1527,63 @@ class SimpleResultsViewTestCase(TestCase):
                 })
         self.assertEqual(response.status_code, 403)
 
+    def test_simpleresult_gives_message_when_bad_coverage(self):
+        self.model.nb_residues = 1
+        self.model.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertTrue('messages' in json.loads(response.content))
+
+    def test_simpleresult_gives_message_when_bad_identity(self):
+        self.model.identity = 10
+        self.model.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertTrue('messages' in json.loads(response.content))
+
+    def test_simpleresult_gives_uniq_message_when_multiple_bad(self):
+        self.contaminant2 = Contaminant.objects.create(
+            uniprot_id = "P0ACJ7",
+            category = self.category,
+            short_name = "CRP_ECOLI2",
+            long_name = "cAMP-activated global transcriptional regulator2",
+            sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            organism = "Escherichia coli",
+            )
+        self.pack2 = Pack.objects.create(
+            contaminant = self.contaminant2,
+            number = 1,
+            structure= '1-mer',
+            )
+        self.model2 = Model.objects.create(
+            pdb_code="ABCD",
+            chain="A",
+            domain=1,
+            nb_residues=1,
+            identity=100,
+            pack=self.pack,
+            )
+        self.model.nb_residues = 1
+        self.model.save()
+
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        content = json.loads(response.content)
+        self.assertTrue('messages' in content)
+        self.assertEqual(len(content['messages']), 1)
+
+    def test_simpleresult_gives_no_message_when_everything_good(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertFalse('messages' in response.content)
 
 
 class DetailedResultsViewTestCase(TestCase):
@@ -1530,35 +1595,43 @@ class DetailedResultsViewTestCase(TestCase):
 
         self.contabase = ContaBase.objects.create()
         self.category = Category.objects.create(
-                contabase = self.contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
+            contabase = self.contabase,
+            number = 1,
+            name = "Protein in E.Coli",
+            )
         self.contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = self.category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
+            uniprot_id = "P0ACJ8",
+            category = self.category,
+            short_name = "CRP_ECOLI",
+            long_name = "cAMP-activated global transcriptional regulator",
+            sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            organism = "Escherichia coli",
+            )
         self.pack = Pack.objects.create(
-                contaminant = self.contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
+            contaminant = self.contaminant,
+            number = 1,
+            structure= '5-mer',
+            )
+        self.model = Model.objects.create(
+            pdb_code="ABCD",
+            chain="A",
+            domain=1,
+            nb_residues=26,
+            identity=100,
+            pack=self.pack,
+            )
         self.job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
+            name = "test",
+            email = "me@example.com",
+            )
         self.task = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-1-2-1",
-                percent = 50,
-                q_factor = 0.60,
-                status_complete = True,
-                )
+            job = self.job,
+            pack = self.pack,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_complete = True,
+            )
         self.task.save()
 
     def test_detailedresult_returns_404_on_wrong_id(self):

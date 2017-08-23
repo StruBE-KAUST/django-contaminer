@@ -5,6 +5,8 @@ All notables changes to this project will be documented in this file.
 ### Changed
 - The API call `GET job/simple_result` now gives the pack and space group used
   to get the best percent and `q_factor`.
+- The API call `GET job/simple_result` now gives a message if a positive result
+  is found for a contaminant without a known structure.
 - The API call `GET job/simple_result` and `GET job/detailed_results` now gives
   the availability status of the final files.
 - The results page is now available as soon as the job is submitted (even if
