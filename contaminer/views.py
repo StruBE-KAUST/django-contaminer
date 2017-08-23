@@ -146,7 +146,7 @@ class DisplayJobView(View):
 
         for category in categories:
             category.contaminants = \
-                    [c for c in contaminants if c.category == category]
+                [c for c in contaminants if c.category == category]
 
         app_config = apps.get_app_config('contaminer')
 
@@ -160,6 +160,7 @@ class DisplayJobView(View):
                 'api_url': reverse('ContaMiner:API:job'),
                 'uglymol_url': reverse('ContaMiner:uglymol', args=(job.id, "")),
             })
+
         log.debug("Exit")
         return result
 

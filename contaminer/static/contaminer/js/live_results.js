@@ -14,10 +14,9 @@ function remove(elem) {
     return elem.parentNode.removeChild(elem);
 }
 
-function update_tasks(content) {
-    content = JSON.parse(content)
-    messages = content['messages'];
-    var results = content['results'];
+function update_tasks(response) {
+    var response = JSON.parse(response);
+    var results = response['results'];
     for (var i = 0; i < results.length; i++){
         var uniprot_id = results[i].uniprot_id;
         var li = document.querySelector("#li_" + uniprot_id);
@@ -76,7 +75,8 @@ function update_tasks(content) {
         }
     }
     // Test if messages is emmpty
-    if (! (Object.keys(messages).length === 0 && messages.constructor === Object)) {
+    if ('messages' in response) {
+        var messages = response['messages'];
         var pl_messages = document.querySelector('#messages_placeholder');
         for (var m in messages) {
             if (messages.hasOwnProperty(m)) {
