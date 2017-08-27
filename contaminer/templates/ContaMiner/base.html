@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% block head %}
+{% load staticfiles %}
+<link rel="stylesheet" href="{% static "contaminer/css/custom.css" %}"/>
+{% endblock %}
 {% block title %}ContaMiner{% endblock %}
 {% block app_name %}ContaMiner{% endblock %}
 {% block content %}<h1>ContaMiner</h1>{% endblock %}

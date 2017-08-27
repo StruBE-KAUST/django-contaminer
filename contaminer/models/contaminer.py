@@ -435,6 +435,11 @@ class Job(models.Model):
             return
 
         current_site = Site.objects.get_current()
+        logo_url = "{0}://{1}{2}{3}".format(
+            "https",
+            current_site.domain,
+            settings.STATIC_URL,
+            "contaminer/img/logo.png")
         result_url = "{0}://{1}{2}".format(
             "https",
             current_site.domain,
@@ -443,6 +448,7 @@ class Job(models.Model):
 
         ctx = {
             'job_name': self.name,
+            'logo_url': logo_url,
             'result_link': result_url,
             'site_name': "ContaMiner"}
 
@@ -452,7 +458,7 @@ class Job(models.Model):
             "ContaMiner/email/complete_message.html",
             ctx)
         send_mail(
-            "Job complete",
+            "ContaMiner job complete",
             "",
             exp_mail,
             [self.email],

@@ -1,6 +1,8 @@
 {% extends "ContaMiner/base.html" %}
 {% block content %}
-<h1>ContaMiner</h1>
+{% load staticfiles %}
+<img src="{% static "contaminer/img/logo.png" %}"
+     alt="ContaMiner logo" class="img-responsive contaminer-logo"/>
 <h2>What is it ?</h2>
 <p>ContaMiner is a rapid automated large-scale detection of contaminant
 crystals.</p>

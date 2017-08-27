@@ -1,8 +1,13 @@
 {% extends "ContaMiner/base.html" %}
-{% block content %}<h1>ContaMiner</h1>
+{% block content %}
 {% load staticfiles %}
-<h3>{{ job.name }}</h3>
+<img src="{% static "contaminer/img/logo.png" %}"
+     alt="ContaMiner logo" class="img-responsive contaminer-logo"/>
+<h1>{{ job.name }}</h1>
 <div id="messages_placeholder"></div>
+<p>
+  If you liked ContaMiner, please add <q class="mark">data were checked if for protein contaminants using ContaMiner [Hungler et al., 2016]</q> to your methods section.
+</p>
 <dl>
     {% for category in categories %}
     <dt><span>{{ category.name }}</span></dt>
