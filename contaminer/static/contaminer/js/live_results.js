@@ -78,7 +78,7 @@ function update_tasks(response) {
         }
     }
 
-    // Test if messages is emmpty
+    // Test if messages is empty
     if ('messages' in response) {
         var messages = response['messages'];
         var pl_messages = document.querySelector('#messages_placeholder');
