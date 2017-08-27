@@ -13,6 +13,8 @@ work_directory = /data/contaminer
 [LOCAL]
 tmp_dir = /tmp
 website_dir = /home/django/website/
+# How long static directories are kept on the webserver
+keep_time = 7
 
 [THRESHOLDS]
 positive = 95

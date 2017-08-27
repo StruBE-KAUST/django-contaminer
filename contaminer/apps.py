@@ -87,5 +87,6 @@ class ContaminerConfig(AppConfig):
             "contaminer_location")
         self.ssh_work_directory = config.get("CLUSTER", "work_directory")
         self.tmp_dir = config.get("LOCAL", "tmp_dir")
+        self.keep_time = int(config.get("LOCAL", "keep_time"))
 
         log.debug("Exit")

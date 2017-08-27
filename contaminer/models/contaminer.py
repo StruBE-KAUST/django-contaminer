@@ -378,7 +378,7 @@ class Job(models.Model):
                             + "available in the PDB.\nYou could deposit or "\
                             + "publish this structure."
 
-                if complete: # Safe access to best_task
+                if complete:
                     result_data['status'] = "Complete"
                 else:
                     result_data['status'] = "Running"
