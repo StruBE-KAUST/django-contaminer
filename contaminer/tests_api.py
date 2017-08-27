@@ -25,6 +25,8 @@
 
 from django.test import TestCase
 from django.test import RequestFactory
+from django.test import Client
+from django.contrib.auth.models import User
 from django.urls import reverse
 from django.http import Http404
 import mock
@@ -1445,43 +1447,57 @@ class SimpleResultsViewTestCase(TestCase):
 
         self.contabase = ContaBase.objects.create()
         self.category = Category.objects.create(
-                contabase = self.contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
+            contabase = self.contabase,
+            number = 1,
+            name = "Protein in E.Coli",
+            )
         self.contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = self.category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
+            uniprot_id = "P0ACJ8",
+            category = self.category,
+            short_name = "CRP_ECOLI",
+            long_name = "cAMP-activated global transcriptional regulator",
+            sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            organism = "Escherichia coli",
+            )
         self.pack = Pack.objects.create(
-                contaminant = self.contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
+            contaminant = self.contaminant,
+            number = 1,
+            structure= '1-mer',
+            )
+        self.model = Model.objects.create(
+            pdb_code="ABCD",
+            chain="A",
+            domain=1,
+            nb_residues=26,
+            identity=100,
+            pack=self.pack,
+            )
         self.job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
+            name = "test",
+            email = "me@example.com",
+            )
         self.task = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-1-2-1",
-                percent = 50,
-                q_factor = 0.60,
-                status_complete = True,
-                )
+            job = self.job,
+            pack = self.pack,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_complete = True,
+            )
         self.task.save()
 
     def test_simpleresult_returns_404_on_wrong_id(self):
         request = self.factory.get(
-                reverse('ContaMiner:API:result', args = [25])
-                )
-        with self.assertRaises(Http404):
-            response = SimpleResultsView.as_view()(request, 25)
+            reverse('ContaMiner:API:result', args = [25])
+            )
+
+        response = SimpleResultsView.as_view()(request, 25)
+        self.assertEqual(response.status_code, 404)
+        self.assertJSONEqual(response.content,
+            {
+                "error": True,
+                "message": "Resource not found",
+            })
 
     def test_simpleresult_returns_good_status(self):
         request = self.factory.get(
@@ -1496,26 +1512,144 @@ class SimpleResultsViewTestCase(TestCase):
                             'uniprot_id': "P0ACJ8",
                             'status': 'Complete',
                             'percent': 50,
-                            'q_factor': 0.60
+                            'q_factor': 0.60,
+                            'pack_number': 1,
+                            'space_group': "P-1-2-1",
+                            'files_available': "False",
                         },
                     ]
                 })
 
-    def test_simpleresult_do_not_display_confidential_job(self):
+    def test_simpleresult_do_not_display_confidential_job_if_logged_out(self):
         request = self.factory.get(
-                reverse('ContaMiner:API:result', args = [25])
-                )
+            reverse('ContaMiner:API:result', args = [self.job.id])
+            )
+        user = User.objects.create_user(
+            username='SpongeBob',
+            email='bob@sea.com',
+            password='squarepants',
+            )
         self.job.confidential = True
+        self.job.author = user
         self.job.save()
         response = SimpleResultsView.as_view()(request, self.job.id)
 
         self.assertJSONEqual(response.content,
-                {
-                    'error': True,
-                    'message': 'You are not allowed to see this job',
-                })
+            {
+                'error': True,
+                'message': 'You are not allowed to see this job',
+            })
         self.assertEqual(response.status_code, 403)
 
+    def test_simpleresult_do_not_display_confidential_job_if_wrong_user(self):
+        user = User.objects.create_user(
+            username='SpongeBob',
+            email='bob@sea.com',
+            password='squarepants',
+            )
+        self.job.author = user
+        self.job.confidential = True
+        self.job.save()
+
+        user2 = User.objects.create_user(
+            username='Alice',
+            email='alice@example.com',
+            password='password',
+            )
+
+        client = Client()
+        client.login(username='Alice', password='password')
+        response = client.get(
+            reverse('ContaMiner:API:result', args = [self.job.id]),
+            )
+
+        self.assertJSONEqual(response.content,
+            {
+                'error': True,
+                'message': 'You are not allowed to see this job',
+            })
+        self.assertEqual(response.status_code, 403)
+
+    def test_simpleresult_do_display_confidential_job_if_good_user(self):
+        user = User.objects.create_user(
+            username='SpongeBob',
+            email='bob@sea.com',
+            password='squarepants',
+            )
+        self.job.author = user
+        self.job.confidential = True
+        self.job.save()
+
+        client = Client()
+        client.login(username='SpongeBob', password='squarepants')
+        response = client.get(
+            reverse('ContaMiner:API:result', args = [self.job.id]),
+            )
+
+        self.assertJSONNotEqual(response.content,
+            {
+                'error': True,
+                'message': 'You are not allowed to see this job',
+            })
+        self.assertEqual(response.status_code, 200)
+
+    def test_simpleresult_gives_message_when_bad_coverage(self):
+        self.model.nb_residues = 1
+        self.model.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertTrue('messages' in json.loads(response.content))
+
+    def test_simpleresult_gives_message_when_bad_identity(self):
+        self.model.identity = 10
+        self.model.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertTrue('messages' in json.loads(response.content))
+
+    def test_simpleresult_gives_uniq_message_when_multiple_bad(self):
+        self.contaminant2 = Contaminant.objects.create(
+            uniprot_id = "P0ACJ7",
+            category = self.category,
+            short_name = "CRP_ECOLI2",
+            long_name = "cAMP-activated global transcriptional regulator2",
+            sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            organism = "Escherichia coli",
+            )
+        self.pack2 = Pack.objects.create(
+            contaminant = self.contaminant2,
+            number = 1,
+            structure= '1-mer',
+            )
+        self.model2 = Model.objects.create(
+            pdb_code="ABCD",
+            chain="A",
+            domain=1,
+            nb_residues=1,
+            identity=100,
+            pack=self.pack,
+            )
+        self.model.nb_residues = 1
+        self.model.save()
+
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        content = json.loads(response.content)
+        self.assertTrue('messages' in content)
+        self.assertEqual(len(content['messages']), 1)
+
+    def test_simpleresult_gives_no_message_when_everything_good(self):
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertFalse('messages' in response.content)
 
 
 class DetailedResultsViewTestCase(TestCase):
@@ -1527,43 +1661,57 @@ class DetailedResultsViewTestCase(TestCase):
 
         self.contabase = ContaBase.objects.create()
         self.category = Category.objects.create(
-                contabase = self.contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
+            contabase = self.contabase,
+            number = 1,
+            name = "Protein in E.Coli",
+            )
         self.contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = self.category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
+            uniprot_id = "P0ACJ8",
+            category = self.category,
+            short_name = "CRP_ECOLI",
+            long_name = "cAMP-activated global transcriptional regulator",
+            sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            organism = "Escherichia coli",
+            )
         self.pack = Pack.objects.create(
-                contaminant = self.contaminant,
-                number = 1,
-                structure= '5-mer',
-                )
+            contaminant = self.contaminant,
+            number = 1,
+            structure= '5-mer',
+            )
+        self.model = Model.objects.create(
+            pdb_code="ABCD",
+            chain="A",
+            domain=1,
+            nb_residues=26,
+            identity=100,
+            pack=self.pack,
+            )
         self.job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
+            name = "test",
+            email = "me@example.com",
+            )
         self.task = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-1-2-1",
-                percent = 50,
-                q_factor = 0.60,
-                status_complete = True,
-                )
+            job = self.job,
+            pack = self.pack,
+            space_group = "P-1-2-1",
+            percent = 50,
+            q_factor = 0.60,
+            status_complete = True,
+            )
         self.task.save()
 
     def test_detailedresult_returns_404_on_wrong_id(self):
         request = self.factory.get(
-                reverse('ContaMiner:API:detailed_result', args = [25])
-                )
-        with self.assertRaises(Http404):
-            response = DetailedResultsView.as_view()(request, 25)
+            reverse('ContaMiner:API:detailed_result', args = [25])
+            )
+
+        response = DetailedResultsView.as_view()(request, 25)
+        self.assertEqual(response.status_code, 404)
+        self.assertJSONEqual(response.content,
+            {
+                "error": True,
+                "message": "Resource not found",
+            })
 
     def test_detailedresult_returns_good_status(self):
         request = self.factory.get(
@@ -1581,7 +1729,8 @@ class DetailedResultsViewTestCase(TestCase):
                             'space_group': "P-1-2-1",
                             'status': 'Complete',
                             'percent': 50,
-                            'q_factor': 0.60
+                            'q_factor': 0.60,
+                            'files_available': "False",
                         },
                     ]
                 })

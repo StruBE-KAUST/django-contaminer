@@ -22,3 +22,4 @@
 BASE_DIR="$(dirname "$(readlink -f "$0")")"/../../StruBE-website
 . "$BASE_DIR"/venv/bin/activate
 python "$BASE_DIR/manage.py" update_jobs
+python "$BASE_DIR/manage.py" remove_old_jobs

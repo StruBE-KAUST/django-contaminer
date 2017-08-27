@@ -1,6 +1,8 @@
 {% extends "ContaMiner/base.html" %}
 {% block content %}
-<h1>ContaMiner</h1>
+{% load staticfiles %}
+<img src="{% static "contaminer/img/logo.png" %}"
+     alt="ContaMiner logo" class="img-responsive contaminer-logo"/>
 <h2>What is it ?</h2>
 <p>ContaMiner is a rapid automated large-scale detection of contaminant
 crystals.</p>
@@ -47,16 +49,20 @@ identifiers to obtain MoRDa statistics.</p>
 {% load staticfiles %}
 <ul class="no-bullet">
     <li>
-<img src="{% static "images/true.png" %}" style="height:1em;" />
-Contaminant highly likely
+      <i class="fa fa-check-circle success"></i>
+        Contaminant highly likely
     </li>
     <li>
-<img src="{% static "images/warning.png" %}" style="height:1em;" />
-Contaminant unlikely
+      <i class="fa fa-question-circle warning"></i>
+        Contaminant unlikely
     </li>
     <li>
-<img src="{% static "images/false.png" %}" style="height:1em;" />
-Definitively not a contaminant
+      <i class="fa fa-times-circle failure"></i>
+        Definitively not a contaminant
+    </li>
+    <li>
+      <i class="fa fa-cog fa-spin fa_progress"></i>
+      Task is still running, the displayed results may improve
     </li>
 </ul></p>
 <p>

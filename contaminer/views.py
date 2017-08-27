@@ -19,6 +19,7 @@
 """ContaMiner views."""
 
 import logging
+import os
 
 from django.views.generic import View
 from django.shortcuts import render
@@ -29,10 +30,12 @@ from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from django.apps import apps
 from django.conf import settings
+from django.urls import reverse
 
 from .forms import SubmitJobForm
 
 from .models.contabase import ContaBase
+from .models.contabase import Contaminant
 from .models.contabase import Category
 from .models.contaminer import Job
 from .models.contaminer import Task
@@ -101,7 +104,8 @@ class SubmitJobView(View):
                 log.info("New job submitted")
                 messages.success(request, "File submitted")
                 # pylint: disable=redefined-variable-type
-                response = HttpResponseRedirect(reverse('ContaMiner:home'))
+                response = HttpResponseRedirect(
+                    reverse('ContaMiner:display', args=[response_data['id']]))
         else:
             log.debug("Invalid form")
             messages.error(request, "Please check the form")
@@ -130,55 +134,50 @@ class DisplayJobView(View):
 
         if job.confidential and request.user != job.author:
             messages.error(request, "This job is confidential. You are not "\
-                    + "allowed to see the results.")
+                + "allowed to see the results.")
             result = SubmitJobView().get(request)
             result.status_code = 403
             log.debug("Permission denied")
             return result
 
-        if not job.status_complete:
-            messages.warning(request, "This job is not yet complete.")
-            result = SubmitJobView().get(request)
-            log.debug("Job not complete")
-            log.debug(result)
-            return result
+        if job.status_running or job.status_complete:
+            # Provide skeleton page. Population will be done by javascript
+            contaminants = \
+                Contaminant.objects.filter(pack__task__job=job).distinct()
+            categories = set([c.category for c in contaminants])
 
-        # Retrieve best tasks for this
-        best_tasks = job.get_best_tasks()
+            for category in categories:
+                category.contaminants = \
+                    [c for c in contaminants if c.category == category]
 
-        app_config = apps.get_app_config('contaminer')
-        added_message = False
-        for task in best_tasks:
-            if task.percent >= app_config.threshold:
-                # Add PDB and MTZ filename
-                task.pdb_filename = settings.MEDIA_URL \
-                    + task.get_final_filename("pdb")
-                task.mtz_filename = settings.MEDIA_URL \
-                    + task.get_final_filename("mtz")
+            app_config = apps.get_app_config('contaminer')
 
-                # If a positive result is found for a pack with low coverage or low
-                # identity display a message to encourage publication
-                coverage = task.pack.coverage
-                identity = task.pack.identity
-                if not added_message \
-                    and (coverage < app_config.bad_model_coverage_threshold \
-                    or identity < app_config.bad_model_identity_threshold):
-                    messages.info(request, "Your dataset gives a positive "\
-                            + "result for a contaminant for which no "\
-                            + "identical model is available in the PDB.\nYou "\
-                            + "could deposit or publish this structure.")
-                    added_message = True
+            result = render(
+                request,
+                'ContaMiner/result.html',
+                {
+                    'job': job,
+                    'categories': categories,
+                    'threshold': app_config.threshold,
+                    'api_url': reverse('ContaMiner:API:job'),
+                    'uglymol_url': reverse('ContaMiner:uglymol', args=(job.id, "")),
+                })
+        else:
+            # Provide buffering page, waiting for the job to be running
+            messages.info(request, "This job is not yet running. Please "\
+                + "wait, this page will automatically reload.")
+            result = render(
+                request,
+                'ContaMiner/buffer.html',
+                {
+                    'job': job,
+                    'api_url_status': reverse(
+                        'ContaMiner:API:job_status', args=[job.id]),
+                })
 
-        result = render(
-            request,
-            'ContaMiner/result.html',
-            {
-                'job': job,
-                'tasks': best_tasks,
-                'threshold': app_config.threshold
-            })
         log.debug("Exit")
         return result
+
 
 class UglymolView(View):
     """Views to display the morda output in Uglymol"""

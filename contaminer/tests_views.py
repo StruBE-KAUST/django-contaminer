@@ -341,7 +341,8 @@ class SubmitJobViewTestCase(TestCase):
                 follow = True,
                 )
 
-        self.assertEqual(response.status_code, 200)
+        # Cannot be 200 as the redirect goes to displaying the mocked Job
+        # self.assertEqual(response.status_code, 200)
         messages = response.context['messages']
         self.assertTrue(len(messages) >= 1)
         self.assertTrue(any(['submitted' in str(e) for e in messages]))
@@ -547,43 +548,43 @@ class DisplayJobViewTestCase(TestCase):
 
         self.contabase = ContaBase.objects.create()
         self.category = Category.objects.create(
-                contabase = self.contabase,
-                number = 1,
-                name = "Protein in E.Coli",
-                )
+            contabase = self.contabase,
+            number = 1,
+            name = "Protein in E.Coli",
+            )
         self.contaminant = Contaminant.objects.create(
-                uniprot_id = "P0ACJ8",
-                category = self.category,
-                short_name = "CRP_ECOLI",
-                long_name = "cAMP-activated global transcriptional regulator",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
+            uniprot_id = "P0ACJ8",
+            category = self.category,
+            short_name = "CRP_ECOLI",
+            long_name = "cAMP-activated global transcriptional regulator",
+            sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            organism = "Escherichia coli",
+            )
         self.pack = Pack.objects.create(
-                contaminant = self.contaminant,
-                number = 5,
-                structure= '5-mer',
-                )
+            contaminant = self.contaminant,
+            number = 5,
+            structure= '5-mer',
+            )
         self.model = Model.objects.create(
-                pdb_code = "ACBD",
-                chain = "A",
-                domain = "1",
-                nb_residues = 1,
-                identity = 2,
-                pack = self.pack,
-                )
+            pdb_code = "ACBD",
+            chain = "A",
+            domain = "1",
+            nb_residues = 1,
+            identity = 2,
+            pack = self.pack,
+            )
         self.job = Job.create(
-                name = "test",
-                email = "me@example.com",
-                )
+            name = "test",
+            email = "me@example.com",
+            )
         self.task = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-1-2-1",
-                status_complete = True,
-                percent = 40,
-                q_factor = 0.53,
-                )
+            job = self.job,
+            pack = self.pack,
+            space_group = "P-1-2-1",
+            status_complete = True,
+            percent = 40,
+            q_factor = 0.53,
+            )
 
     def test_smoke(self):
         self.job.status_complete = True
@@ -596,17 +597,17 @@ class DisplayJobViewTestCase(TestCase):
     def test_do_not_show_confidential_job(self):
         self.job.confidential = True
         user = User.objects.create_user(
-                username = 'SpongeBob',
-                email = 'bob@sea.com',
-                password = 'squarepants',
-                )
+            username = 'SpongeBob',
+            email = 'bob@sea.com',
+            password = 'squarepants',
+            )
         self.job.author = user
         self.job.save()
 
         response = self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                follow = True,
-                )
+            reverse('ContaMiner:display', args = [self.job.id]),
+            follow = True,
+            )
         messages = response.context['messages']
         self.assertTrue(len(messages) >= 1)
         self.assertTrue(any(['confidential' in str(e) for e in messages]))
@@ -632,23 +633,23 @@ class DisplayJobViewTestCase(TestCase):
     def test_no_show_confidential_if_logged_in_wrong_user(self):
         self.job.confidential = True
         user = User.objects.create_user(
-                username = 'SpongeBob',
-                email = 'bob@sea.com',
-                password = 'squarepants',
-                )
+            username = 'SpongeBob',
+            email = 'bob@sea.com',
+            password = 'squarepants',
+            )
         user2 = User.objects.create_user(
-                username = 'Alice',
-                email = 'alice@example.com',
-                password = 'password',
-                )
+            username = 'Alice',
+            email = 'alice@example.com',
+            password = 'password',
+            )
         self.job.author = user
         self.job.save()
 
         self.client.login(username = 'Alice', password = 'password')
         response= self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                follow = True,
-                )
+            reverse('ContaMiner:display', args = [self.job.id]),
+            follow = True,
+            )
 
         messages = response.context['messages']
         self.assertTrue(len(messages) >= 1)
@@ -660,71 +661,14 @@ class DisplayJobViewTestCase(TestCase):
                 )
         self.assertEqual(response.status_code, 404)
 
-    def test_no_display_if_non_complete(self):
+    def test_display_even_if_non_complete(self):
         self.job.status_complete = False
         self.job.save()
         response = self.client.get(
                 reverse('ContaMiner:display', args = [self.job.id]),
                 follow = True,
                 )
-        messages = response.context['messages']
-        self.assertTrue(len(messages) >= 1)
-        self.assertTrue(any(['complete' in str(e) for e in messages]))
-
-    def test_display_message_if_bad_coverage_positive_result(self):
-        self.job.status_complete = True
-        self.job.save()
-        self.task.percent = 99
-        self.task.save()
-        response = self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                follow = True,
-                )
-        messages = response.context['messages']
-        self.assertTrue(len(messages) >= 1)
-
-    def test_display_only_one_message_if_multiple_positive(self):
-        self.job.status_complete = True
-        self.job.save()
-        self.task.percent = 99
-        self.task.save()
-
-        contaminant2 = Contaminant.objects.create(
-                uniprot_id = "P0ACJ9",
-                category = self.category,
-                short_name = "CRP_ECOLI2",
-                long_name = "cAMP-activated global transcriptional regulator2",
-                sequence = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                organism = "Escherichia coli",
-                )
-        pack2 = Pack.objects.create(
-                contaminant = contaminant2,
-                number = 5,
-                structure= '5-mer',
-                )
-        model2 = Model.objects.create(
-                pdb_code = "ACBD",
-                chain = "A",
-                domain = "1",
-                nb_residues = 1,
-                identity = 2,
-                pack = pack2,
-                )
-        task2 = Task.objects.create(
-                job = self.job,
-                pack = pack2,
-                space_group = "P-1-2-1",
-                status_complete = True,
-                percent = 99,
-                q_factor = 0.53,
-                )
-
-        response = self.client.get(
-                reverse('ContaMiner:display', args = [self.job.id]),
-                follow = True,
-                )
-        messages = response.context['messages']
-        self.assertEqual(len(messages), 1)
+        self.assertEqual(response.status_code, 200)
 
 
 class UglymolViewTestCase(TestCase):

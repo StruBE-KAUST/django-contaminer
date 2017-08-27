@@ -1,61 +1,51 @@
 {% extends "ContaMiner/base.html" %}
-{% block content %}<h1>ContaMiner</h1>
+{% block content %}
 {% load staticfiles %}
-<h3>{{ job.name }}</h3>
-<div class="bullet">
-    <ul class="no-bullet">
-    {% for task in tasks %}
-    <li>{% if task.percent != 0 %}
-        {% if task.percent >= threshold %}
-        <img src="{% static "images/true.png" %}" style="height:1em;" />
-        {% else %}
-        <img src="{% static "images/warning.png" %}" style="height:1em;" />
-        {% endif %}
-        {% else %}
-        <img src="{% static "images/false.png" %}" style="height:1em;" />
-        {% endif %}
-        <a href="javascript://"
-           data-toggle="popover" 
-           data-trigger="focus"
-           data-html="true"
-           title='
-<a target="blank" href="http://www.uniprot.org/uniprot/{{ task.pack.contaminant.uniprot_id }}">Uniprot</a>'
-           data-content='
-{% if task.percent == 0 %}
-<dl><dt>No solution</dt></dl>
-{% else %}
-<dl><dt>Percent</dt>
-    <dd>{{ task.percent }}</dd>
-    <dt>Q factor</dt>
-    <dd>{{ task.q_factor }}</dd>
-    <dt>Space group</dt>
-    <dd>{{ task.space_group }}</dd>
-{% if task.pdb_filename %}
-    <dt>Files</dt>
-    <dd>
-        <a href="{{ task.pdb_filename }}">PDB</a>
-    </dd>
-    <dd>
-        <a href="{{ task.mtz_filename }}">MTZ</a>
-    </dd>
-    <dd>
-    <a href="{% url "ContaMiner:uglymol" job_id=job.id task_desc=task.name %}">Uglymol (beta)</a>
-    </dd>
-{% endif %}
-</dl>
-{% endif %}
-'>
-{{ task.pack.contaminant.short_name }} - {{ task.pack.contaminant.long_name }}
-        </a>
-    </li>
+<img src="{% static "contaminer/img/logo.png" %}"
+     alt="ContaMiner logo" class="img-responsive contaminer-logo"/>
+<h1>{{ job.name }}</h1>
+<div id="messages_placeholder"></div>
+<p>
+  If you liked ContaMiner, please add <q class="mark">data were checked if for protein contaminants using ContaMiner [Hungler et al., 2016]</q> to your methods section.
+</p>
+<dl>
+    {% for category in categories %}
+    <dt><span>{{ category.name }}</span></dt>
+    <dd><ul class="no-bullet">
+        {% for contaminant in category.contaminants %}
+        <li class="running" id="li_{{ contaminant.uniprot_id }}">
+            <i class='fa fa-times-circle failure fa_result'></i>
+            <i class='fa fa-cog fa-spin fa_progress'></i>
+            <a href="javascript://"
+               data-toggle="popover"
+               data-trigger="focus"
+               data-html="true"
+               title='<a target="blank"
+        href="http://www.uniprot.org/uniprot/{{ contaminant.uniprot_id }}">
+                    Uniprot
+               </a>'
+               data-content=''>
+                {{ contaminant.short_name }} - {{ contaminant.long_name }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul></dd>
     {% endfor %}
-    </ul>
-</div>
+</dl>
 {% endblock %}
 {% block scripts %}
 <script>
 $(document).ready(function() {
     $('[data-toggle="popover"]').popover();
 });
+</script>
+<script>
+var api_url = "{{ api_url }}";
+var uglymol_url = "{{ uglymol_url }}";
+var job_id = {{ job.id }};
+var percent_threshold = "{{ threshold }}";
+</script>
+<script type="text/javascript"
+        src="{% static "contaminer/js/live_results.js" %}">
 </script>
 {% endblock %}

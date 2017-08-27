@@ -1,6 +1,7 @@
 {% extends "ContaMiner/base.html" %}
 {% block app_name %}ContaBase{% endblock %}
 {% block content %}
+{% load staticfiles %}
 <h3>List of contaminants available</h3>
 <p>Did we miss a contaminant? Please <a href="{% url "contact" %}">send us</a> suggestions for additions, corrections and improvements of ContaBase.</p>
 {% load staticfiles %}

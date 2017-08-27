@@ -67,6 +67,7 @@ class Job(models.Model):
     status_archived = models.BooleanField(default=False)
 
     submission_date = models.DateField(auto_now_add=True)
+    mail_sent = models.BooleanField(default=False)
 
     name = models.CharField(max_length=50, blank=True, null=True)
     author = models.ForeignKey(
@@ -267,8 +268,8 @@ class Job(models.Model):
             log.warning("Archived. No modification will be recorded.")
             return
 
-        self.update_status()
         self.update_tasks()
+        self.update_status()
 
         if self.status_complete:
             self.status_archived = True
@@ -316,56 +317,76 @@ class Job(models.Model):
         """Return the results compiled per contaminant."""
         response_data = {}
         response_data['id'] = self.id
+        messages = None
 
         tasks = Task.objects.filter(job=self)
         uniprot_ids = [task.pack.contaminant.uniprot_id for task in tasks]
         unique_uniprot_ids = list(set(uniprot_ids))
 
         results = []
+        app_config = apps.get_app_config('contaminer')
+        coverage_threshold = app_config.bad_model_coverage_threshold
+        identity_threshold = app_config.bad_model_identity_threshold
+
         for uniprot_id in unique_uniprot_ids:
             result_data = {}
             result_data['uniprot_id'] = uniprot_id
+            messages = {}
 
             tasks = Task.objects.filter(
-                    job=self,
-                    pack__contaminant__uniprot_id=uniprot_id)
+                job=self,
+                pack__contaminant__uniprot_id=uniprot_id)
 
             error = True # All tasks are in error
             complete = True # All tasks are complete
-            percent = 0
-            q_factor = 0
+            best_task = None
 
             for task in tasks:
                 status = task.get_status()
                 if status == 'New':
-                    complete = False
-                    error = False
+                    complete = False # At least one is not in error
+                    error = False # At least one is not complete
                     continue
                 if status == 'Error':
                     continue
                 if status == 'Complete':
-                    error = False
-                    if task.percent > percent:
-                        percent = task.percent
-                        q_factor = task.q_factor
-                    elif task.percent == percent:
-                        if task.q_factor > q_factor:
-                            percent = task.percent
-                            q_factor = task.q_factor
+                    error = False # At least one is not in error
+                    best_task = max(task, best_task)
 
-            if error:
+            if error: # All in error, or no task
                 result_data['status'] = "Error"
-            elif complete:
-                result_data['status'] = "Complete"
-                result_data['percent'] = percent
-                result_data['q_factor'] = q_factor
             else:
-                result_data['status'] = "Running"
-                if percent != 0:
-                    result_data['percent'] = percent
-                    result_data['q_factor'] = q_factor
+                if best_task:
+                    result_data['percent'] = best_task.percent
+                    result_data['q_factor'] = best_task.q_factor
+                    result_data['pack_number'] = best_task.pack.number
+                    result_data['space_group'] = best_task.space_group
+
+                    final_files_path = os.path.join(\
+                        settings.MEDIA_ROOT,
+                        best_task.get_final_filename("pdb"))
+                    result_data['files_available'] = \
+                        str(os.path.exists(final_files_path))
+
+                    coverage = best_task.pack.coverage
+                    identity = best_task.pack.identity
+                    if coverage < coverage_threshold \
+                        or identity < identity_threshold:
+                        messages['bad_model'] = \
+                            "Your dataset gives a positive result for a "\
+                            + "contaminant for which no identical model is "\
+                            + "available in the PDB.\nYou could deposit or "\
+                            + "publish this structure."
+
+                if complete:
+                    result_data['status'] = "Complete"
+                else:
+                    result_data['status'] = "Running"
 
             results.append(result_data)
+
+        if messages:
+            response_data['messages'] = messages
 
         response_data['results'] = results
         return response_data
@@ -402,28 +423,7 @@ class Job(models.Model):
         if valid_tasks == []:
             return None
 
-        max_percent = max([task.percent for task in valid_tasks])
-        max_tasks = [
-            task for task in valid_tasks
-            if task.percent == max_percent]
-
-        max_q_factor = max([task.q_factor for task in max_tasks])
-        max2_tasks = [
-            task for task in max_tasks
-            if task.q_factor == max_q_factor]
-
-        max_coverage = max([task.pack.coverage for task in max2_tasks])
-        max3_tasks = [
-            task for task in max2_tasks
-            if task.pack.coverage == max_coverage]
-
-        max_identity = max([task.pack.identity for task in max3_tasks])
-        max4_tasks = [
-            task for task in max3_tasks
-            if task.pack.identity == max_identity]
-
-        log.debug("Exit")
-        return max4_tasks[0]
+        return max(valid_tasks)
 
     def send_complete_mail(self):
         """If an address is available, send an email."""
@@ -435,6 +435,11 @@ class Job(models.Model):
             return
 
         current_site = Site.objects.get_current()
+        logo_url = "{0}://{1}{2}{3}".format(
+            "https",
+            current_site.domain,
+            settings.STATIC_URL,
+            "contaminer/img/logo.png")
         result_url = "{0}://{1}{2}".format(
             "https",
             current_site.domain,
@@ -443,21 +448,25 @@ class Job(models.Model):
 
         ctx = {
             'job_name': self.name,
+            'logo_url': logo_url,
             'result_link': result_url,
             'site_name': "ContaMiner"}
 
-        app_config = apps.get_app_config('contaminer')
+        exp_mail = settings.DEFAULT_MAIL_FROM
 
         message = render_to_string(
             "ContaMiner/email/complete_message.html",
             ctx)
         send_mail(
-            "Job complete",
+            "ContaMiner job complete",
             "",
-            app_config.noreply_mail,
+            exp_mail,
             [self.email],
             html_message=message)
         log.info("E-Mail sent to " + str(self.email))
+
+        self.mail_sent = True
+        self.save()
 
         log.debug("Exiting function")
 
@@ -493,6 +502,39 @@ class Task(models.Model):
                 + " / " + str(self.pack)\
                 + " / " + str(self.space_group)\
                 + " / " + self.get_status()
+
+    def __cmp__(self, other):
+        """
+        Compare the scores of the two tasks.
+
+        The greatest has the highest percentage, then q_factor, then coverage,
+        then identity.
+        /!\ Does not override __eq__ from django models /!\
+        """
+        if not isinstance(other, Task):
+            return NotImplemented
+
+        if self.percent > other.percent:
+            return 1
+        elif self.percent < other.percent:
+            return -1
+
+        if self.q_factor > other.q_factor:
+            return 1
+        elif self.q_factor < other.q_factor:
+            return -1
+
+        if self.pack.coverage > other.pack.coverage:
+            return 1
+        elif self.pack.coverage > other.pack.coverage:
+            return -1
+
+        if self.pack.identity > other.pack.identity:
+            return 1
+        elif self.pack.identity > other.pack.identity:
+            return -1
+
+        return 0
 
     def get_status(self):
         """Return the status as a string."""
@@ -637,7 +679,10 @@ class Task(models.Model):
         return os.path.join(self.job.get_filename(), filename)
 
     def get_final_files(self):
-        """Download the final PDB, MTZ and MAP files for this task."""
+        """
+        Download the final PDB, MTZ and MAP files for this task from the
+        supercomputer.
+        """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
@@ -698,5 +743,11 @@ class Task(models.Model):
         if self.status_complete and not self.status_error:
             response_data['percent'] = self.percent
             response_data['q_factor'] = self.q_factor
+
+        final_files_path = os.path.join(\
+            settings.MEDIA_ROOT,
+            self.get_final_filename("pdb"))
+        response_data['files_available'] = \
+            str(os.path.exists(final_files_path))
 
         return response_data

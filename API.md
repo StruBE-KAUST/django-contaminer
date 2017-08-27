@@ -716,8 +716,12 @@ Example Response
 ## GET job/result
 > Parameters: (int) job ID
 > Returns the resuls for the job with the given ID.
-> Returns an error if the job is not yet complete
+> Returns an error if the job is not yet submitted
 Use `GET status` to know the current state of the job
+The `pack_number` and `space_group` are the combinaison giving the best
+`q_factor` and `percent` for this `job` and `contaminant`. `files_available`
+indicates if the final files are available for download through the adequate
+URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-jobfinal_mzt))
 
 ### Example Request
 > GET https://{domain}/api/result/166
@@ -742,19 +746,26 @@ Use `GET status` to know the current state of the job
             "uniprot_id": "P0ACJ8",
             "status": "complete",
             "percent": 51,
-            "q_factor": 0.469
+            "q_factor": 0.469,
+            "pack_number": 1,
+            "space_group": "P-1-2-1",
+            "files_available": "False"
         },
         {
             "uniprot_id": "P0AA25",
             "status": "complete",
             "percent": 99,
             "q_factor": 0.871
+            "pack_number": 3,
+            "space_group": "P-1-2-1",
+            "files_available": "True"
         },
         {
             uniprot_id": "P63165",
-            "status": "aborted",
+            "status": "running",
             "percent": 0,
-            "q_factor": 0
+            "q_factor": 0,
+            "files_available": "False"
         }
     ]
 }
@@ -764,8 +775,11 @@ Use `GET status` to know the current state of the job
 > Parameters: (int) job ID
 > Returns the results for the job with the given ID,
 > with the result for each space_group and pack pairs
-> Returns an error if the job is not yet complete
-Use `GET status` to know the current state of the job
+> Returns an error if the job is not yet submitted
+Use `GET status` to know the current state of the job. `files_available`
+indicates if the final files are available for download through the adequate
+URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-jobfinal_mzt))
+
 
 ### Example Request
 > GET https://{domain}/api/job/detailed_result/166
@@ -792,7 +806,8 @@ Use `GET status` to know the current state of the job
              "space_group": "P-1-2-1",
              "status": "complete",
              "percent": 40,
-             "q_factor": 0.411
+             "q_factor": 0.411,
+             "files_available": "False"
         },
         {
             "contaminant_id": "P0ACJ8",
@@ -800,7 +815,8 @@ Use `GET status` to know the current state of the job
             "space_group": "P-1-2-1",
             "status": "complete",
             "percent": 51,
-            "q_factor": 0.469
+            "q_factor": 0.469,
+            "files_available": "False"
         },
         [... Truncated output ...]
         {
@@ -809,7 +825,8 @@ Use `GET status` to know the current state of the job
             "space_group": "P-1-2-1",
             "status": "complete",
             "percent": 99,
-            "q_factor": 0.871
+            "q_factor": 0.871,
+            "files_available": "True"
         },
         [... Truncated output ...]
     ] 

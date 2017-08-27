@@ -1,0 +1,16 @@
+{% extends "ContaMiner/base.html" %}
+{% block content %}<h1>ContaMiner</h1>
+{% load staticfiles %}
+<h3>{{ job.name }}</h3>
+<div>
+    <i class="fa fa-spinner fa-spin fa-2x"></i>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+var api_url = "{{ api_url_status }}";
+</script>
+<script type="text/javascript"
+        src="{% static "contaminer/js/reload_when_running.js" %}">
+</script>
+{% endblock %}
