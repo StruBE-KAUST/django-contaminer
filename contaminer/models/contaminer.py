@@ -17,7 +17,7 @@
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Models for ContaMiner application.
+Job-related models for ContaMiner application.
 
 This module contains the classes definition for the application named
 "ContaMiner".
@@ -42,54 +42,75 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import MultipleObjectsReturned
 
-from ..ssh_tools import SSHChannel
-from ..ssh_tools import SFTPChannel
-from .tools import PercentageField
-
 from .contabase import ContaBase
 from .contabase import Contaminant
 from .contabase import Pack
-
-
+from ..ssh_tools import SFTPChannel
+from ..ssh_tools import SSHChannel
+from .tools import PercentageField
 
 # pylint: disable=too-many-instance-attributes
 class Job(models.Model):
     """
-    A job is the set of tasks launched to test one diffraction data file.
+    Set of tasks launched to test one diffraction data file.
 
     For each file uploaded by a user, a new Job object is created.
+    :status_submitted: True if the job has been submitted to the cluster
+    :status_running: True if the job tasks has started on the cluster
+    :status_complete: True if the cluster job is finished, and all the data are
+    retrieved to the django application. Usually goes with status_archived
+    :status_error: True if the job encountered any error at any step
+    :status_archived: When true, the cron task will not try to make a future
+    modification to the job.
+    :submission_date: date of the form submission
+    :mail_sent: True if notification mail has been sent. Mainly used for
+    debugging purpose as the mail server looks unstable
+    :name: Displayed name of the job on the end-user side.
+    :author: User who submitted the job if he's logged in. Blank if anonymous.
+    :email: E-mail address used to send any notification
+    :confidential: If true, only the logged in author can see the results of
+    the job.
     """
-
+    # Status
     status_submitted = models.BooleanField(default=False)
     status_running = models.BooleanField(default=False)
     status_complete = models.BooleanField(default=False)
     status_error = models.BooleanField(default=False)
     status_archived = models.BooleanField(default=False)
-
-    submission_date = models.DateField(auto_now_add=True)
     mail_sent = models.BooleanField(default=False)
-
-    name = models.CharField(max_length=50, blank=True, null=True)
+    
+    # Form fields
+    submission_date = models.DateField(auto_now_add=True)
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         blank=True,
         null=True)
+    name = models.CharField(max_length=50, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     confidential = models.BooleanField(default=False)
 
     def __str__(self):
-        """Write id (email)."""
+        """Return id (email) status."""
         return unicode(self).encode('utf-8')
 
     def __unicode__(self):
-        """Write id (email)."""
+        """Return id (email) status."""
         res = str(self.id) + " (" \
                 + str(self.email) + ")" \
                 + " " + self.get_status()
         return res
 
     def get_status(self):
-        """Give the status of the job as a string."""
+        """
+        Return the status of the job as a string.
+
+        :return: status is a string and can be:
+        New
+        Submitted
+        Running
+        Complete
+        Error
+        """
         if self.status_error:
             return "Error"
         if self.status_complete:
@@ -102,7 +123,17 @@ class Job(models.Model):
 
     @classmethod
     def create(cls, name, author=None, email=None, confidential=False):
-        """Populate the fields of a job."""
+        """
+        Create a new job and fill in the fields.
+
+        :param: cls is Job
+        :param: name is the displayed job name
+        :param: author (optional) is the author
+        :param: email (optional) is the address used for notifications
+        :param: confidential (default False) sets the job as confidential if 
+        True
+        :return: The created job
+        """
         log = logging.getLogger(__name__)
         log.debug("Entering function with args :\n\
                 name : " + str(name) + "\n\
@@ -124,7 +155,13 @@ class Job(models.Model):
         return job
 
     def get_filename(self, suffix=''):
-        """Return the name of the file associated to the job."""
+        """
+        Return the name of the file associated to the job.
+
+        :param: suffix is a string to add at the end of the file. Can be
+        the extension.
+        :return: web_task_id.suffix
+        """
         if not suffix:
             result = "web_task_" + str(self.id)
         else:
@@ -136,6 +173,7 @@ class Job(models.Model):
 
     def submit(self, filepath, contaminants):
         """Send the files to the cluster, then launch ContaMiner."""
+        # TODO: Divide in send, then launch
         log = logging.getLogger(__name__)
         log.debug("Entering function with args : \n\
                 self: " + str(self) + "\n\
@@ -473,9 +511,20 @@ class Job(models.Model):
 
 class Task(models.Model):
     """
-    A task is the test of one pack against one diffraction data file.
+    A task is the test of one pack in one space group against one diffraction
+    data file.
 
     All tasks for one input file make a Job.
+
+    :job: The job this task is part of.
+    :pack: The pack being tested in this task.
+    :space_group: Space group, dash '-' seprated.
+    :status_complete: True if the task is complete.
+    :status_running: True if the task is running on the cluster.
+    :status_error: True if the task encountered an error.
+    :percent: The percent score given by MoRDa (0 if not available).
+    :q_factor: The Q_factor given by MoRDa (0 if not available).
+    :exec_time: Time of execution (running state) on the cluster.
     """
 
     # Input
@@ -485,6 +534,7 @@ class Task(models.Model):
 
     # State
     status_complete = models.BooleanField(default=False)
+    status_running = models.BooleanField(default=False)
     status_error = models.BooleanField(default=False)
 
     # Result
@@ -507,9 +557,10 @@ class Task(models.Model):
         """
         Compare the scores of the two tasks.
 
-        The greatest has the highest percentage, then q_factor, then coverage,
-        then identity.
+        The greatest has the highest percentage, then q_factor, then
+        coverage, then identity.
         /!\ Does not override __eq__ from django models /!\
+        Allow the usage of <, <=, >, >=
         """
         if not isinstance(other, Task):
             return NotImplemented
@@ -537,11 +588,17 @@ class Task(models.Model):
         return 0
 
     def get_status(self):
-        """Return the status as a string."""
+        """
+        Return the status as a string.
+        
+        :return: Status (string) can be Error, Complete, Running, or New
+        """
         if self.status_error:
             return "Error"
         if self.status_complete:
             return "Complete"
+        if self.status_running:
+            return "Running"
         return "New"
 
     def name(self):
@@ -568,12 +625,35 @@ class Task(models.Model):
 
     @staticmethod
     def parse_line(line):
-        """Parse a line from results.txt to give."""
-        pack, scores, elapsed_time = line.split(':')
+        """
+        Parse a line from results.txt to give.
 
-        # Parse pack
-        uniprot_id, pack_number, space_group = pack.split('_')
+        :param line: line to parse
+        :returns: dictionnary containing the 7 parsed values
+        
+        The line formatting must be 7 fields separated by a comma ',' in this
+        order:
+        uniprot_id: any string without comma or new line
+        pack_number: integer
+        space group: full space group name, dash '-' separated
+        status: can be 'new', 'running', 'completed', or 'error'
+        q_factor: decimal, dot '.' separated
+        percent: integer
+        elapsed_time: following the regexp '\d+h [\d ]\dm [\d ]\ds'
 
+        Return a dictionnary with the keys:
+        uniprot_id: string
+        pack_number: integer
+        space_group: string
+        status: string
+        q_factor: float
+        percent: integer
+        elapsed_seconds: integer
+        """
+        # Split line in fields
+        line_bites = line.split(',')
+        elapsed_time = line_bites[6]
+        
         # Parse time
         try:
             hours, minutes, seconds = re.split(' +', elapsed_time)
@@ -585,28 +665,52 @@ class Task(models.Model):
             seconds = int(seconds[:-1])
             elapsed_seconds = ((hours * 60) + minutes) * 60 + seconds
 
+        # Build results dictionary
         result = {
-            'uniprot_id': uniprot_id,
-            'pack_number': pack_number,
-            'space_group': space_group,
+            'uniprot_id': line_bites[0],
+            'pack_number': int(line_bites[1]),
+            'space_group': line_bites[2],
+            'status': line_bites[3],
+            'q_factor': float(line_bites[4]),
+            'percent': int(line_bites[5]),
             'elapsed_seconds': elapsed_seconds,
-            'scores': scores
             }
 
         return result
 
     @classmethod
     def update(cls, job, line):
-        """Create the task attached to job, with line information."""
+        """
+        Create or update the task attached to job, with line information.
+
+        :param cls: Task class
+        :param job: Job instance. A created task is attached to this job. An
+        updated task must already be attached to this job to be found.
+        :param line: line describing the task.
+        :returns: the created or updated task
+
+        The line formatting must be 7 fields separated by a comma ',' in this
+        order:
+        uniprot_id: any string without comma or new line
+        pack_number: integer
+        space group: full space group name, dash '-' separated
+        status: can be 'new', 'running', 'completed', or 'error'
+        q_factor: decimal, dot '.' separated
+        percent: integer
+        elapsed_time: following the regexp '\d+h [\d ]\dm [\d ]\ds'
+
+        If the task already exist and is complete, not further update is
+        done for this task.
+        """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         # Parse line
         try:
             parsed_line = cls.parse_line(line)
-        except ValueError:
+        except (ValueError, IndexError):
             log.warning("Invalid line to parse: " + str(line))
-            raise
+            raise ValueError("Invalid line to parse: " + str(line))
 
         try:
             contaminant = Contaminant.objects.get(
@@ -632,31 +736,20 @@ class Task(models.Model):
             task.pack = pack
             task.space_group = parsed_line['space_group']
 
-        if parsed_line['scores'] in ["cancelled", "error"]:
-            task.percent = 0
-            task.q_factor = 0.
-
+        if task.status_complete:
+            log.info("Trying to update a complete task. Skipping...")
+            return task
+        
         task.status_complete = \
-            (not parsed_line['scores'] in ["cancelled", "error"])
+            (parsed_line['status'] in ["completed", "aborted"])
+        task.status_running = (parsed_line['status'] == "running")
+        task.status_error = (parsed_line['status'] == "error")
 
-        task.status_error = (parsed_line['scores'] == "error")
+        task.percent = parsed_line['percent']
+        task.q_factor = parsed_line['q_factor']
 
-        if task.status_complete and not task.status_error:
-            log.debug("Task complete")
-            if parsed_line['scores'] in ["nosolution", "aborted"]:
-                task.percent = 0
-                task.q_factor = 0.
-            else:
-                try:
-                    q_factor, percent = parsed_line['scores'].split('-')
-                except ValueError:
-                    log.warning("Invalid line to parse: " + str(line))
-                    raise
-                task.percent = int(percent)
-                task.q_factor = float(q_factor)
-
-                if task.percent > 90:
-                    task.get_final_files()
+        if task.percent > 90:
+            task.get_final_files()
 
         task.exec_time = \
             datetime.timedelta(seconds=parsed_line['elapsed_seconds'])

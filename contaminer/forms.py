@@ -45,6 +45,11 @@ class SubmitJobForm(forms.Form):
         label="Make your job confidential",
         required=False)
 
+    custom_models = forms.FileField(
+        widget=forms.ClearableFileInput(
+            attrs={'multiple': True}),
+        required=False)
+
     def __init__(self, *args, **kwargs):
         """Create a new form."""
         log = logging.getLogger(__name__)
@@ -67,6 +72,11 @@ class SubmitJobForm(forms.Form):
                         'email_address'
                     )),
                 Tab('Contaminants',),
+                Tab('Advanced',
+                    Field(
+                        'custom_models'
+                    ),
+                ),
             ),
             StrictButton(
                 '<span class="ladda-label">Submit</span>',

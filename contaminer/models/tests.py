@@ -2874,7 +2874,8 @@ class TaskTestCase(TestCase):
                 "web_task_" + str(self.job.id) + "/P0ACJ8_5_P-2-2-2.pdb")
 
     def test_update_create_new_task(self):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,running,0.414,52,1h 26m  9s")
         self.assertTrue(task.id is not None)
 
     def test_update_use_existing_task(self):
@@ -2884,76 +2885,100 @@ class TaskTestCase(TestCase):
                 space_group = "P-1-2-1",
                 )
         task1.save()
-        task2 = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
+        task2 = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,running,0.414,52,1h 26m  9s")
         self.assertEqual(task1.id, task2.id)
 
     def test_update_raises_error_on_bad_line(self):
         with self.assertRaises(ValueError):
             task = Task.update(self.job, "Tata yoyo")
         with self.assertRaises(ValueError):
-            task = Task.update(self.job, "1:2:3")
+            task = Task.update(self.job, "1,2,3")
 
     def test_update_creates_good_task(self):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-1-1,completed,0.414,52,1h 26m  9s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
-        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertEqual(task.space_group, "P-1-1-1")
         self.assertTrue(task.status_complete)
+        self.assertFalse(task.status_running)
         self.assertFalse(task.status_error)
         self.assertEqual(task.percent, 52)
         self.assertEqual(task.q_factor, 0.414)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 5169))
 
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:nosolution:2h 26m  9s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-1-2,completed,0,0,2h 26m  9s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
-        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertEqual(task.space_group, "P-1-1-2")
         self.assertTrue(task.status_complete)
+        self.assertFalse(task.status_running)
         self.assertFalse(task.status_error)
         self.assertEqual(task.percent, 0)
         self.assertEqual(task.q_factor, 0)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 8769))
 
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:cancelled:0h  0m  0s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,running,0,0,0h  0m  0s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
         self.assertEqual(task.space_group, "P-1-2-1")
         self.assertFalse(task.status_complete)
+        self.assertTrue(task.status_running)
         self.assertFalse(task.status_error)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 0))
 
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:error:1h  1m  1s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-2,new,0,0,0h  0m  0s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
-        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertEqual(task.space_group, "P-1-2-2")
+        self.assertFalse(task.status_complete)
+        self.assertFalse(task.status_running)
+        self.assertFalse(task.status_error)
+        self.assertEqual(task.exec_time, datetime.timedelta(seconds = 0))
+
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-2-1-1,error,0,0,1h  1m  1s")
+        self.assertEqual(task.job, self.job)
+        self.assertEqual(task.pack, self.pack)
+        self.assertEqual(task.space_group, "P-2-1-1")
         self.assertTrue(task.status_error)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 3661))
 
     def test_update_works_on_error(self):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:error:")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,error,0,0,0h  0m  0s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
         self.assertEqual(task.space_group, "P-1-2-1")
         self.assertFalse(task.status_complete)
+        self.assertFalse(task.status_running)
         self.assertTrue(task.status_error)
         self.assertEqual(task.percent, 0)
         self.assertEqual(task.q_factor, 0)
 
     def test_update_works_on_aborted(self):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:aborted:")
+        task = Task.update(self.job,
+                           "P0ACJ8,5,P-1-2-1,aborted,0,0,0h  0m  0s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
         self.assertEqual(task.space_group, "P-1-2-1")
         self.assertTrue(task.status_complete)
+        self.assertFalse(task.status_running)
         self.assertFalse(task.status_error)
         self.assertEqual(task.percent, 0)
         self.assertEqual(task.q_factor, 0)
 
     @mock.patch('contaminer.models.contaminer.Task.get_final_files')
     def test_update_gets_final_on_high_percentage(self, mock_get):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-89:1h 26m  9s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,completed,0.414,89,1h 26m  9s")
         self.assertFalse(mock_get.called)
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-91:1h 26m  9s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-2,completed,0.414,91,1h 26m  9s")
         self.assertTrue(mock_get.called)
 
     @mock.patch('contaminer.models.contaminer.os.makedirs')
