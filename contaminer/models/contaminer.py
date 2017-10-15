@@ -381,7 +381,7 @@ class Job(models.Model):
 
             for task in tasks:
                 status = task.get_status()
-                if status == 'New':
+                if status in ['New', 'Running']:
                     complete = False # At least one is not in error
                     error = False # At least one is not complete
                     continue

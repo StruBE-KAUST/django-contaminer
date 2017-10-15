@@ -180,16 +180,18 @@ Job             Set of tasks to run with one unique diffraction data file.
   |=id            (int) Unique identifier of the job
   |
   |=status        (string) Current status of the job. Can be:
-  |               * "submitted" when the file is uploaded to the cluster, and
+  |               * "New" if the job has been created but not submitted to the
+  |               cluster.
+  |               * "Submitted" when the file is uploaded to the cluster, and
   |               the tasks are queued
-  |               * "running" if the tasks are running on the cluster
-  |               * "complete" when all the tasks for this job are complete
-  |               * "error" if an error has been encountered (bad file,
+  |               * "Running" if the tasks are running on the cluster
+  |               * "Complete" when all the tasks for this job are complete
+  |               * "Error" if an error has been encountered (bad file,
   |               bad list of contaminants, cluster down, ...)
   |
   |=name          (string) Name of the job, as given during the submission.
   |
-  |*Result        Result of morda_solve for one combinaison of contaminant,
+  |*Task          Result of morda_solve for one combinaison of contaminant,
     |             pack and space group.
     |             The set (uniprot_id, pack_nb, space_group) is unique among
     |             the results for one single job.
@@ -204,10 +206,11 @@ Job             Set of tasks to run with one unique diffraction data file.
     |               P-21-21-21
     |
     |=status        (string) Status of the task. Can be:
-    |               * "complete"
-    |               * "cancelled" if another task gave a positive result
-    |               * "aborted" if the cut-off time limit has been reached
-    |               * "error" if an error has been encountered
+    |               * "New" if the task did not yet start
+    |               * "Running" if the task is running on the cluster
+    |               * "Complete"
+    |               * "Error" if an error has been encountered
+    |
     |=percent       (int) probability for solution to be a good solution.
     |               See MoRDa documentation for more details
     |
@@ -744,7 +747,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
     "results": [
         {
             "uniprot_id": "P0ACJ8",
-            "status": "complete",
+            "status": "Complete",
             "percent": 51,
             "q_factor": 0.469,
             "pack_number": 1,
@@ -753,7 +756,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
         },
         {
             "uniprot_id": "P0AA25",
-            "status": "complete",
+            "status": "Complete",
             "percent": 99,
             "q_factor": 0.871
             "pack_number": 3,
@@ -762,7 +765,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
         },
         {
             uniprot_id": "P63165",
-            "status": "running",
+            "status": "Running",
             "percent": 0,
             "q_factor": 0,
             "files_available": "False"
@@ -804,7 +807,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
              "contaminant_id": "P0ACJ8",
              "pack_nb": 1,
              "space_group": "P-1-2-1",
-             "status": "complete",
+             "status": "Complete",
              "percent": 40,
              "q_factor": 0.411,
              "files_available": "False"
@@ -813,7 +816,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
             "contaminant_id": "P0ACJ8",
             "pack_nb": 2,
             "space_group": "P-1-2-1",
-            "status": "complete",
+            "status": "Complete",
             "percent": 51,
             "q_factor": 0.469,
             "files_available": "False"
@@ -823,7 +826,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
             "contaminant_id": "P0AA25",
             "pack_nb": 1,
             "space_group": "P-1-2-1",
-            "status": "complete",
+            "status": "Complete",
             "percent": 99,
             "q_factor": 0.871,
             "files_available": "True"

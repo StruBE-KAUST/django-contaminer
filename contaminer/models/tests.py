@@ -1603,6 +1603,7 @@ class JobTestCase(TestCase):
             space_group = "P-1-2-1",
             percent = 50,
             q_factor = 0.60,
+            status_running = False,
             status_complete = False,
             )
         task2 = Task.objects.create(
@@ -1611,10 +1612,21 @@ class JobTestCase(TestCase):
             space_group = "P-1-2-2",
             percent = 40,
             q_factor = 0.70,
+            status_running = False,
             status_complete = True,
+            )
+        task3 = Task.objects.create(
+            job = self.job,
+            pack = self.pack2,
+            space_group = "P-2-2-2",
+            percent = 40,
+            q_factor = 0.70,
+            status_running = True,
+            status_complete = False,
             )
 
         response_dict = self.job.to_detailed_dict()
+        self.maxDiff = None
         response_expected = {
             'id': self.job.id,
             'results': [
@@ -1634,6 +1646,13 @@ class JobTestCase(TestCase):
                     'q_factor': 0.70,
                     'files_available': "False",
                 },
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'pack_nb': 2,
+                    'space_group': "P-2-2-2",
+                    'status': 'Running',
+                    'files_available': "False",
+                },
             ]
         }
         self.assertEqual(response_dict, response_expected)
@@ -1645,6 +1664,7 @@ class JobTestCase(TestCase):
             space_group = "P-1-2-1",
             percent = 50,
             q_factor = 0.60,
+            status_running = True,
             status_complete = False,
             )
         task2 = Task.objects.create(
@@ -1653,6 +1673,7 @@ class JobTestCase(TestCase):
             space_group = "P-1-2-1",
             percent = 40,
             q_factor = 0.70,
+            status_running = False,
             status_complete = True,
             )
         response_dict = self.job.to_simple_dict()
@@ -1677,8 +1698,7 @@ class JobTestCase(TestCase):
             job = self.job,
             pack = self.pack1,
             space_group = "P-1-2-1",
-            percent = 50,
-            q_factor = 0.60,
+            status_running = True,
             ).save()
         Task.objects.create(
             job = self.job,
@@ -1686,6 +1706,7 @@ class JobTestCase(TestCase):
             space_group = "P-1-2-1",
             percent = 40,
             q_factor = 0.53,
+            status_running = False,
             status_complete = True,
             ).save()
 
@@ -1706,6 +1727,27 @@ class JobTestCase(TestCase):
         }
         self.assertEqual(response_dict, response_expected)
 
+    def test_to_simple_dict_gives_running_if_one_new(self):
+        Task.objects.create(
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            status_running = False,
+            status_complete = False,
+            ).save()
+
+        response_dict = self.job.to_simple_dict()
+        response_expected = {
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'status': 'Running',
+                },
+            ]
+        }
+        self.assertEqual(response_dict, response_expected)
+        
     def test_to_simple_dict_gives_running_tasks_new_error(self):
         Task.objects.create(
             job = self.job,

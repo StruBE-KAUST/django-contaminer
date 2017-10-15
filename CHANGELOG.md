@@ -11,6 +11,10 @@ All notables changes to this project will be documented in this file.
   the availability status of the final files.
 - The results page is now available as soon as the job is submitted (even if
   not complete)
+- The status available in `GET job/simple_result` and `GET job/detailed_result`
+  first letter is now upper case. The possible values have been updated to
+  New, Running, Complete, and Error. The Submitted status is possible only
+  for a Job (not for a Task).
 
 ## v1 04-06-2017
 ### Added
