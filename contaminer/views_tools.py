@@ -165,9 +165,6 @@ def newjob_handler(request):
         target=job.submit,
         args=(tmp_diff_data_file, contaminants)
         ).start()
-    job.status_submitted = True
-    job.save()
-    log.info("New job submitted: " + str(job))
 
     response_data = {
         'error': False,
