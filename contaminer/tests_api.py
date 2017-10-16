@@ -1329,6 +1329,8 @@ class JobViewTestCase(TestCase):
         request.FILES['diffraction_data'] = self.test_file
 
         response = JobView.as_view()(request)
+        # Add a delay to let the thread start
+        time.sleep(0.01)
         self.mock_job_instance.submit.assert_called_once()
         args, kwargs = self.mock_job_instance.submit.call_args
         self.assertEqual(args[1], "P0ACJ8\nP0AA25")
