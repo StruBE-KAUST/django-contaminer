@@ -1269,7 +1269,7 @@ class JobViewTestCase(TestCase):
         self.mock_job_instance.submit.side_effect = self.rm_dir
         self.addCleanup(self.clean_tmp_dir)
 
-    def rm_dir(self, filename, _):
+    def rm_dir(self, filename, _, custom_contaminants=None):
         try:
             shutil.rmtree(os.path.dirname(filename))
         except OSError:

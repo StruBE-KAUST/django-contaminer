@@ -171,7 +171,7 @@ class Job(models.Model):
 
         return result
 
-    def submit(self, filepath, contaminants):
+    def submit(self, filepath, contaminants, custom_contaminants=None):
         """Send the files to the cluster, then launch ContaMiner."""
         # TODO: Divide in send, then launch
         log = logging.getLogger(__name__)
@@ -183,16 +183,21 @@ class Job(models.Model):
         # Send files to cluster
         remote_work_directory = \
                 apps.get_app_config('contaminer').ssh_work_directory
+        # Input file
         input_file_ext = os.path.splitext(filepath)[1]
         remote_filepath = os.path.join(
             remote_work_directory,
             self.get_filename(suffix=input_file_ext))
+        client = SFTPChannel()
+        client.send_file(filepath, remote_work_directory)
+        # Contaminants list
         remote_contaminants = os.path.join(
             remote_work_directory,
             self.get_filename(suffix='txt'))
-        client = SFTPChannel()
-        client.send_file(filepath, remote_work_directory)
         client.write_file(remote_contaminants, contaminants)
+        # Custom contaminants
+        for custom_model in custom_contaminants:
+            client.send_file(custom_model, remote_work_directory)
 
         # Remove local file
         os.remove(filepath)

@@ -174,7 +174,7 @@ class SubmitJobViewTestCase(TestCase):
         self.mock_job_instance.submit.side_effect = self.rm_dir
         self.addCleanup(self.clean_tmp_dir)
 
-    def rm_dir(self, filename, _):
+    def rm_dir(self, filename, _, custom_contaminants=None):
         try:
             shutil.rmtree(os.path.dirname(filename))
         except OSError:
@@ -520,6 +520,64 @@ class SubmitJobViewTestCase(TestCase):
         self.assertEqual(cont, "P0ACJ8\nP0AA25\n")
         with open(data_f, 'r') as f:
             self.assertEqual(f.read(), "Foooo")
+        self.assertEqual(kwargs, {'custom_contaminants': []})
+
+        dir_to_rm = os.path.dirname(
+                self.mock_job_instance.submit.call_args[0][0]
+                )
+        shutil.rmtree(dir_to_rm)
+
+    @mock.patch('contaminer.views_tools.Job')
+    def test_post_submit_good_parameters_with_custom_models(self, mock_Job):
+        self.mock_job_instance.submit.side_effect = None
+        mock_Job.create.return_value = self.mock_job_instance
+
+        ContaBase.objects.create()
+        contabase = ContaBase.get_current()
+        category = Category.objects.create(
+                number = 1,
+                name = "Cat1",
+                contabase = contabase,
+                )
+        contaminant1 = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        contaminant2 = Contaminant.objects.create(
+                uniprot_id = "P0AA25",
+                category = category,
+                short_name = "TESTOBS",
+                long_name = "View testing obs",
+                sequence = "ABCDEFOBS",
+                organism = "Mario obs",
+                )
+
+        # No need to remove the file. Has an auto cleanup.
+        custom_model = tempfile.NamedTemporaryFile(suffix='.pdb')
+        custom_model.write("Foooo")
+        custom_model.seek(0)
+
+        post_data = self.post_data
+        post_data['custom_models'] = custom_model
+      
+        response = self.client.post(
+                reverse('ContaMiner:submit'),
+                post_data,
+                follow = True,
+                )
+
+        (data_f, cont), kwargs = self.mock_job_instance.submit.call_args
+        self.assertEqual(cont,
+            "P0ACJ8\nP0AA25\n./"
+            + os.path.basename(custom_model.name))
+        with open(data_f, 'r') as f:
+            self.assertEqual(f.read(), "Foooo")
+        self.assertTrue('custom_contaminants' in kwargs)
+        self.assertEqual(len(kwargs['custom_contaminants']), 1)
 
         dir_to_rm = os.path.dirname(
                 self.mock_job_instance.submit.call_args[0][0]

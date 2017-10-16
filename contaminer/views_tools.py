@@ -163,7 +163,8 @@ def newjob_handler(request):
     # Submit job
     threading.Thread(
         target=job.submit,
-        args=(tmp_diff_data_file, contaminants)
+        args=(tmp_diff_data_file, contaminants),
+        kwargs={'custom_contaminants':  request.FILES.getlist('custom_models')}
         ).start()
 
     response_data = {
