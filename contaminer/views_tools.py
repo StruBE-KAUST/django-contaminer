@@ -104,10 +104,11 @@ def newjob_handler(request):
     except AttributeError:
         user = None
     # If choosen, define confidential
+    confidential = False
     try:
-        confidential = request.POST['confidential']
-    except MultiValueDictKeyError:
-        confidential = False
+        confidential = (request.POST['confidential'] == 'on')
+    except MultiValueDictKeyError, KeyError:
+        pass
     log.debug("User : " + str(user))
     log.debug("Conf : " + str(confidential))
 
