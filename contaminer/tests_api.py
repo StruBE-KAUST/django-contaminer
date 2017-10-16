@@ -1333,7 +1333,7 @@ class JobViewTestCase(TestCase):
         time.sleep(0.01)
         self.mock_job_instance.submit.assert_called_once()
         args, kwargs = self.mock_job_instance.submit.call_args
-        self.assertEqual(args[1], "P0ACJ8\nP0AA25")
+        self.assertEqual(args[1], "P0ACJ8\nP0AA25\n")
 
     @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_job_id(self, mock_Job):

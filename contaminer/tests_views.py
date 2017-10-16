@@ -422,7 +422,7 @@ class SubmitJobViewTestCase(TestCase):
                 )
 
         (data_f, cont), kwargs = self.mock_job_instance.submit.call_args
-        self.assertEqual(cont, "P0ACJ8\nP0AA25")
+        self.assertEqual(cont, "P0ACJ8\nP0AA25\n")
         with open(data_f, 'r') as f:
             self.assertEqual(f.read(), "Foooo")
 

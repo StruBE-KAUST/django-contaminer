@@ -52,6 +52,8 @@ def get_contaminants(request):
 
     contaminants = contaminants.replace(',', '\n')
 
+    contaminants = '\n'.join([contaminants, get_custom_contaminants(request)])
+
     log.debug("Exit with: " + str(contaminants))
     return contaminants
 
@@ -106,7 +108,7 @@ def newjob_handler(request):
 
     # Define list of contaminants
     contaminants = get_contaminants(request)
-    if not contaminants:
+    if not contaminants or contaminants == '\n':
         response_data = {
             'error': True,
             'message': 'Missing list of contaminants'}
