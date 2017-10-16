@@ -30,6 +30,17 @@ from .models.contabase import Contaminant
 from .models.contaminer import Job
 
 
+def get_custom_contaminants(request):
+    """Return the list of custom contaminants as string."""
+    log = logging.getLogger(__name__)
+    log.debug("Enter")
+
+    custom_contaminants = '\n'.join(['./' + model_file.name
+        for model_file in request.FILES.getlist('custom_models')])
+
+    log.debug("Exit with: " + str(custom_contaminants))
+    return custom_contaminants
+
 def get_contaminants(request):
     """Return the list of contaminants as string asked in the request."""
     log = logging.getLogger(__name__)
@@ -66,7 +77,7 @@ def newjob_handler(request):
     if not "diffraction_data" in request.FILES:
         response_data = {
             'error': True,
-            'message': 'Missing diffraction data file'}
+            'message': 'Missing diffraction data file.'}
         return response_data
 
     # Check the file extension
