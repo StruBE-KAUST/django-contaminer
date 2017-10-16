@@ -632,6 +632,94 @@ class SubmitJobViewTestCase(TestCase):
         except ValueError as e:
             self.fail("ValueError raised: " + str(e))
 
+    @mock.patch('contaminer.views_tools.Job.submit')
+    @mock.patch('contaminer.views_tools.open')
+    def test_save_diffraction_file_locally(self, mock_open, mock_submit):
+        mock_submit.side_effect = self.rm_dir
+
+        ContaBase.objects.create()
+        contabase = ContaBase.get_current()
+        category = Category.objects.create(
+                number = 1,
+                name = "Cat1",
+                contabase = contabase,
+                )
+        contaminant1 = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        contaminant2 = Contaminant.objects.create(
+                uniprot_id = "P0AA25",
+                category = category,
+                short_name = "TESTOBS",
+                long_name = "View testing obs",
+                sequence = "ABCDEFOBS",
+                organism = "Mario obs",
+                )
+
+        response = self.client.post(
+                reverse('ContaMiner:submit'),
+                self.post_data,
+                follow = True,
+                )
+
+        self.assertTrue(mock_open.called)
+        args, _ = mock_open.call_args
+        self.assertTrue('.mtz' in args[0])
+
+    @mock.patch('contaminer.views_tools.Job.submit')
+    @mock.patch('contaminer.views_tools.open')
+    def test_save_custom_model_files_locally(self, mock_open, mock_submit):
+        mock_submit.side_effect = self.rm_dir
+
+        ContaBase.objects.create()
+        contabase = ContaBase.get_current()
+        category = Category.objects.create(
+                number = 1,
+                name = "Cat1",
+                contabase = contabase,
+                )
+        contaminant1 = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        contaminant2 = Contaminant.objects.create(
+                uniprot_id = "P0AA25",
+                category = category,
+                short_name = "TESTOBS",
+                long_name = "View testing obs",
+                sequence = "ABCDEFOBS",
+                organism = "Mario obs",
+                )
+
+        # No need to remove the file. Has an auto cleanup.
+        custom_model = tempfile.NamedTemporaryFile(suffix='.pdb')
+        custom_model.write("Foooo")
+        custom_model.seek(0)
+
+        post_data = self.post_data
+        post_data['custom_models'] = custom_model
+        del post_data['P0ACJ8']
+        del post_data['P0AA25']
+
+        response = self.client.post(
+                reverse('ContaMiner:submit'),
+                self.post_data,
+                follow = True,
+                )
+
+        self.assertTrue(mock_open.called)
+        self.assertTrue(any(['.pdb' in call[0][0]
+            for call in mock_open.call_args_list]))
+
 
 class DisplayJobViewTestCase(TestCase):
     """

@@ -142,13 +142,23 @@ def newjob_handler(request):
     log.debug("Job created")
 
     # Locally save file
+    temp_directory = tempfile.mkdtemp()
     filename = job.get_filename(suffix=extension)
-    tmp_diff_data_file = os.path.join(tempfile.mkdtemp(), filename)
+    tmp_diff_data_file = os.path.join(temp_directory, filename)
 
     with open(tmp_diff_data_file, 'wb') as destination:
         for chunk in request.FILES['diffraction_data']:
             destination.write(chunk)
     log.debug("Diffraction data file saved")
+
+    for custom_model_file in request.FILES.getlist('custom_models'):
+        filename = custom_model_file.name
+        tmp_custom_model_file = os.path.join(temp_directory, filename)
+
+        with open(tmp_custom_model_file, 'wb') as destination:
+            for chunk in custom_model_file:
+                destination.write(chunk)
+        log.debug("Custom model saved: " + str(custom_model_file.name))
 
     # Submit job
     threading.Thread(
