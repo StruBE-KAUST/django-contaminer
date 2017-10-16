@@ -302,10 +302,10 @@ class SubmitJobViewTestCase(TestCase):
                 follow = True,
                 )
 
-        self.assertEqual(response.status_code, 200)
         messages = response.context['messages']
         self.assertTrue(len(messages) >= 1)
         self.assertTrue(any(['contaminants' in str(e) for e in messages]))
+        self.assertFalse(any(['submitted' in str(e) for e in messages]))
 
     @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_message_success_on_good_input(self, mock_Job):
