@@ -308,6 +308,101 @@ class SubmitJobViewTestCase(TestCase):
         self.assertFalse(any(['submitted' in str(e) for e in messages]))
 
     @mock.patch('contaminer.views_tools.Job')
+    def test_post_returns_no_message_on_custom_models_only(self, mock_Job):
+        mock_Job.create.return_value = self.mock_job_instance
+
+        ContaBase.objects.create()
+        contabase = ContaBase.get_current()
+        category = Category.objects.create(
+                number = 1,
+                name = "Cat1",
+                contabase = contabase,
+                )
+        contaminant1 = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        contaminant2 = Contaminant.objects.create(
+                uniprot_id = "P0AA25",
+                category = category,
+                short_name = "TESTOBS",
+                long_name = "View testing obs",
+                sequence = "ABCDEFOBS",
+                organism = "Mario obs",
+                )
+
+        # No need to remove the file. Has an auto cleanup.
+        custom_model = tempfile.NamedTemporaryFile(suffix='.pdb')
+        custom_model.write("Foooo")
+        custom_model.seek(0)
+
+        post_data = self.post_data
+        post_data['custom_models'] = custom_model
+        del post_data['P0ACJ8']
+        del post_data['P0AA25']
+        response = self.client.post(
+            reverse('ContaMiner:submit'),
+            post_data,
+            follow = True,
+        )
+        
+        messages = response.context['messages']
+        self.assertTrue(len(messages) >= 1)
+        self.assertTrue(any(['submitted' in str(e) for e in messages]))
+
+    @mock.patch('contaminer.views_tools.Job')
+    def test_post_returns_message_on_bad_custom_models(self, mock_Job):
+        mock_Job.create.return_value = self.mock_job_instance
+
+        ContaBase.objects.create()
+        contabase = ContaBase.get_current()
+        category = Category.objects.create(
+                number = 1,
+                name = "Cat1",
+                contabase = contabase,
+                )
+        contaminant1 = Contaminant.objects.create(
+                uniprot_id = "P0ACJ8",
+                category = category,
+                short_name = "TEST",
+                long_name = "View testing",
+                sequence = "ABCDEF",
+                organism = "Mario",
+                )
+        contaminant2 = Contaminant.objects.create(
+                uniprot_id = "P0AA25",
+                category = category,
+                short_name = "TESTOBS",
+                long_name = "View testing obs",
+                sequence = "ABCDEFOBS",
+                organism = "Mario obs",
+                )
+
+        # No need to remove the file. Has an auto cleanup.
+        custom_model = tempfile.NamedTemporaryFile(suffix='.ext')
+        custom_model.write("Foooo")
+        custom_model.seek(0)
+
+        post_data = self.post_data
+        post_data['custom_models'] = custom_model
+        del post_data['P0ACJ8']
+        del post_data['P0AA25']
+        response = self.client.post(
+            reverse('ContaMiner:submit'),
+            post_data,
+            follow = True,
+        )
+        
+        messages = response.context['messages']
+        self.assertTrue(len(messages) >= 1)
+        self.assertTrue(any(['Wrong' in str(e) for e in messages]))
+        self.assertFalse(any(['submitted' in str(e) for e in messages]))
+            
+    @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_message_success_on_good_input(self, mock_Job):
         mock_Job.create.return_value = self.mock_job_instance
 

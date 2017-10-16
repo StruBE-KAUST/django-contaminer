@@ -85,7 +85,15 @@ def newjob_handler(request):
     if extension.lower() not in ['.mtz', '.cif']:
         response_data = {
             'error': True,
-            'message': 'File format is not CIF or MTZ'}
+            'message': 'File format is not CIF or MTZ.'}
+        return response_data
+
+    # Check custom PDB files extensions
+    if any([os.path.splitext(model_file.name)[1].lower() != '.pdb'
+            for model_file in request.FILES.getlist('custom_models')]):
+        response_data = {
+            'error': True,
+            'message': 'Wrong file type given as a custom model.'}
         return response_data
 
     # Define user and confidentiality
