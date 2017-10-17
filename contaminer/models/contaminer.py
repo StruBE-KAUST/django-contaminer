@@ -225,6 +225,8 @@ class Job(models.Model):
         self.status_submitted = True
         self.save()
 
+        self.send_submitted_mail()
+
         log.debug("Job " + str(self.id) + " submitted")
         log.debug("Exiting function")
 
@@ -470,8 +472,20 @@ class Job(models.Model):
 
         return max(valid_tasks)
 
+    def send_submitted_mail(self):
+        """If an address is available, send a notification."""
+        self.send_mail_notification("submitted")
+                
     def send_complete_mail(self):
-        """If an address is available, send an email."""
+        self.send_mail_notification("complete")
+        self.mail_sent = True
+        self.save()
+        
+    def send_mail_notification(self, notification):
+        """
+        If an address is available, send an email.
+        :notification: can be "complete" or "submitted"
+        """
         log = logging.getLogger(__name__)
         log.debug("Entering function")
 
@@ -499,19 +513,27 @@ class Job(models.Model):
 
         exp_mail = settings.DEFAULT_MAIL_FROM
 
-        message = render_to_string(
-            "ContaMiner/email/complete_message.html",
-            ctx)
+        if notification == "complete":
+            message = render_to_string(
+                "ContaMiner/email/complete_message.html",
+                ctx)
+            title = "ContaMiner job complete"
+        elif notification == "submitted":
+            message = render_to_string(
+                "ContaMiner/email/submitted_message.html",
+                ctx)
+            title = "ContaMiner job submitted"
+        else:
+            raise ValueError("Bad argument. notification can only be " \
+                             + "\"complete\" or \"submitted\".")
+        
         send_mail(
-            "ContaMiner job complete",
+            title,
             "",
             exp_mail,
             [self.email],
             html_message=message)
         log.info("E-Mail sent to " + str(self.email))
-
-        self.mail_sent = True
-        self.save()
 
         log.debug("Exiting function")
 
