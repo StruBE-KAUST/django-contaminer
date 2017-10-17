@@ -114,7 +114,8 @@ class ContaBase(models.Model):
         """Return a dictionary of the fields and Categories."""
         response_data = {}
 
-        categories = Category.objects.filter(contabase=self)
+        categories = Category.objects.filter(contabase=self).exclude(
+            name="User provided models")
         categories_dict = [cat.to_detailed_dict() for cat in categories]
         response_data['categories'] = categories_dict
 

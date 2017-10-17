@@ -42,8 +42,10 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import MultipleObjectsReturned
 
+from .contabase import Category
 from .contabase import ContaBase
 from .contabase import Contaminant
+from .contabase import Model
 from .contabase import Pack
 from ..ssh_tools import SFTPChannel
 from ..ssh_tools import SSHChannel
@@ -554,9 +556,9 @@ class Task(models.Model):
     def __unicode__(self):
         """Write job - pack - space group."""
         return str(self.job) \
-                + " / " + str(self.pack)\
-                + " / " + str(self.space_group)\
-                + " / " + self.get_status()
+            + " / " + str(self.pack)\
+            + " / " + str(self.space_group)\
+            + " / " + self.get_status()
 
     def __cmp__(self, other):
         """
@@ -724,11 +726,42 @@ class Task(models.Model):
             pack = Pack.objects.get(
                 contaminant=contaminant,
                 number=parsed_line['pack_number'])
-        except (ObjectDoesNotExist, MultipleObjectsReturned) as excep:
+        except ObjectDoesNotExist:
+            # Probably a custom contaminant. We try to get a previously existing
+            # one , or create it in the "custom" category
+            custom_category = Category.objects.get(
+                name="User provided models")
+            try:
+                custom_contaminant = Contaminant.objects.get(
+                    uniprot_id=parsed_line['uniprot_id'].upper(),
+                    category=custom_category)
+                custom_pack = Pack.objects.get(contaminant=custom_contaminant)
+            except ObjectDoesNotExist:
+                custom_contaminant = Contaminant.objects.create(
+                    uniprot_id=parsed_line['uniprot_id'],
+                    category=custom_category,
+                    short_name=parsed_line['uniprot_id'],
+                    long_name="Custom contaminant",
+                    sequence="XXX",
+                    organism="Unknown")
+                custom_pack = Pack.objects.create(
+                    contaminant=custom_contaminant,
+                    number=1,
+                    structure="1-mer")
+                Model.objects.create(
+                    pdb_code="XXXX",
+                    chain="A",
+                    domain=None,
+                    nb_residues=3,
+                    identity=100,
+                    pack=custom_pack)
+            pack = custom_pack
+                
+        except MultipleObjectsReturned as e:
             log.warning("Multiple contaminants or packs returned.")
-            log.warning(str(excep))
+            log.warning(str(e))
             log.error("Database is not consistent.")
-            raise excep
+            raise e
 
         try:
             task = Task.objects.get(

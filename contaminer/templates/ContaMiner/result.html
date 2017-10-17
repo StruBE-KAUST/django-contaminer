@@ -22,10 +22,12 @@
                data-toggle="popover"
                data-trigger="focus"
                data-html="true"
+               {% if category.name != "User provided models" %}
                title='<a target="blank"
         href="http://www.uniprot.org/uniprot/{{ contaminant.uniprot_id }}">
                     Uniprot
                </a>'
+               {% endif %}
                data-content=''>
                 {{ contaminant.short_name }} - {{ contaminant.long_name }}
             </a>
