@@ -152,6 +152,7 @@ def newjob_handler(request):
             destination.write(chunk)
     log.debug("Diffraction data file saved")
 
+    tmp_custom_model_files = []
     for custom_model_file in request.FILES.getlist('custom_models'):
         filename = custom_model_file.name
         tmp_custom_model_file = os.path.join(temp_directory, filename)
@@ -159,13 +160,16 @@ def newjob_handler(request):
         with open(tmp_custom_model_file, 'wb') as destination:
             for chunk in custom_model_file:
                 destination.write(chunk)
+
+        tmp_custom_model_files.append(tmp_custom_model_file)
+        
         log.debug("Custom model saved: " + str(custom_model_file.name))
 
     # Submit job
     threading.Thread(
         target=job.submit,
         args=(tmp_diff_data_file, contaminants),
-        kwargs={'custom_contaminants':  request.FILES.getlist('custom_models')}
+        kwargs={'custom_contaminants':  tmp_custom_model_files}
         ).start()
 
     response_data = {
