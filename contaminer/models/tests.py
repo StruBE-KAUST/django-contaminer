@@ -2001,10 +2001,10 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "New job 3")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
-        mock_client.exec_command.assert_called_with(
-                'cd "/remote/dir" && /remote/CM/contaminer solve ' \
-                + '"web_task_' + str(job.id) + '.mtz" ' \
-                + '"web_task_' + str(job.id) + '.txt"')
+        mock_client.exec_command_in_shell.assert_called_with(
+            'cd "/remote/dir" && /remote/CM/contaminer solve ' \
+            + '"web_task_' + str(job.id) + '.mtz" ' \
+            + '"web_task_' + str(job.id) + '.txt"')
 
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
@@ -2070,7 +2070,7 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "New job 3")
         job.update_status()
-        mock_client.exec_command.assert_called_with(
+        mock_client.exec_command_in_shell.assert_called_with(
                 '/remote/CM/contaminer job_status /remote/dir/web_task_' \
                         + str(job.id))
 
@@ -2091,27 +2091,27 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "New job 3")
 
-        mock_client.exec_command.return_value = "Job does not exist\n"
+        mock_client.exec_command_in_shell.return_value = "Job does not exist\n"
         job.update_status()
         self.assertEqual(job.status_submitted, False)
         self.assertEqual(job.get_status(), "New")
 
-        mock_client.exec_command.return_value = "Job is submitted\n"
+        mock_client.exec_command_in_shell.return_value = "Job is submitted\n"
         job.update_status()
         self.assertEqual(job.status_submitted, True)
         self.assertEqual(job.get_status(), "Submitted")
 
-        mock_client.exec_command.return_value = "Job is running\n"
+        mock_client.exec_command_in_shell.return_value = "Job is running\n"
         job.update_status()
         self.assertEqual(job.status_running, True)
         self.assertEqual(job.get_status(), "Running")
 
-        mock_client.exec_command.return_value = "Job is complete\n"
+        mock_client.exec_command_in_shell.return_value = "Job is complete\n"
         job.update_status()
         self.assertEqual(job.status_complete, True)
         self.assertEqual(job.get_status(), "Complete")
 
-        mock_client.exec_command.return_value = "Job encountered an error\n"
+        mock_client.exec_command_in_shell.return_value = "Job encountered an error\n"
         job.update_status()
         self.assertEqual(job.status_error, True)
         self.assertEqual(job.get_status(), "Error")
@@ -2126,7 +2126,7 @@ class JobTestCase(TestCase):
         mock_CMConfig.return_value = mock_config
         mock_client = mock.MagicMock(side_effect = RuntimeError())
         property_mock = mock.PropertyMock(side_effect = RuntimeError)
-        mock_client.exec_command = property_mock
+        mock_client.exec_command_in_shell = property_mock
         mock_sshchannel.return_value = mock_client
         job = Job.create(
                 name = "test",

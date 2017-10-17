@@ -171,7 +171,7 @@ class Job(models.Model):
 
         return result
 
-    def submit(self, filepath, contaminants, custom_contaminants=None):
+    def submit(self, filepath, contaminants, custom_contaminants=[]):
         """Send the files to the cluster, then launch ContaMiner."""
         # TODO: Divide in send, then launch
         log = logging.getLogger(__name__)
@@ -215,7 +215,7 @@ class Job(models.Model):
             + str(os.path.basename(remote_contaminants)) + '"'
 
         log.debug("Execute command on remote host:\n" + command)
-        stdout = SSHChannel().exec_command(command)
+        stdout = SSHChannel().exec_command_in_shell(command)
 
         log.debug("stdout: " + str(stdout))
 
@@ -248,7 +248,7 @@ class Job(models.Model):
 
         client = SSHChannel()
         log.debug("Execute command on remote host:\n" + command)
-        stdout = client.exec_command(command)
+        stdout = client.exec_command_in_shell(command)
 
         log.debug("stdout: " + str(stdout))
 

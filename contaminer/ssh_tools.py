@@ -71,8 +71,11 @@ class SSHChannel(paramiko.SSHClient):
                 'port': contaminer_config.ssh_port,
                 'username': contaminer_config.ssh_username,
                 'password': contaminer_config.ssh_password,
-                'key_filename': contaminer_config.ssh_identityfile,
                 }
+            if contaminer_config.ssh_identityfile \
+               and contaminer_config.ssh_identityfile is not '':
+                self.sshconfig['key_filename'] = \
+                    contaminer_config.ssh_identityfile
 
         log.debug("Exit")
         return self.sshconfig
@@ -103,6 +106,17 @@ class SSHChannel(paramiko.SSHClient):
         log.debug("Exit")
         return stdout
 
+    def exec_command_in_shell(self, command):
+        """Execute the given command in a shell to load the env."""
+        log = logging.getLogger(__name__)
+        log.debug("Enter")
+
+        command = command.replace("'", "\'")
+        stdout = self.exec_command("bash -lc '" + command + "'")
+
+        log.debug("Exit")
+        return stdout
+        
     def exec_command(self, *args, **kwargs):
         """Open a channel then execute command on remote destination."""
         log = logging.getLogger(__name__)
