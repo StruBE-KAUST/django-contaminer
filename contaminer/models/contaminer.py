@@ -755,7 +755,7 @@ class Task(models.Model):
                 name="User provided models")
             try:
                 custom_contaminant = Contaminant.objects.get(
-                    uniprot_id=parsed_line['uniprot_id'].upper(),
+                    uniprot_id=parsed_line['uniprot_id'],
                     category=custom_category)
                 custom_pack = Pack.objects.get(contaminant=custom_contaminant)
             except ObjectDoesNotExist:

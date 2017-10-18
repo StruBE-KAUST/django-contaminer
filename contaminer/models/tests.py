@@ -552,7 +552,7 @@ class ContaminantTestCase(TestCase):
                 name = "Protein in E.Coli",
                 )
         Contaminant.objects.create(
-                uniprot_id = "P0acj8",
+                uniprot_id = "P0ACJ8",
                 category = category,
                 short_name = "CRP_ecoli",
                 long_name = "cAMP-activated global transcriptional regulator",
@@ -565,12 +565,6 @@ class ContaminantTestCase(TestCase):
                 uniprot_id = "P0ACJ8",
                 )
         self.assertEqual(str(contaminant), 'P0ACJ8 - CRP_ECOLI')
-
-    def test_Contaminant_uniprot_id_is_uppercase(self):
-        contaminant = Contaminant.objects.get(
-                uniprot_id = "P0ACJ8",
-                )
-        self.assertEqual(contaminant.uniprot_id, 'P0ACJ8')
 
     def test_Contaminant_short_name_is_uppercase(self):
         contaminant = Contaminant.objects.get(
