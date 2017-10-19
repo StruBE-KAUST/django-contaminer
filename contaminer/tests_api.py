@@ -1539,7 +1539,7 @@ class SimpleResultsViewTestCase(TestCase):
         self.assertJSONEqual(response.content,
             {
                 'error': True,
-                'message': 'You are not allowed to see this job',
+                'message': 'You are not allowed to see this job.',
             })
         self.assertEqual(response.status_code, 403)
 
@@ -1568,7 +1568,7 @@ class SimpleResultsViewTestCase(TestCase):
         self.assertJSONEqual(response.content,
             {
                 'error': True,
-                'message': 'You are not allowed to see this job',
+                'message': 'You are not allowed to see this job.',
             })
         self.assertEqual(response.status_code, 403)
 
@@ -1591,7 +1591,7 @@ class SimpleResultsViewTestCase(TestCase):
         self.assertJSONNotEqual(response.content,
             {
                 'error': True,
-                'message': 'You are not allowed to see this job',
+                'message': 'You are not allowed to see this job.',
             })
         self.assertEqual(response.status_code, 200)
 

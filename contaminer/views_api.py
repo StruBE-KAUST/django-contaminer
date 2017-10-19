@@ -294,9 +294,15 @@ class SimpleResultsView(View):
             (not hasattr(request, 'user') or request.user != job.author):
             response_data = {
                 'error': True,
-                'message': 'You are not allowed to see this job'}
+                'message': 'You are not allowed to see this job.'}
             return JsonResponse(response_data, status=403)
 
+        if job.status_error:
+            response_data = {
+                'error': True,
+                'message': 'This job encountered and error.'}
+            return JsonResponse(response_data)
+        
         response_data = job.to_simple_dict()
 
         log.debug("Exit")
