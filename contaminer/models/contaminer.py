@@ -397,7 +397,8 @@ class Job(models.Model):
                     continue
                 if status == 'Complete':
                     error = False # At least one is not in error
-                    best_task = max(task, best_task)
+                    if task.is_better_than(best_task):
+                        best_task = task
 
             if error: # All in error, or no task
                 result_data['status'] = "Error"
@@ -469,7 +470,12 @@ class Job(models.Model):
         if valid_tasks == []:
             return None
 
-        return max(valid_tasks)
+        best_task = None
+        for valid_task in valid_tasks:
+            if valid_task.is_better_than(best_task):
+                best_task = valid_task
+
+        return best_task
 
     def send_submitted_mail(self):
         """If an address is available, send a notification."""
@@ -581,39 +587,44 @@ class Task(models.Model):
             + " / " + str(self.space_group)\
             + " / " + self.get_status()
 
-    def __cmp__(self, other):
+    def is_better_than(self, other):
         """
-        Compare the scores of the two tasks.
+        Compare the scores of two tasks.
 
-        The greatest has the highest percentage, then q_factor, then
-        coverage, then identity.
-        /!\ Does not override __eq__ from django models /!\
-        Allow the usage of <, <=, >, >=
+        Return True if other is None,
+        or if self has a higher percentage than other
+        or if self has a higher q_factor and same percentage
+        or if self has a higer coverage and same q_factor and percentage
+        or if self has a higher identity and same coverage, Q and %
+        Return False otherwise
         """
+        if other is None:
+            return True
+        
         if not isinstance(other, Task):
             return NotImplemented
-
+        
         if self.percent > other.percent:
-            return 1
+            return True
         elif self.percent < other.percent:
-            return -1
+            return False
 
         if self.q_factor > other.q_factor:
-            return 1
+            return True
         elif self.q_factor < other.q_factor:
-            return -1
+            return False
 
         if self.pack.coverage > other.pack.coverage:
-            return 1
+            return True
         elif self.pack.coverage > other.pack.coverage:
-            return -1
+            return False
 
         if self.pack.identity > other.pack.identity:
-            return 1
+            return True
         elif self.pack.identity > other.pack.identity:
-            return -1
+            return False
 
-        return 0
+        return False
 
     def get_status(self):
         """

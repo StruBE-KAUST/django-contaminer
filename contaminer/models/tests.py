@@ -2767,10 +2767,10 @@ class TaskTestCase(TestCase):
                 percent = 51,
                 q_factor = 0.8,
                 )
-        self.assertEqual(task1.__cmp__(task2), -1)
-        self.assertEqual(task2.__cmp__(task1),  1)
-        self.assertEqual(task1.__cmp__(task3),  0)
-        self.assertEqual(task1.__cmp__(task4),  1)
+        self.assertFalse(task1.is_better_than(task2))
+        self.assertTrue(task2.is_better_than(task1))
+        self.assertFalse(task1.is_better_than(task3))
+        self.assertTrue(task1.is_better_than(task4))
 
     def test_comp_gives_expected_result_edge_cases(self):
         task1 = Task.objects.create(
@@ -2794,53 +2794,10 @@ class TaskTestCase(TestCase):
                 percent = 1,
                 q_factor = None,
                 )
-        self.assertEqual(task1.__cmp__(task2), -1)
-        self.assertEqual(task2.__cmp__(task1),  1)
-        self.assertEqual(task1.__cmp__(task3), -1)
-        self.assertEqual(task2.__cmp__(task3),  1)
-
-    def test_comp_extends_to_operators(self):
-        task1 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-2-2-2",
-                percent = 51,
-                q_factor = 0.9,
-                )
-        task2 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-21-2-2",
-                percent = 52,
-                q_factor = 0.9,
-                )
-        task3 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-2-21-2",
-                percent = 52,
-                q_factor = 0.9,
-                )
-
-        self.assertTrue(task1 < task2)
-        self.assertFalse(task1 > task2)
-
-    def test_comp_does_not_override_django__eq__(self):
-        task1 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-21-2-2",
-                percent = 52,
-                q_factor = 0.9,
-                )
-        task2 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-2-21-2",
-                percent = 52,
-                q_factor = 0.9,
-                )
-        self.assertFalse(task1 == task2)
+        self.assertFalse(task1.is_better_than(task2))
+        self.assertTrue(task2.is_better_than(task1))
+        self.assertFalse(task1.is_better_than(task3))
+        self.assertTrue(task2.is_better_than(task3))
 
     def test_get_status_gives_good_result(self):
         task = Task.objects.create(
