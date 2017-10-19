@@ -113,9 +113,7 @@ class ContaBase(models.Model):
     def to_detailed_dict(self):
         """Return a dictionary of the fields and Categories."""
         response_data = {}
-
-        categories = Category.objects.filter(contabase=self).exclude(
-            name="User provided models")
+        categories = Category.get_current()
         categories_dict = [cat.to_detailed_dict() for cat in categories]
         response_data['categories'] = categories_dict
 
@@ -192,6 +190,16 @@ class Category(models.Model):
             Contaminant.update(new_category, contaminant)
 
         log.debug("Exit")
+
+    @classmethod
+    def get_current(cls):
+        """Return all the Categories linked to the current ContaBase, without
+        the "User provided models" """
+        return cls.objects.filter(
+                contabase=ContaBase.get_current()
+            ).exclude(
+                name="User provided models"
+            )
 
     def to_simple_dict(self):
         """Return a dictionary of the fields."""

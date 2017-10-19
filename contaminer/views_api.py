@@ -56,8 +56,7 @@ class CategoriesView(View):
         log.debug("Enter")
 
         try:
-            categories = Category.objects.filter(
-                contabase=ContaBase.get_current())
+            categories = Category.get_current()
         except ObjectDoesNotExist: #happens if no ContaBase is available
             log.debug("Raise 404")
             raise Http404()
@@ -80,8 +79,7 @@ class DetailedCategoriesView(View):
         log.debug("Enter")
 
         try:
-            categories = Category.objects.filter(
-                contabase=ContaBase.get_current())
+            categories = Category.get_current()
         except ObjectDoesNotExist: #happens if no ContaBase is available
             log.debug("Raise 404")
             raise Http404()

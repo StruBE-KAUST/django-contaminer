@@ -98,9 +98,7 @@ class SubmitJobForm(forms.Form):
 
         # Add contaminants selection to form
         try:
-            contabase = ContaBase.get_current()
-            categories = Category.objects.filter(
-                contabase=contabase).exclude(name="User provided models")
+            categories = Category.get_current()
         except ObjectDoesNotExist:
             categories = []
 
