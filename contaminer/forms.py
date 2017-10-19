@@ -100,7 +100,7 @@ class SubmitJobForm(forms.Form):
         try:
             contabase = ContaBase.get_current()
             categories = Category.objects.filter(
-                contabase=contabase)
+                contabase=contabase).exclude(name="User provided models")
         except ObjectDoesNotExist:
             categories = []
 

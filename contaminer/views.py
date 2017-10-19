@@ -55,7 +55,11 @@ class SubmitJobView(View):
 
         try:
             contabase = ContaBase.get_current()
-            categories = Category.objects.filter(contabase=contabase)
+            categories = Category.objects.filter(
+                contabase=contabase,
+            ).exclude(
+                name="User provided models"
+            )
         except ObjectDoesNotExist:
             messages.warning(request, "The ContaBase is empty. You should" \
                     + " update the database before continuing by using" \
