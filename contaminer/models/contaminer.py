@@ -364,7 +364,7 @@ class Job(models.Model):
         """Return the results compiled per contaminant."""
         response_data = {}
         response_data['id'] = self.id
-        messages = None
+        messages = {}
 
         tasks = Task.objects.filter(job=self)
         uniprot_ids = [task.pack.contaminant.uniprot_id for task in tasks]
@@ -378,7 +378,6 @@ class Job(models.Model):
         for uniprot_id in unique_uniprot_ids:
             result_data = {}
             result_data['uniprot_id'] = uniprot_id
-            messages = {}
 
             tasks = Task.objects.filter(
                 job=self,
@@ -665,7 +664,7 @@ class Task(models.Model):
         uniprot_id: any string without comma or new line
         pack_number: integer
         space group: full space group name, dash '-' separated
-        status: can be 'new', 'running', 'completed', or 'error'
+        status: can be 'new', 'running', 'completed', 'aborted' or 'error'
         q_factor: decimal, dot '.' separated
         percent: integer
         elapsed_time: following the regexp '\d+h [\d ]\dm [\d ]\ds'
@@ -723,7 +722,7 @@ class Task(models.Model):
         uniprot_id: any string without comma or new line
         pack_number: integer
         space group: full space group name, dash '-' separated
-        status: can be 'new', 'running', 'completed', or 'error'
+        status: can be 'new', 'running', 'completed', 'aborted', or 'error'
         q_factor: decimal, dot '.' separated
         percent: integer
         elapsed_time: following the regexp '\d+h [\d ]\dm [\d ]\ds'
