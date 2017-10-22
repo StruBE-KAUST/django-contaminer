@@ -374,6 +374,7 @@ class Job(models.Model):
         app_config = apps.get_app_config('contaminer')
         coverage_threshold = app_config.bad_model_coverage_threshold
         identity_threshold = app_config.bad_model_identity_threshold
+        percent_threshold = app_config.threshold
 
         for uniprot_id in unique_uniprot_ids:
             result_data = {}
@@ -415,15 +416,16 @@ class Job(models.Model):
                     result_data['files_available'] = \
                         str(os.path.exists(final_files_path))
 
-                    coverage = best_task.pack.coverage
-                    identity = best_task.pack.identity
-                    if coverage < coverage_threshold \
-                        or identity < identity_threshold:
-                        messages['bad_model'] = \
-                            "Your dataset gives a positive result for a "\
-                            + "contaminant for which no identical model is "\
-                            + "available in the PDB.\nYou could deposit or "\
-                            + "publish this structure."
+                    if best_task.percent > percent_threshold:
+                        coverage = best_task.pack.coverage
+                        identity = best_task.pack.identity
+                        if coverage < coverage_threshold \
+                           or identity < identity_threshold:
+                            messages['bad_model'] = \
+                                "Your dataset gives a positive result for a "\
+                                + "contaminant for which no identical model is "\
+                                + "available in the PDB.\nYou could deposit or "\
+                                + "publish this structure."
 
                 if complete:
                     result_data['status'] = "Complete"

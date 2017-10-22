@@ -1595,7 +1595,9 @@ class SimpleResultsViewTestCase(TestCase):
             })
         self.assertEqual(response.status_code, 200)
 
-    def test_simpleresult_gives_message_when_bad_coverage(self):
+    def test_simpleresult_gives_message_when_bad_coverage_and_pos_task(self):
+        self.task.percent = 99
+        self.task.save()
         self.model.nb_residues = 1
         self.model.save()
         request = self.factory.get(
@@ -1604,7 +1606,20 @@ class SimpleResultsViewTestCase(TestCase):
         response = SimpleResultsView.as_view()(request, self.job.id)
         self.assertTrue('messages' in json.loads(response.content))
 
-    def test_simpleresult_gives_message_when_bad_identity(self):
+    def test_simpleresult_gives_no_message_when_bad_coverage_and_neg_task(self):
+        self.task.percent = 10
+        self.task.save()
+        self.model.nb_residues = 1
+        self.model.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertFalse('messages' in json.loads(response.content))
+        
+    def test_simpleresult_gives_message_when_bad_identity_and_pos_task(self):
+        self.task.percent = 99
+        self.task.save()
         self.model.identity = 10
         self.model.save()
         request = self.factory.get(
@@ -1613,6 +1628,17 @@ class SimpleResultsViewTestCase(TestCase):
         response = SimpleResultsView.as_view()(request, self.job.id)
         self.assertTrue('messages' in json.loads(response.content))
 
+    def test_simpleresult_gives_no_message_when_bad_identity_and_neg_task(self):
+        self.task.percent = 10
+        self.task.save()
+        self.model.identity = 10
+        self.model.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertFalse('messages' in json.loads(response.content))
+        
     def test_simpleresult_gives_uniq_message_when_multiple_bad(self):
         self.contaminant2 = Contaminant.objects.create(
             uniprot_id = "P0ACJ7",
@@ -1635,8 +1661,20 @@ class SimpleResultsViewTestCase(TestCase):
             identity=100,
             pack=self.pack,
             )
+        self.task2 = Task.objects.create(
+            job=self.job,
+            pack=self.pack2,
+            space_group="P-1-2-2",
+            percent=99,
+            q_factor=0.9,
+            status_complete=True)
+        self.task2.save()
+        
         self.model.nb_residues = 1
         self.model.save()
+
+        self.task.percent = 99
+        self.task.save()
 
         request = self.factory.get(
                 reverse('ContaMiner:API:result', args = [25])
@@ -1647,6 +1685,8 @@ class SimpleResultsViewTestCase(TestCase):
         self.assertEqual(len(content['messages']), 1)
 
     def test_simpleresult_gives_no_message_when_everything_good(self):
+        self.task.percent = 99
+        self.task.save()
         request = self.factory.get(
                 reverse('ContaMiner:API:result', args = [25])
                 )
