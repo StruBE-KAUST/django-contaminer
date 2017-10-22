@@ -503,7 +503,7 @@ class CategoryTestCase(TestCase):
                 ]
             }
 
-        self.assertEqual(response_dict, response_expected)
+        self.assertItemsEqual(response_dict, response_expected)
 
     def test_count_gives_good_result(self):
         Contaminant.objects.create(
@@ -885,7 +885,7 @@ class ContaminantTestCase(TestCase):
                 ],
             }
 
-        self.assertEqual(response_dict, response_expected)
+        self.assertItemsEqual(response_dict, response_expected)
 
 
 class PackTestCase(TestCase):
