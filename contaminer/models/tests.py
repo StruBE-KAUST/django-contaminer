@@ -2684,6 +2684,28 @@ class TaskTestCase(TestCase):
                 Task.from_name(self.job, "P0ACJ8_5_P-2-2-2"),
                 task)
 
+    def test_task_from_name_works_with_underscore(self):
+        custom_contaminant = Contaminant.objects.create(
+            uniprot_id="c_5jk4",
+            category=self.category,
+            short_name="CUSTOM",
+            long_name="",
+            sequence="XXXX",
+            organism="Custom")
+        custom_pack = Pack.objects.create(
+            contaminant=custom_contaminant,
+            number=1,
+            structure="1-mer")
+        task = Task.objects.create(
+            job=self.job,
+            pack=custom_pack,
+            space_group="P-1-1-1",
+            percent=99,
+            q_factor=0.9)
+        self.assertEqual(
+            Task.from_name(self.job, "c_5jk4_1_P-1-1-1"),
+            task)
+
     def test_task_works_with_multiple_existing_tasks(self):
         task = Task.objects.create(
                 job = self.job,

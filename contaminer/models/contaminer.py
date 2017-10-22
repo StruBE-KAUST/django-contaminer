@@ -654,7 +654,7 @@ class Task(models.Model):
     @classmethod
     def from_name(cls, job, task_name):
         """Return the task with the given name"""
-        uniprot_id, pack_number, space_group = task_name.split('_')
+        uniprot_id, pack_number, space_group = task_name.rsplit('_', 2)
 
         task = cls.objects.get(
             job=job,
