@@ -1653,22 +1653,22 @@ class JobTestCase(TestCase):
 
     def test_to_simple_dict_gives_running_tasks_new(self):
         task1 = Task.objects.create(
-            job = self.job,
-            pack = self.pack1,
-            space_group = "P-1-2-1",
-            percent = 50,
-            q_factor = 0.60,
-            status_running = True,
-            status_complete = False,
+            job=self.job,
+            pack=self.pack1,
+            space_group="P-1-2-1",
+            percent=50,
+            q_factor=0.60,
+            status_running=True,
+            status_complete=False,
             )
         task2 = Task.objects.create(
-            job = self.job,
-            pack = self.pack2,
-            space_group = "P-1-2-1",
-            percent = 40,
-            q_factor = 0.70,
-            status_running = False,
-            status_complete = True,
+            job=self.job,
+            pack=self.pack2,
+            space_group="P-1-2-1",
+            percent=40,
+            q_factor=0.70,
+            status_running=False,
+            status_complete=True,
             )
         response_dict = self.job.to_simple_dict()
         response_expected = {
@@ -1695,13 +1695,13 @@ class JobTestCase(TestCase):
             status_running = True,
             ).save()
         Task.objects.create(
-            job = self.job,
-            pack = self.pack2,
-            space_group = "P-1-2-1",
-            percent = 40,
-            q_factor = 0.53,
-            status_running = False,
-            status_complete = True,
+            job=self.job,
+            pack=self.pack2,
+            space_group="P-1-2-1",
+            percent=40,
+            q_factor=0.53,
+            status_running=False,
+            status_complete=True,
             ).save()
 
         response_dict = self.job.to_simple_dict()
@@ -1808,19 +1808,19 @@ class JobTestCase(TestCase):
 
     def test_to_simple_dict_gives_complete_scores_tasks_complete_error(self):
         Task.objects.create(
-            job = self.job,
-            pack = self.pack1,
-            space_group = "P-1-2-1",
-            percent = 50,
-            q_factor = 0.60,
-            status_error = True,
+            job=self.job,
+            pack=self.pack1,
+            space_group="P-1-2-1",
+            percent=50,
+            q_factor=0.60,
+            status_error=True,
             ).save()
         Task.objects.create(
-            job = self.job,
-            pack = self.pack2,
-            space_group = "P-1-2-1",
-            percent = 40,
-            q_factor = 0.70,
+            job=self.job,
+            pack=self.pack2,
+            space_group="P-1-2-1",
+            percent=40,
+            q_factor=0.70,
             status_complete = True,
             ).save()
 
@@ -1874,12 +1874,13 @@ class JobTestCase(TestCase):
     @mock.patch('contaminer.models.contaminer.os.path.exists')
     def test_to_simple_dict_gives_available_files(self, mock_exists):
         task1 = Task.objects.create(
-            job = self.job,
-            pack = self.pack1,
-            space_group = "P-1-2-1",
-            percent = 50,
-            q_factor = 0.60,
-            status_complete = True,
+            job=self.job,
+            pack=self.pack1,
+            space_group="P-1-2-1",
+            percent=50,
+            q_factor=0.60,
+            r_free=0.2,
+            status_complete=True,
             )
 
         mock_exists.return_value = True
@@ -1892,6 +1893,7 @@ class JobTestCase(TestCase):
                     'status': 'Complete',
                     'percent': 50,
                     'q_factor': 0.60,
+                    'r_free': 0.2,
                     'pack_number': 1,
                     'space_group': "P-1-2-1",
                     'files_available': "True",
@@ -2987,8 +2989,10 @@ class TaskTestCase(TestCase):
         self.assertEqual(task.percent, 0)
         self.assertEqual(task.q_factor, 0)
 
+    @mock.patch('contaminer.models.contaminer.PDBHandler.get_r_free')
     @mock.patch('contaminer.models.contaminer.Task.get_final_files')
-    def test_update_gets_final_on_high_percentage(self, mock_get):
+    def test_update_gets_final_on_high_percentage(self, mock_get, mock_r_free):
+        mock_r_free.return_value = 0.2
         task = Task.update(self.job,
             "P0ACJ8,5,P-1-2-1,completed,0.414,89,1h 26m  9s")
         self.assertFalse(mock_get.called)

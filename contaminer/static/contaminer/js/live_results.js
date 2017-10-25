@@ -58,6 +58,8 @@ function update_tasks(response) {
                     popover_content += "<dd>" + results[i].space_group + "</dd>";
                     
                     if (results[i].files_available == "True") {
+                        popover_content += "<dt>R Free</dt>";
+                        popover_content += "<dd>" + results[i].r_free + "</dd>";
                         popover_content += "<dt>Files</dt>";
                         task_details = "?id=" + job_id
                             + "&uniprot_id=" + results[i].uniprot_id
