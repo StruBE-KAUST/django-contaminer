@@ -262,7 +262,8 @@ class JobStatusView(View):
         except ObjectDoesNotExist:
             raise Http404()
 
-        if job.confidential:
+        if job.confidential and \
+           (not hasattr(request, 'user') or request.user != job.author):
             response_data = {
                 'error': True,
                 'message': 'You are not allowed to see this job'}
