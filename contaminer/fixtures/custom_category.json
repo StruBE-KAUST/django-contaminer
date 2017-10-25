@@ -1,0 +1,11 @@
+[
+    {
+        "model": "contaminer.category",
+        "fields": {
+            "contabase": 1,
+            "number": 9999,
+            "name": "User provided models",
+            "selected_by_default": false
+        }
+    }
+]

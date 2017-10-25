@@ -113,8 +113,7 @@ class ContaBase(models.Model):
     def to_detailed_dict(self):
         """Return a dictionary of the fields and Categories."""
         response_data = {}
-
-        categories = Category.objects.filter(contabase=self)
+        categories = Category.get_current()
         categories_dict = [cat.to_detailed_dict() for cat in categories]
         response_data['categories'] = categories_dict
 
@@ -192,6 +191,16 @@ class Category(models.Model):
 
         log.debug("Exit")
 
+    @classmethod
+    def get_current(cls):
+        """Return all the Categories linked to the current ContaBase, without
+        the "User provided models" """
+        return cls.objects.filter(
+                contabase=ContaBase.get_current()
+            ).exclude(
+                name="User provided models"
+            )
+
     def to_simple_dict(self):
         """Return a dictionary of the fields."""
         response_data = {}
@@ -225,7 +234,7 @@ class Contaminant(models.Model):
     used to test a file of diffraction data.
     """
 
-    uniprot_id = UpperCaseCharField(max_length=10)
+    uniprot_id = models.CharField(max_length=10)
     category = models.ForeignKey(Category)
     short_name = UpperCaseCharField(max_length=20)
     long_name = models.CharField(max_length=100, null=True, blank=True)

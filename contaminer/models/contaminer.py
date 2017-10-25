@@ -17,7 +17,7 @@
 ##    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Models for ContaMiner application.
+Job-related models for ContaMiner application.
 
 This module contains the classes definition for the application named
 "ContaMiner".
@@ -42,54 +42,78 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import MultipleObjectsReturned
 
-from ..ssh_tools import SSHChannel
-from ..ssh_tools import SFTPChannel
-from .tools import PercentageField
-
+from .contabase import Category
 from .contabase import ContaBase
 from .contabase import Contaminant
+from .contabase import Model
 from .contabase import Pack
-
-
+from ..pdb_tools import PDBHandler
+from ..ssh_tools import SFTPChannel
+from ..ssh_tools import SSHChannel
+from .tools import PercentageField
 
 # pylint: disable=too-many-instance-attributes
 class Job(models.Model):
     """
-    A job is the set of tasks launched to test one diffraction data file.
+    Set of tasks launched to test one diffraction data file.
 
     For each file uploaded by a user, a new Job object is created.
+    :status_submitted: True if the job has been submitted to the cluster
+    :status_running: True if the job tasks has started on the cluster
+    :status_complete: True if the cluster job is finished, and all the data are
+    retrieved to the django application. Usually goes with status_archived
+    :status_error: True if the job encountered any error at any step
+    :status_archived: When true, the cron task will not try to make a future
+    modification to the job.
+    :submission_date: date of the form submission
+    :mail_sent: True if notification mail has been sent. Mainly used for
+    debugging purpose as the mail server looks unstable
+    :name: Displayed name of the job on the end-user side.
+    :author: User who submitted the job if he's logged in. Blank if anonymous.
+    :email: E-mail address used to send any notification
+    :confidential: If true, only the logged in author can see the results of
+    the job.
     """
-
+    # Status
     status_submitted = models.BooleanField(default=False)
     status_running = models.BooleanField(default=False)
     status_complete = models.BooleanField(default=False)
     status_error = models.BooleanField(default=False)
     status_archived = models.BooleanField(default=False)
-
-    submission_date = models.DateField(auto_now_add=True)
     mail_sent = models.BooleanField(default=False)
-
-    name = models.CharField(max_length=50, blank=True, null=True)
+    
+    # Form fields
+    submission_date = models.DateField(auto_now_add=True)
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         blank=True,
         null=True)
+    name = models.CharField(max_length=50, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     confidential = models.BooleanField(default=False)
 
     def __str__(self):
-        """Write id (email)."""
+        """Return id (email) status."""
         return unicode(self).encode('utf-8')
 
     def __unicode__(self):
-        """Write id (email)."""
+        """Return id (email) status."""
         res = str(self.id) + " (" \
                 + str(self.email) + ")" \
                 + " " + self.get_status()
         return res
 
     def get_status(self):
-        """Give the status of the job as a string."""
+        """
+        Return the status of the job as a string.
+
+        :return: status is a string and can be:
+        New
+        Submitted
+        Running
+        Complete
+        Error
+        """
         if self.status_error:
             return "Error"
         if self.status_complete:
@@ -102,7 +126,17 @@ class Job(models.Model):
 
     @classmethod
     def create(cls, name, author=None, email=None, confidential=False):
-        """Populate the fields of a job."""
+        """
+        Create a new job and fill in the fields.
+
+        :param: cls is Job
+        :param: name is the displayed job name
+        :param: author (optional) is the author
+        :param: email (optional) is the address used for notifications
+        :param: confidential (default False) sets the job as confidential if 
+        True
+        :return: The created job
+        """
         log = logging.getLogger(__name__)
         log.debug("Entering function with args :\n\
                 name : " + str(name) + "\n\
@@ -124,7 +158,13 @@ class Job(models.Model):
         return job
 
     def get_filename(self, suffix=''):
-        """Return the name of the file associated to the job."""
+        """
+        Return the name of the file associated to the job.
+
+        :param: suffix is a string to add at the end of the file. Can be
+        the extension.
+        :return: web_task_id.suffix
+        """
         if not suffix:
             result = "web_task_" + str(self.id)
         else:
@@ -134,8 +174,9 @@ class Job(models.Model):
 
         return result
 
-    def submit(self, filepath, contaminants):
+    def submit(self, filepath, contaminants, custom_contaminants=[]):
         """Send the files to the cluster, then launch ContaMiner."""
+        # TODO: Divide in send, then launch
         log = logging.getLogger(__name__)
         log.debug("Entering function with args : \n\
                 self: " + str(self) + "\n\
@@ -145,16 +186,21 @@ class Job(models.Model):
         # Send files to cluster
         remote_work_directory = \
                 apps.get_app_config('contaminer').ssh_work_directory
+        # Input file
         input_file_ext = os.path.splitext(filepath)[1]
         remote_filepath = os.path.join(
             remote_work_directory,
             self.get_filename(suffix=input_file_ext))
+        client = SFTPChannel()
+        client.send_file(filepath, remote_work_directory)
+        # Contaminants list
         remote_contaminants = os.path.join(
             remote_work_directory,
             self.get_filename(suffix='txt'))
-        client = SFTPChannel()
-        client.send_file(filepath, remote_work_directory)
         client.write_file(remote_contaminants, contaminants)
+        # Custom contaminants
+        for custom_model in custom_contaminants:
+            client.send_file(custom_model, remote_work_directory)
 
         # Remove local file
         os.remove(filepath)
@@ -172,13 +218,15 @@ class Job(models.Model):
             + str(os.path.basename(remote_contaminants)) + '"'
 
         log.debug("Execute command on remote host:\n" + command)
-        stdout = SSHChannel().exec_command(command)
+        stdout = SSHChannel().exec_command_in_shell(command)
 
         log.debug("stdout: " + str(stdout))
 
         # Change state
         self.status_submitted = True
         self.save()
+
+        self.send_submitted_mail()
 
         log.debug("Job " + str(self.id) + " submitted")
         log.debug("Exiting function")
@@ -205,7 +253,7 @@ class Job(models.Model):
 
         client = SSHChannel()
         log.debug("Execute command on remote host:\n" + command)
-        stdout = client.exec_command(command)
+        stdout = client.exec_command_in_shell(command)
 
         log.debug("stdout: " + str(stdout))
 
@@ -317,7 +365,7 @@ class Job(models.Model):
         """Return the results compiled per contaminant."""
         response_data = {}
         response_data['id'] = self.id
-        messages = None
+        messages = {}
 
         tasks = Task.objects.filter(job=self)
         uniprot_ids = [task.pack.contaminant.uniprot_id for task in tasks]
@@ -327,11 +375,11 @@ class Job(models.Model):
         app_config = apps.get_app_config('contaminer')
         coverage_threshold = app_config.bad_model_coverage_threshold
         identity_threshold = app_config.bad_model_identity_threshold
+        percent_threshold = app_config.threshold
 
         for uniprot_id in unique_uniprot_ids:
             result_data = {}
             result_data['uniprot_id'] = uniprot_id
-            messages = {}
 
             tasks = Task.objects.filter(
                 job=self,
@@ -343,7 +391,7 @@ class Job(models.Model):
 
             for task in tasks:
                 status = task.get_status()
-                if status == 'New':
+                if status in ['New', 'Running']:
                     complete = False # At least one is not in error
                     error = False # At least one is not complete
                     continue
@@ -351,7 +399,8 @@ class Job(models.Model):
                     continue
                 if status == 'Complete':
                     error = False # At least one is not in error
-                    best_task = max(task, best_task)
+                    if task.is_better_than(best_task):
+                        best_task = task
 
             if error: # All in error, or no task
                 result_data['status'] = "Error"
@@ -365,18 +414,21 @@ class Job(models.Model):
                     final_files_path = os.path.join(\
                         settings.MEDIA_ROOT,
                         best_task.get_final_filename("pdb"))
-                    result_data['files_available'] = \
-                        str(os.path.exists(final_files_path))
+                    files_available = os.path.exists(final_files_path)
+                    result_data['files_available'] = str(files_available)
+                    if files_available:
+                        result_data['r_free'] = best_task.r_free
 
-                    coverage = best_task.pack.coverage
-                    identity = best_task.pack.identity
-                    if coverage < coverage_threshold \
-                        or identity < identity_threshold:
-                        messages['bad_model'] = \
-                            "Your dataset gives a positive result for a "\
-                            + "contaminant for which no identical model is "\
-                            + "available in the PDB.\nYou could deposit or "\
-                            + "publish this structure."
+                    if best_task.percent > percent_threshold:
+                        coverage = best_task.pack.coverage
+                        identity = best_task.pack.identity
+                        if coverage < coverage_threshold \
+                           or identity < identity_threshold:
+                            messages['bad_model'] = \
+                                "Your dataset gives a positive result for a "\
+                                + "contaminant for which no identical model is "\
+                                + "available in the PDB.\nYou could deposit or "\
+                                + "publish this structure."
 
                 if complete:
                     result_data['status'] = "Complete"
@@ -423,10 +475,27 @@ class Job(models.Model):
         if valid_tasks == []:
             return None
 
-        return max(valid_tasks)
+        best_task = None
+        for valid_task in valid_tasks:
+            if valid_task.is_better_than(best_task):
+                best_task = valid_task
 
+        return best_task
+
+    def send_submitted_mail(self):
+        """If an address is available, send a notification."""
+        self.send_mail_notification("submitted")
+                
     def send_complete_mail(self):
-        """If an address is available, send an email."""
+        self.send_mail_notification("complete")
+        self.mail_sent = True
+        self.save()
+        
+    def send_mail_notification(self, notification):
+        """
+        If an address is available, send an email.
+        :notification: can be "complete" or "submitted"
+        """
         log = logging.getLogger(__name__)
         log.debug("Entering function")
 
@@ -454,28 +523,48 @@ class Job(models.Model):
 
         exp_mail = settings.DEFAULT_MAIL_FROM
 
-        message = render_to_string(
-            "ContaMiner/email/complete_message.html",
-            ctx)
+        if notification == "complete":
+            message = render_to_string(
+                "ContaMiner/email/complete_message.html",
+                ctx)
+            title = "ContaMiner job complete"
+        elif notification == "submitted":
+            message = render_to_string(
+                "ContaMiner/email/submitted_message.html",
+                ctx)
+            title = "ContaMiner job submitted"
+        else:
+            raise ValueError("Bad argument. notification can only be " \
+                             + "\"complete\" or \"submitted\".")
+        
         send_mail(
-            "ContaMiner job complete",
+            title,
             "",
             exp_mail,
             [self.email],
             html_message=message)
         log.info("E-Mail sent to " + str(self.email))
 
-        self.mail_sent = True
-        self.save()
-
         log.debug("Exiting function")
 
 
 class Task(models.Model):
     """
-    A task is the test of one pack against one diffraction data file.
+    A task is the test of one pack in one space group against one diffraction
+    data file.
 
     All tasks for one input file make a Job.
+
+    :job: The job this task is part of.
+    :pack: The pack being tested in this task.
+    :space_group: Space group, dash '-' seprated.
+    :status_complete: True if the task is complete.
+    :status_running: True if the task is running on the cluster.
+    :status_error: True if the task encountered an error.
+    :percent: The percent score given by MoRDa (0 if not available).
+    :q_factor: The Q_factor given by MoRDa (0 if not available).
+    :r_free: The R free value of the final PDB file generated by MoRDa.
+    :exec_time: Time of execution (running state) on the cluster.
     """
 
     # Input
@@ -485,11 +574,13 @@ class Task(models.Model):
 
     # State
     status_complete = models.BooleanField(default=False)
+    status_running = models.BooleanField(default=False)
     status_error = models.BooleanField(default=False)
 
     # Result
     percent = PercentageField(null=True, default=None)
     q_factor = models.FloatField(null=True, default=None)
+    r_free = models.FloatField(null=True, default=None)
     exec_time = models.DurationField(default=datetime.timedelta(0))
 
     def __str__(self):
@@ -499,49 +590,61 @@ class Task(models.Model):
     def __unicode__(self):
         """Write job - pack - space group."""
         return str(self.job) \
-                + " / " + str(self.pack)\
-                + " / " + str(self.space_group)\
-                + " / " + self.get_status()
+            + " / " + str(self.pack)\
+            + " / " + str(self.space_group)\
+            + " / " + self.get_status()
 
-    def __cmp__(self, other):
+    def is_better_than(self, other):
         """
-        Compare the scores of the two tasks.
+        Compare the scores of two tasks.
 
-        The greatest has the highest percentage, then q_factor, then coverage,
-        then identity.
-        /!\ Does not override __eq__ from django models /!\
+        Return True if other is None,
+        or if self has a higher percentage than other
+        or if self has a higher q_factor and same percentage
+        or if self has a higer coverage and same q_factor and percentage
+        or if self has a higher identity and same coverage, Q and %
+        Return False otherwise
         """
+        if other is None:
+            return True
+        
         if not isinstance(other, Task):
             return NotImplemented
-
+        
         if self.percent > other.percent:
-            return 1
+            return True
         elif self.percent < other.percent:
-            return -1
+            return False
 
         if self.q_factor > other.q_factor:
-            return 1
+            return True
         elif self.q_factor < other.q_factor:
-            return -1
+            return False
 
         if self.pack.coverage > other.pack.coverage:
-            return 1
+            return True
         elif self.pack.coverage > other.pack.coverage:
-            return -1
+            return False
 
         if self.pack.identity > other.pack.identity:
-            return 1
+            return True
         elif self.pack.identity > other.pack.identity:
-            return -1
+            return False
 
-        return 0
+        return False
 
     def get_status(self):
-        """Return the status as a string."""
+        """
+        Return the status as a string.
+        
+        :return: Status (string) can be Error, Complete, Running, or New
+        """
         if self.status_error:
             return "Error"
         if self.status_complete:
             return "Complete"
+        if self.status_running:
+            return "Running"
         return "New"
 
     def name(self):
@@ -556,7 +659,7 @@ class Task(models.Model):
     @classmethod
     def from_name(cls, job, task_name):
         """Return the task with the given name"""
-        uniprot_id, pack_number, space_group = task_name.split('_')
+        uniprot_id, pack_number, space_group = task_name.rsplit('_', 2)
 
         task = cls.objects.get(
             job=job,
@@ -568,12 +671,35 @@ class Task(models.Model):
 
     @staticmethod
     def parse_line(line):
-        """Parse a line from results.txt to give."""
-        pack, scores, elapsed_time = line.split(':')
+        """
+        Parse a line from results.txt to give.
 
-        # Parse pack
-        uniprot_id, pack_number, space_group = pack.split('_')
+        :param line: line to parse
+        :returns: dictionnary containing the 7 parsed values
+        
+        The line formatting must be 7 fields separated by a comma ',' in this
+        order:
+        uniprot_id: any string without comma or new line
+        pack_number: integer
+        space group: full space group name, dash '-' separated
+        status: can be 'new', 'running', 'completed', 'aborted' or 'error'
+        q_factor: decimal, dot '.' separated
+        percent: integer
+        elapsed_time: following the regexp '\d+h [\d ]\dm [\d ]\ds'
 
+        Return a dictionnary with the keys:
+        uniprot_id: string
+        pack_number: integer
+        space_group: string
+        status: string
+        q_factor: float
+        percent: integer
+        elapsed_seconds: integer
+        """
+        # Split line in fields
+        line_bites = line.split(',')
+        elapsed_time = line_bites[6]
+        
         # Parse time
         try:
             hours, minutes, seconds = re.split(' +', elapsed_time)
@@ -585,28 +711,52 @@ class Task(models.Model):
             seconds = int(seconds[:-1])
             elapsed_seconds = ((hours * 60) + minutes) * 60 + seconds
 
+        # Build results dictionary
         result = {
-            'uniprot_id': uniprot_id,
-            'pack_number': pack_number,
-            'space_group': space_group,
+            'uniprot_id': line_bites[0],
+            'pack_number': int(line_bites[1]),
+            'space_group': line_bites[2],
+            'status': line_bites[3],
+            'q_factor': float(line_bites[4]),
+            'percent': int(line_bites[5]),
             'elapsed_seconds': elapsed_seconds,
-            'scores': scores
             }
 
         return result
 
     @classmethod
     def update(cls, job, line):
-        """Create the task attached to job, with line information."""
+        """
+        Create or update the task attached to job, with line information.
+
+        :param cls: Task class
+        :param job: Job instance. A created task is attached to this job. An
+        updated task must already be attached to this job to be found.
+        :param line: line describing the task.
+        :returns: the created or updated task
+
+        The line formatting must be 7 fields separated by a comma ',' in this
+        order:
+        uniprot_id: any string without comma or new line
+        pack_number: integer
+        space group: full space group name, dash '-' separated
+        status: can be 'new', 'running', 'completed', 'aborted', or 'error'
+        q_factor: decimal, dot '.' separated
+        percent: integer
+        elapsed_time: following the regexp '\d+h [\d ]\dm [\d ]\ds'
+
+        If the task already exist and is complete, not further update is
+        done for this task.
+        """
         log = logging.getLogger(__name__)
         log.debug("Enter")
 
         # Parse line
         try:
             parsed_line = cls.parse_line(line)
-        except ValueError:
+        except (ValueError, IndexError):
             log.warning("Invalid line to parse: " + str(line))
-            raise
+            raise ValueError("Invalid line to parse: " + str(line))
 
         try:
             contaminant = Contaminant.objects.get(
@@ -615,11 +765,42 @@ class Task(models.Model):
             pack = Pack.objects.get(
                 contaminant=contaminant,
                 number=parsed_line['pack_number'])
-        except (ObjectDoesNotExist, MultipleObjectsReturned) as excep:
+        except ObjectDoesNotExist:
+            # Probably a custom contaminant. We try to get a previously existing
+            # one , or create it in the "custom" category
+            custom_category = Category.objects.get(
+                name="User provided models")
+            try:
+                custom_contaminant = Contaminant.objects.get(
+                    uniprot_id=parsed_line['uniprot_id'],
+                    category=custom_category)
+                custom_pack = Pack.objects.get(contaminant=custom_contaminant)
+            except ObjectDoesNotExist:
+                custom_contaminant = Contaminant.objects.create(
+                    uniprot_id=parsed_line['uniprot_id'],
+                    category=custom_category,
+                    short_name=parsed_line['uniprot_id'],
+                    long_name="Custom contaminant",
+                    sequence="XXX",
+                    organism="Unknown")
+                custom_pack = Pack.objects.create(
+                    contaminant=custom_contaminant,
+                    number=1,
+                    structure="1-mer")
+                Model.objects.create(
+                    pdb_code="XXXX",
+                    chain="A",
+                    domain=None,
+                    nb_residues=3,
+                    identity=100,
+                    pack=custom_pack)
+            pack = custom_pack
+                
+        except MultipleObjectsReturned as e:
             log.warning("Multiple contaminants or packs returned.")
-            log.warning(str(excep))
+            log.warning(str(e))
             log.error("Database is not consistent.")
-            raise excep
+            raise e
 
         try:
             task = Task.objects.get(
@@ -632,31 +813,23 @@ class Task(models.Model):
             task.pack = pack
             task.space_group = parsed_line['space_group']
 
-        if parsed_line['scores'] in ["cancelled", "error"]:
-            task.percent = 0
-            task.q_factor = 0.
-
+        if task.status_complete:
+            log.info("Trying to update a complete task. Skipping...")
+            return task
+        
         task.status_complete = \
-            (not parsed_line['scores'] in ["cancelled", "error"])
+            (parsed_line['status'] in ["completed", "aborted"])
+        task.status_running = (parsed_line['status'] == "running")
+        task.status_error = (parsed_line['status'] == "error")
 
-        task.status_error = (parsed_line['scores'] == "error")
+        task.percent = parsed_line['percent']
+        task.q_factor = parsed_line['q_factor']
 
-        if task.status_complete and not task.status_error:
-            log.debug("Task complete")
-            if parsed_line['scores'] in ["nosolution", "aborted"]:
-                task.percent = 0
-                task.q_factor = 0.
-            else:
-                try:
-                    q_factor, percent = parsed_line['scores'].split('-')
-                except ValueError:
-                    log.warning("Invalid line to parse: " + str(line))
-                    raise
-                task.percent = int(percent)
-                task.q_factor = float(q_factor)
-
-                if task.percent > 90:
-                    task.get_final_files()
+        if task.percent > 90:
+            task.get_final_files()
+            # Save R free value
+            final_PDB = PDBHandler(task.get_final_filename('pdb'))
+            task.r_free = final_PDB.get_r_free()
 
         task.exec_time = \
             datetime.timedelta(seconds=parsed_line['elapsed_seconds'])

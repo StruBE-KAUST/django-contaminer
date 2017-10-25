@@ -59,7 +59,7 @@ and displayed to the end-user.
      |                   |---------------------->|   |
      |                   |                       |  Repeat until
      |                   |     status (JSON)     |  status is
-     |                   |<----------------------|  "complete"
+     |                   |<----------------------|  "Complete"
      |                   |                       |   |
      |                   |                       |___|
      |                   |                       |
@@ -76,6 +76,65 @@ and displayed to the end-user.
 
 This workflow can be modified, for example by using a cache version of the 
 list of contaminants. 
+
+A more advanced workflow can take advantage of the various available of
+a job. 
+```
+ __________         ____________        ____________________
+|          |       |            |      |                    |
+| End-user |       | Web server |      | Django application |
+|__________|       |____________|      |  (API provider)    |
+     |                   |             |____________________|
+     |                   |                       |
+     |                   |   GET contaminants    |
+     |                   |---------------------->|
+     |                   |                       |
+     |                   |  contaminants (JSON)  |
+     |                   |<----------------------|
+     |                   |                       |
+     |    Display form   |                       |
+     |<------------------|                       |
+     |                   |                       |
+     |     Send form     |                       |
+     |------------------>|                       |
+     |                   |__                     |
+     |                   |  |                    |
+     |                   |  | Local stuff        |
+     |                   |  |                    |
+     |                   |<--                    |
+     |                   |                       |
+     |                   |    POST submit_job    |
+     |                   |---------------------->|
+     |                   |                       |
+     |                   |     job ID (JSON)     |
+     |                   |<----------------------|
+     |                   |                       |
+     |   Loading page    |                       |
+     |<------------------|                       |
+     |                   |                       |<--
+     |                   |       GET status      |   |
+     |                   |---------------------->|   |
+     |                   |                       |  Repeat until
+     |                   |     status (JSON)     |  status is
+     |                   |<----------------------|  "Running"
+     |                   |                       |   |
+     |                   |                       |___|
+     |                   |                       |
+     |                   |                       |
+     |                   |                       |<--
+     |                   |      GET results      |   |
+     |                   |---------------------->|   |
+     |                   |                       |   |
+     |                   |       results (JSON)  |  Repeat until
+     |                   |<----------------------|  status is
+     |                   |                       |  "Complete"
+     |  Display results  |                       |   |
+     |<------------------|                       |   |
+     |                   |                       |___|
+     |                   |                       |
+```
+Such a workflow allows the Web server to display live results to the End-user,
+while waiting less time before getting the first results.
 
 ## General structure
 Data sent as a reply to a query follow a given structure. This structure is
@@ -137,8 +196,7 @@ ContaBase       Database of possible contaminants which may cristallise
       | |             in the ContaBase.
       | |
       | |=structure   (string) Quaternary structure. Can be :
-      | |             * "monomer" for a monomer
-      | |             * "domain" for a single domain
+      | |             * "1-mer" for a monomer
       | |             * "domains" for a set of domains
       | |             * "2-mer", "3-mer", "4-mer", ...  for a multimer
       | |
@@ -180,16 +238,18 @@ Job             Set of tasks to run with one unique diffraction data file.
   |=id            (int) Unique identifier of the job
   |
   |=status        (string) Current status of the job. Can be:
-  |               * "submitted" when the file is uploaded to the cluster, and
+  |               * "New" if the job has been created but not submitted to the
+  |               cluster.
+  |               * "Submitted" when the file is uploaded to the cluster, and
   |               the tasks are queued
-  |               * "running" if the tasks are running on the cluster
-  |               * "complete" when all the tasks for this job are complete
-  |               * "error" if an error has been encountered (bad file,
+  |               * "Running" if the tasks are running on the cluster
+  |               * "Complete" when all the tasks for this job are complete
+  |               * "Error" if an error has been encountered (bad file,
   |               bad list of contaminants, cluster down, ...)
   |
   |=name          (string) Name of the job, as given during the submission.
   |
-  |*Result        Result of morda_solve for one combinaison of contaminant,
+  |*Task          Result of morda_solve for one combinaison of contaminant,
     |             pack and space group.
     |             The set (uniprot_id, pack_nb, space_group) is unique among
     |             the results for one single job.
@@ -204,16 +264,16 @@ Job             Set of tasks to run with one unique diffraction data file.
     |               P-21-21-21
     |
     |=status        (string) Status of the task. Can be:
-    |               * "complete"
-    |               * "cancelled" if another task gave a positive result
-    |               * "aborted" if the cut-off time limit has been reached
-    |               * "error" if an error has been encountered
+    |               * "New" if the task did not yet start
+    |               * "Running" if the task is running on the cluster
+    |               * "Complete"
+    |               * "Error" if an error has been encountered
+    |
     |=percent       (int) probability for solution to be a good solution.
     |               See MoRDa documentation for more details
     |
     |=q_factor      (float)Indicator of the solution quality.
-    |               See MoRDa documentation
-                    for more details
+    |               See MoRDa documentation for more details
 ```
 
 ## Functions documentation
@@ -270,7 +330,7 @@ Here is the list of available functions.
                     "packs": [
                         {
                             "number": 1,
-                            "structure": "monomer",
+                            "structure": "1-mer",
                             "models": [
                                 {
                                     "template": "3RYP",
@@ -426,7 +486,7 @@ See GET contabase
             "packs": [
                 {
                     "number": 1,
-                    "structure": "monomer",
+                    "structure": "1-mer",
                     "models": [
                         {
                             "template": "3DXB",
@@ -526,7 +586,7 @@ See GET contabase
             "packs": [
                 {
                     "number": 1,
-                    "structure": "monomer",
+                    "structure": "1-mer",
                     "models": [
                         {
                             "template": "3DXB",
@@ -574,7 +634,7 @@ See GET contabase
 > Returns the contaminant with the given uniprot ID
 
 ### Example Request
-> GET https://{domain}/api/containant/P0AA25
+> GET https://{domain}/api/contaminant/P0AA25
 
 ### Example Response
 ```
@@ -606,7 +666,7 @@ See GET contabase
     "packs": [
         {
             "number": 1,
-            "structure": "monomer",
+            "structure": "1-mer",
             "models": [
                 {
                     "template": "3DXB",
@@ -641,17 +701,20 @@ See GET contabase
 ```
 
 ## POST job
-> Parameters: (string) contaminants
->             (file) diffraction_data
+> Parameters: (file) diffraction_data
+>             (string)(opt) contaminants
+>             (files)(opt) custom_models
 >             (string)(opt) email_address
-              (string)(opt) name
+>             (string)(opt) name
 > Returns a new job ID and submits the job to the cluster
 > Returns an error if the submitted file is not valid
 This function submits a new job to the cluster. The job uses
 the diffraction data from $diffraction_data, and tests
 it against the contaminants whose uniprot IDs are in
-$contaminants. When the job is complete, an email is sent
-to "mail_address".
+$contaminants, and/or against the models in $custom_models.
+Either $contaminants or $custom_models has to be provided (or both).
+If available, "mail_address" is used to send a
+notification email when the job is submitted, then complete.
 
 `contaminants` is a list of the uniprot IDs, separated by
 commas, without space.
@@ -692,36 +755,64 @@ $_FILES['diffraction_data'] = An invalid diffraction file
 }
 ```
 
+### Example Request
+>POST http://{domain}/api/job
+with:
+```
+$_POST['email_address'] = 'you@example.com'
+$_POST['name'] = 'MBP or my contaminant?'
+$_POST['contaminants'] = "P0ACJ8,P0AA25,P63165"
+$_FILES['diffraction_data'] = A valid diffraction file
+$_FILES['custom_models'] = A list of valid PDB files
+
+### Example Response
+```
+{
+    "error": false,
+    "id": 169,
+}
+```
+
 ## GET job/status
 > Parameters: (int) job ID
 > Returns the current status of the job with the given job ID
 The returned status can be:
-* "submitted": when the file is uploaded to the server and
-the tasks are queued
-* "running": when the tasks started on the cluster
-* "complete": when all the tasks are complete on the cluster
-* "error": when an error has been encountered
+* "New": when the file has been submitted to the web server,
+but the job is not submitted to the cluster. (Live results are
+not available)
+* "Submitted": when the file is uploaded to the server and
+the tasks are queued. (Live results are not available)
+* "Running": when the tasks started on the cluster. (Live
+results are available)
+* "Complete": when all the tasks are complete on the cluster
+* "Error": when an error has been encountered
 
 ### Example Request
-> GET https://{domain}/api/job/165
+> GET https://{domain}/api/job/status/165
 
 Example Response
 ```
 {
     "id": 165,
-    "status": "submitted"
+    "status": "Submitted"
 }
 ```
 
 ## GET job/result
 > Parameters: (int) job ID
-> Returns the resuls for the job with the given ID.
-> Returns an error if the job is not yet submitted
+> Returns the resuls for the job with the given ID if the job is "Running", or
+"Complete"
+> Returns an error if the job does not exist or its status is "Error"
+> Returns empty results if the job if "New" or "Submitted"
 Use `GET status` to know the current state of the job
 The `pack_number` and `space_group` are the combinaison giving the best
 `q_factor` and `percent` for this `job` and `contaminant`. `files_available`
 indicates if the final files are available for download through the adequate
 URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-jobfinal_mzt))
+The `uniprot_id` for a user-provided model is "c_" followed by the filename of
+the submitted file (without the extension).
+A `messages['bad_model']` field is returned in the response if a positive result is found
+for a contaminant without a known model in the Protein Data Bank.
 
 ### Example Request
 > GET https://{domain}/api/result/166
@@ -740,11 +831,11 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
 ### Example Response
 ```
 {
-    "id": 164,
+    "id": 169,
     "results": [
         {
             "uniprot_id": "P0ACJ8",
-            "status": "complete",
+            "status": "Complete",
             "percent": 51,
             "q_factor": 0.469,
             "pack_number": 1,
@@ -753,7 +844,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
         },
         {
             "uniprot_id": "P0AA25",
-            "status": "complete",
+            "status": "Complete",
             "percent": 99,
             "q_factor": 0.871
             "pack_number": 3,
@@ -761,25 +852,38 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
             "files_available": "True"
         },
         {
-            uniprot_id": "P63165",
-            "status": "running",
+            "uniprot_id": "P63165",
+            "status": "Running",
             "percent": 0,
             "q_factor": 0,
             "files_available": "False"
         }
-    ]
+        {
+            "uniprot_id": "c_myfile",
+            "status": "Running",
+            "percent": 0,
+            "q_factor": 0,
+            "files_available": "False"
+        }
+    ],
+    "messages": {
+        "bad_model": "Your dataset gives a positive result for [... Truncated output ...]"
+    }
 }
 ```
 
 ## GET job/detailed_result
 > Parameters: (int) job ID
 > Returns the results for the job with the given ID,
-> with the result for each space_group and pack pairs
-> Returns an error if the job is not yet submitted
+> with the result for each space_group and pack pairs if the job is "Running", 
+or "Complete"
+> Returns an error if the job does not exist or its status is "Error"
+> Returns empty results if the job is "New" or "Submitted"
 Use `GET status` to know the current state of the job. `files_available`
 indicates if the final files are available for download through the adequate
 URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-jobfinal_mzt))
-
+The `uniprot_id` for a user-provided model is "c_" followed by the filename of
+the submitted file (without the extension).
 
 ### Example Request
 > GET https://{domain}/api/job/detailed_result/166
@@ -804,7 +908,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
              "contaminant_id": "P0ACJ8",
              "pack_nb": 1,
              "space_group": "P-1-2-1",
-             "status": "complete",
+             "status": "Complete",
              "percent": 40,
              "q_factor": 0.411,
              "files_available": "False"
@@ -813,7 +917,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
             "contaminant_id": "P0ACJ8",
             "pack_nb": 2,
             "space_group": "P-1-2-1",
-            "status": "complete",
+            "status": "Complete",
             "percent": 51,
             "q_factor": 0.469,
             "files_available": "False"
@@ -823,7 +927,7 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
             "contaminant_id": "P0AA25",
             "pack_nb": 1,
             "space_group": "P-1-2-1",
-            "status": "complete",
+            "status": "Complete",
             "percent": 99,
             "q_factor": 0.871,
             "files_available": "True"
@@ -844,7 +948,9 @@ URL (see [GET job/final_pdb](#get-jobfinal_pdb) and [GET job/final_mtz](#get-job
 > (for example P-21-21-21), and the given pack number.
 The file is available only if the result for the combination
 of contaminant, space group and pack gave a result with
-a percentage higher than 90.
+a percentage higher than 90. The file is kept for a limited time on
+the server. Check the 'files_available' field of
+[GET job/result](#get-result) and [GET job/detailed_result](#get-detailed_result)
 > Returns an error if the file is not available.
 
 ### Example Request
@@ -875,7 +981,9 @@ PDB file content
 > (for example P-21-21-21), and the given pack number.
 The file is available only if the result for the combination
 of contaminant, space group and pack gave a result with
-a percentage higher than 90.
+a percentage higher than 90. The file is kept for a limited time on
+the server. Check the 'files_available' field of
+[GET job/result](#get-result) and [GET job/detailed_result](#get-detailed_result)
 > Returns an error if the file is not available.
 
 ### Example Request

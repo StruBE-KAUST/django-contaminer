@@ -30,6 +30,17 @@ from .models.contabase import Contaminant
 from .models.contaminer import Job
 
 
+def get_custom_contaminants(request):
+    """Return the list of custom contaminants as string."""
+    log = logging.getLogger(__name__)
+    log.debug("Enter")
+
+    custom_contaminants = '\n'.join(['./' + model_file.name
+        for model_file in request.FILES.getlist('custom_models')])
+
+    log.debug("Exit with: " + str(custom_contaminants))
+    return custom_contaminants
+
 def get_contaminants(request):
     """Return the list of contaminants as string asked in the request."""
     log = logging.getLogger(__name__)
@@ -52,6 +63,8 @@ def get_contaminants(request):
 
     contaminants = contaminants.replace(',', '\n')
 
+    contaminants = '\n'.join([contaminants, get_custom_contaminants(request)])
+
     log.debug("Exit with: " + str(contaminants))
     return contaminants
 
@@ -64,7 +77,7 @@ def newjob_handler(request):
     if not "diffraction_data" in request.FILES:
         response_data = {
             'error': True,
-            'message': 'Missing diffraction data file'}
+            'message': 'Missing diffraction data file.'}
         return response_data
 
     # Check the file extension
@@ -72,7 +85,15 @@ def newjob_handler(request):
     if extension.lower() not in ['.mtz', '.cif']:
         response_data = {
             'error': True,
-            'message': 'File format is not CIF or MTZ'}
+            'message': 'File format is not CIF or MTZ.'}
+        return response_data
+
+    # Check custom PDB files extensions
+    if any([os.path.splitext(model_file.name)[1].lower() != '.pdb'
+            for model_file in request.FILES.getlist('custom_models')]):
+        response_data = {
+            'error': True,
+            'message': 'Wrong file type given as a custom model.'}
         return response_data
 
     # Define user and confidentiality
@@ -83,10 +104,11 @@ def newjob_handler(request):
     except AttributeError:
         user = None
     # If choosen, define confidential
+    confidential = False
     try:
-        confidential = request.POST['confidential']
-    except MultiValueDictKeyError:
-        confidential = False
+        confidential = (request.POST['confidential'] == 'on')
+    except MultiValueDictKeyError, KeyError:
+        pass
     log.debug("User : " + str(user))
     log.debug("Conf : " + str(confidential))
 
@@ -106,7 +128,7 @@ def newjob_handler(request):
 
     # Define list of contaminants
     contaminants = get_contaminants(request)
-    if not contaminants:
+    if not contaminants or contaminants == '\n':
         response_data = {
             'error': True,
             'message': 'Missing list of contaminants'}
@@ -121,22 +143,34 @@ def newjob_handler(request):
     log.debug("Job created")
 
     # Locally save file
+    temp_directory = tempfile.mkdtemp()
     filename = job.get_filename(suffix=extension)
-    tmp_diff_data_file = os.path.join(tempfile.mkdtemp(), filename)
+    tmp_diff_data_file = os.path.join(temp_directory, filename)
 
     with open(tmp_diff_data_file, 'wb') as destination:
         for chunk in request.FILES['diffraction_data']:
             destination.write(chunk)
     log.debug("Diffraction data file saved")
 
+    tmp_custom_model_files = []
+    for custom_model_file in request.FILES.getlist('custom_models'):
+        filename = custom_model_file.name
+        tmp_custom_model_file = os.path.join(temp_directory, filename)
+
+        with open(tmp_custom_model_file, 'wb') as destination:
+            for chunk in custom_model_file:
+                destination.write(chunk)
+
+        tmp_custom_model_files.append(tmp_custom_model_file)
+        
+        log.debug("Custom model saved: " + str(custom_model_file.name))
+
     # Submit job
     threading.Thread(
         target=job.submit,
-        args=(tmp_diff_data_file, contaminants)
+        args=(tmp_diff_data_file, contaminants),
+        kwargs={'custom_contaminants':  tmp_custom_model_files}
         ).start()
-    job.status_submitted = True
-    job.save()
-    log.info("New job submitted: " + str(job))
 
     response_data = {
         'error': False,

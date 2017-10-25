@@ -1269,7 +1269,7 @@ class JobViewTestCase(TestCase):
         self.mock_job_instance.submit.side_effect = self.rm_dir
         self.addCleanup(self.clean_tmp_dir)
 
-    def rm_dir(self, filename, _):
+    def rm_dir(self, filename, _, custom_contaminants=None):
         try:
             shutil.rmtree(os.path.dirname(filename))
         except OSError:
@@ -1329,9 +1329,11 @@ class JobViewTestCase(TestCase):
         request.FILES['diffraction_data'] = self.test_file
 
         response = JobView.as_view()(request)
+        # Add a delay to let the thread start
+        time.sleep(0.01)
         self.mock_job_instance.submit.assert_called_once()
         args, kwargs = self.mock_job_instance.submit.call_args
-        self.assertEqual(args[1], "P0ACJ8\nP0AA25")
+        self.assertEqual(args[1], "P0ACJ8\nP0AA25\n")
 
     @mock.patch('contaminer.views_tools.Job')
     def test_post_returns_job_id(self, mock_Job):
@@ -1537,7 +1539,7 @@ class SimpleResultsViewTestCase(TestCase):
         self.assertJSONEqual(response.content,
             {
                 'error': True,
-                'message': 'You are not allowed to see this job',
+                'message': 'You are not allowed to see this job.',
             })
         self.assertEqual(response.status_code, 403)
 
@@ -1566,7 +1568,7 @@ class SimpleResultsViewTestCase(TestCase):
         self.assertJSONEqual(response.content,
             {
                 'error': True,
-                'message': 'You are not allowed to see this job',
+                'message': 'You are not allowed to see this job.',
             })
         self.assertEqual(response.status_code, 403)
 
@@ -1589,11 +1591,13 @@ class SimpleResultsViewTestCase(TestCase):
         self.assertJSONNotEqual(response.content,
             {
                 'error': True,
-                'message': 'You are not allowed to see this job',
+                'message': 'You are not allowed to see this job.',
             })
         self.assertEqual(response.status_code, 200)
 
-    def test_simpleresult_gives_message_when_bad_coverage(self):
+    def test_simpleresult_gives_message_when_bad_coverage_and_pos_task(self):
+        self.task.percent = 99
+        self.task.save()
         self.model.nb_residues = 1
         self.model.save()
         request = self.factory.get(
@@ -1602,7 +1606,20 @@ class SimpleResultsViewTestCase(TestCase):
         response = SimpleResultsView.as_view()(request, self.job.id)
         self.assertTrue('messages' in json.loads(response.content))
 
-    def test_simpleresult_gives_message_when_bad_identity(self):
+    def test_simpleresult_gives_no_message_when_bad_coverage_and_neg_task(self):
+        self.task.percent = 10
+        self.task.save()
+        self.model.nb_residues = 1
+        self.model.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertFalse('messages' in json.loads(response.content))
+        
+    def test_simpleresult_gives_message_when_bad_identity_and_pos_task(self):
+        self.task.percent = 99
+        self.task.save()
         self.model.identity = 10
         self.model.save()
         request = self.factory.get(
@@ -1611,6 +1628,17 @@ class SimpleResultsViewTestCase(TestCase):
         response = SimpleResultsView.as_view()(request, self.job.id)
         self.assertTrue('messages' in json.loads(response.content))
 
+    def test_simpleresult_gives_no_message_when_bad_identity_and_neg_task(self):
+        self.task.percent = 10
+        self.task.save()
+        self.model.identity = 10
+        self.model.save()
+        request = self.factory.get(
+                reverse('ContaMiner:API:result', args = [25])
+                )
+        response = SimpleResultsView.as_view()(request, self.job.id)
+        self.assertFalse('messages' in json.loads(response.content))
+        
     def test_simpleresult_gives_uniq_message_when_multiple_bad(self):
         self.contaminant2 = Contaminant.objects.create(
             uniprot_id = "P0ACJ7",
@@ -1633,8 +1661,20 @@ class SimpleResultsViewTestCase(TestCase):
             identity=100,
             pack=self.pack,
             )
+        self.task2 = Task.objects.create(
+            job=self.job,
+            pack=self.pack2,
+            space_group="P-1-2-2",
+            percent=99,
+            q_factor=0.9,
+            status_complete=True)
+        self.task2.save()
+        
         self.model.nb_residues = 1
         self.model.save()
+
+        self.task.percent = 99
+        self.task.save()
 
         request = self.factory.get(
                 reverse('ContaMiner:API:result', args = [25])
@@ -1645,6 +1685,8 @@ class SimpleResultsViewTestCase(TestCase):
         self.assertEqual(len(content['messages']), 1)
 
     def test_simpleresult_gives_no_message_when_everything_good(self):
+        self.task.percent = 99
+        self.task.save()
         request = self.factory.get(
                 reverse('ContaMiner:API:result', args = [25])
                 )

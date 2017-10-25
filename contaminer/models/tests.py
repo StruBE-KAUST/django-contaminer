@@ -503,7 +503,7 @@ class CategoryTestCase(TestCase):
                 ]
             }
 
-        self.assertEqual(response_dict, response_expected)
+        self.assertItemsEqual(response_dict, response_expected)
 
     def test_count_gives_good_result(self):
         Contaminant.objects.create(
@@ -552,7 +552,7 @@ class ContaminantTestCase(TestCase):
                 name = "Protein in E.Coli",
                 )
         Contaminant.objects.create(
-                uniprot_id = "P0acj8",
+                uniprot_id = "P0ACJ8",
                 category = category,
                 short_name = "CRP_ecoli",
                 long_name = "cAMP-activated global transcriptional regulator",
@@ -565,12 +565,6 @@ class ContaminantTestCase(TestCase):
                 uniprot_id = "P0ACJ8",
                 )
         self.assertEqual(str(contaminant), 'P0ACJ8 - CRP_ECOLI')
-
-    def test_Contaminant_uniprot_id_is_uppercase(self):
-        contaminant = Contaminant.objects.get(
-                uniprot_id = "P0ACJ8",
-                )
-        self.assertEqual(contaminant.uniprot_id, 'P0ACJ8')
 
     def test_Contaminant_short_name_is_uppercase(self):
         contaminant = Contaminant.objects.get(
@@ -891,7 +885,7 @@ class ContaminantTestCase(TestCase):
                 ],
             }
 
-        self.assertEqual(response_dict, response_expected)
+        self.assertItemsEqual(response_dict, response_expected)
 
 
 class PackTestCase(TestCase):
@@ -1603,6 +1597,7 @@ class JobTestCase(TestCase):
             space_group = "P-1-2-1",
             percent = 50,
             q_factor = 0.60,
+            status_running = False,
             status_complete = False,
             )
         task2 = Task.objects.create(
@@ -1611,10 +1606,21 @@ class JobTestCase(TestCase):
             space_group = "P-1-2-2",
             percent = 40,
             q_factor = 0.70,
+            status_running = False,
             status_complete = True,
+            )
+        task3 = Task.objects.create(
+            job = self.job,
+            pack = self.pack2,
+            space_group = "P-2-2-2",
+            percent = 40,
+            q_factor = 0.70,
+            status_running = True,
+            status_complete = False,
             )
 
         response_dict = self.job.to_detailed_dict()
+        self.maxDiff = None
         response_expected = {
             'id': self.job.id,
             'results': [
@@ -1634,26 +1640,35 @@ class JobTestCase(TestCase):
                     'q_factor': 0.70,
                     'files_available': "False",
                 },
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'pack_nb': 2,
+                    'space_group': "P-2-2-2",
+                    'status': 'Running',
+                    'files_available': "False",
+                },
             ]
         }
         self.assertEqual(response_dict, response_expected)
 
     def test_to_simple_dict_gives_running_tasks_new(self):
         task1 = Task.objects.create(
-            job = self.job,
-            pack = self.pack1,
-            space_group = "P-1-2-1",
-            percent = 50,
-            q_factor = 0.60,
-            status_complete = False,
+            job=self.job,
+            pack=self.pack1,
+            space_group="P-1-2-1",
+            percent=50,
+            q_factor=0.60,
+            status_running=True,
+            status_complete=False,
             )
         task2 = Task.objects.create(
-            job = self.job,
-            pack = self.pack2,
-            space_group = "P-1-2-1",
-            percent = 40,
-            q_factor = 0.70,
-            status_complete = True,
+            job=self.job,
+            pack=self.pack2,
+            space_group="P-1-2-1",
+            percent=40,
+            q_factor=0.70,
+            status_running=False,
+            status_complete=True,
             )
         response_dict = self.job.to_simple_dict()
         response_expected = {
@@ -1677,16 +1692,16 @@ class JobTestCase(TestCase):
             job = self.job,
             pack = self.pack1,
             space_group = "P-1-2-1",
-            percent = 50,
-            q_factor = 0.60,
+            status_running = True,
             ).save()
         Task.objects.create(
-            job = self.job,
-            pack = self.pack2,
-            space_group = "P-1-2-1",
-            percent = 40,
-            q_factor = 0.53,
-            status_complete = True,
+            job=self.job,
+            pack=self.pack2,
+            space_group="P-1-2-1",
+            percent=40,
+            q_factor=0.53,
+            status_running=False,
+            status_complete=True,
             ).save()
 
         response_dict = self.job.to_simple_dict()
@@ -1706,6 +1721,27 @@ class JobTestCase(TestCase):
         }
         self.assertEqual(response_dict, response_expected)
 
+    def test_to_simple_dict_gives_running_if_one_new(self):
+        Task.objects.create(
+            job = self.job,
+            pack = self.pack1,
+            space_group = "P-1-2-1",
+            status_running = False,
+            status_complete = False,
+            ).save()
+
+        response_dict = self.job.to_simple_dict()
+        response_expected = {
+            'id': self.job.id,
+            'results': [
+                {
+                    'uniprot_id': "P0ACJ8",
+                    'status': 'Running',
+                },
+            ]
+        }
+        self.assertEqual(response_dict, response_expected)
+        
     def test_to_simple_dict_gives_running_tasks_new_error(self):
         Task.objects.create(
             job = self.job,
@@ -1772,19 +1808,19 @@ class JobTestCase(TestCase):
 
     def test_to_simple_dict_gives_complete_scores_tasks_complete_error(self):
         Task.objects.create(
-            job = self.job,
-            pack = self.pack1,
-            space_group = "P-1-2-1",
-            percent = 50,
-            q_factor = 0.60,
-            status_error = True,
+            job=self.job,
+            pack=self.pack1,
+            space_group="P-1-2-1",
+            percent=50,
+            q_factor=0.60,
+            status_error=True,
             ).save()
         Task.objects.create(
-            job = self.job,
-            pack = self.pack2,
-            space_group = "P-1-2-1",
-            percent = 40,
-            q_factor = 0.70,
+            job=self.job,
+            pack=self.pack2,
+            space_group="P-1-2-1",
+            percent=40,
+            q_factor=0.70,
             status_complete = True,
             ).save()
 
@@ -1838,12 +1874,13 @@ class JobTestCase(TestCase):
     @mock.patch('contaminer.models.contaminer.os.path.exists')
     def test_to_simple_dict_gives_available_files(self, mock_exists):
         task1 = Task.objects.create(
-            job = self.job,
-            pack = self.pack1,
-            space_group = "P-1-2-1",
-            percent = 50,
-            q_factor = 0.60,
-            status_complete = True,
+            job=self.job,
+            pack=self.pack1,
+            space_group="P-1-2-1",
+            percent=50,
+            q_factor=0.60,
+            r_free=0.2,
+            status_complete=True,
             )
 
         mock_exists.return_value = True
@@ -1856,6 +1893,7 @@ class JobTestCase(TestCase):
                     'status': 'Complete',
                     'percent': 50,
                     'q_factor': 0.60,
+                    'r_free': 0.2,
                     'pack_number': 1,
                     'space_group': "P-1-2-1",
                     'files_available': "True",
@@ -1959,10 +1997,10 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "New job 3")
         job.submit("/local/dir/file.mtz", "cont1\ncont2\n")
-        mock_client.exec_command.assert_called_with(
-                'cd "/remote/dir" && /remote/CM/contaminer solve ' \
-                + '"web_task_' + str(job.id) + '.mtz" ' \
-                + '"web_task_' + str(job.id) + '.txt"')
+        mock_client.exec_command_in_shell.assert_called_with(
+            'cd "/remote/dir" && /remote/CM/contaminer solve ' \
+            + '"web_task_' + str(job.id) + '.mtz" ' \
+            + '"web_task_' + str(job.id) + '.txt"')
 
     @mock.patch('contaminer.models.contaminer.apps.get_app_config')
     @mock.patch('contaminer.models.contaminer.os.remove')
@@ -2028,7 +2066,7 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "New job 3")
         job.update_status()
-        mock_client.exec_command.assert_called_with(
+        mock_client.exec_command_in_shell.assert_called_with(
                 '/remote/CM/contaminer job_status /remote/dir/web_task_' \
                         + str(job.id))
 
@@ -2049,27 +2087,27 @@ class JobTestCase(TestCase):
                 )
         job = Job.objects.get(name = "New job 3")
 
-        mock_client.exec_command.return_value = "Job does not exist\n"
+        mock_client.exec_command_in_shell.return_value = "Job does not exist\n"
         job.update_status()
         self.assertEqual(job.status_submitted, False)
         self.assertEqual(job.get_status(), "New")
 
-        mock_client.exec_command.return_value = "Job is submitted\n"
+        mock_client.exec_command_in_shell.return_value = "Job is submitted\n"
         job.update_status()
         self.assertEqual(job.status_submitted, True)
         self.assertEqual(job.get_status(), "Submitted")
 
-        mock_client.exec_command.return_value = "Job is running\n"
+        mock_client.exec_command_in_shell.return_value = "Job is running\n"
         job.update_status()
         self.assertEqual(job.status_running, True)
         self.assertEqual(job.get_status(), "Running")
 
-        mock_client.exec_command.return_value = "Job is complete\n"
+        mock_client.exec_command_in_shell.return_value = "Job is complete\n"
         job.update_status()
         self.assertEqual(job.status_complete, True)
         self.assertEqual(job.get_status(), "Complete")
 
-        mock_client.exec_command.return_value = "Job encountered an error\n"
+        mock_client.exec_command_in_shell.return_value = "Job encountered an error\n"
         job.update_status()
         self.assertEqual(job.status_error, True)
         self.assertEqual(job.get_status(), "Error")
@@ -2084,7 +2122,7 @@ class JobTestCase(TestCase):
         mock_CMConfig.return_value = mock_config
         mock_client = mock.MagicMock(side_effect = RuntimeError())
         property_mock = mock.PropertyMock(side_effect = RuntimeError)
-        mock_client.exec_command = property_mock
+        mock_client.exec_command_in_shell = property_mock
         mock_sshchannel.return_value = mock_client
         job = Job.create(
                 name = "test",
@@ -2648,6 +2686,28 @@ class TaskTestCase(TestCase):
                 Task.from_name(self.job, "P0ACJ8_5_P-2-2-2"),
                 task)
 
+    def test_task_from_name_works_with_underscore(self):
+        custom_contaminant = Contaminant.objects.create(
+            uniprot_id="c_5jk4",
+            category=self.category,
+            short_name="CUSTOM",
+            long_name="",
+            sequence="XXXX",
+            organism="Custom")
+        custom_pack = Pack.objects.create(
+            contaminant=custom_contaminant,
+            number=1,
+            structure="1-mer")
+        task = Task.objects.create(
+            job=self.job,
+            pack=custom_pack,
+            space_group="P-1-1-1",
+            percent=99,
+            q_factor=0.9)
+        self.assertEqual(
+            Task.from_name(self.job, "c_5jk4_1_P-1-1-1"),
+            task)
+
     def test_task_works_with_multiple_existing_tasks(self):
         task = Task.objects.create(
                 job = self.job,
@@ -2731,10 +2791,10 @@ class TaskTestCase(TestCase):
                 percent = 51,
                 q_factor = 0.8,
                 )
-        self.assertEqual(task1.__cmp__(task2), -1)
-        self.assertEqual(task2.__cmp__(task1),  1)
-        self.assertEqual(task1.__cmp__(task3),  0)
-        self.assertEqual(task1.__cmp__(task4),  1)
+        self.assertFalse(task1.is_better_than(task2))
+        self.assertTrue(task2.is_better_than(task1))
+        self.assertFalse(task1.is_better_than(task3))
+        self.assertTrue(task1.is_better_than(task4))
 
     def test_comp_gives_expected_result_edge_cases(self):
         task1 = Task.objects.create(
@@ -2758,53 +2818,10 @@ class TaskTestCase(TestCase):
                 percent = 1,
                 q_factor = None,
                 )
-        self.assertEqual(task1.__cmp__(task2), -1)
-        self.assertEqual(task2.__cmp__(task1),  1)
-        self.assertEqual(task1.__cmp__(task3), -1)
-        self.assertEqual(task2.__cmp__(task3),  1)
-
-    def test_comp_extends_to_operators(self):
-        task1 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-2-2-2",
-                percent = 51,
-                q_factor = 0.9,
-                )
-        task2 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-21-2-2",
-                percent = 52,
-                q_factor = 0.9,
-                )
-        task3 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-2-21-2",
-                percent = 52,
-                q_factor = 0.9,
-                )
-
-        self.assertTrue(task1 < task2)
-        self.assertFalse(task1 > task2)
-
-    def test_comp_does_not_override_django__eq__(self):
-        task1 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-21-2-2",
-                percent = 52,
-                q_factor = 0.9,
-                )
-        task2 = Task.objects.create(
-                job = self.job,
-                pack = self.pack,
-                space_group = "P-2-21-2",
-                percent = 52,
-                q_factor = 0.9,
-                )
-        self.assertFalse(task1 == task2)
+        self.assertFalse(task1.is_better_than(task2))
+        self.assertTrue(task2.is_better_than(task1))
+        self.assertFalse(task1.is_better_than(task3))
+        self.assertTrue(task2.is_better_than(task3))
 
     def test_get_status_gives_good_result(self):
         task = Task.objects.create(
@@ -2874,7 +2891,8 @@ class TaskTestCase(TestCase):
                 "web_task_" + str(self.job.id) + "/P0ACJ8_5_P-2-2-2.pdb")
 
     def test_update_create_new_task(self):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,running,0.414,52,1h 26m  9s")
         self.assertTrue(task.id is not None)
 
     def test_update_use_existing_task(self):
@@ -2884,76 +2902,102 @@ class TaskTestCase(TestCase):
                 space_group = "P-1-2-1",
                 )
         task1.save()
-        task2 = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
+        task2 = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,running,0.414,52,1h 26m  9s")
         self.assertEqual(task1.id, task2.id)
 
     def test_update_raises_error_on_bad_line(self):
         with self.assertRaises(ValueError):
             task = Task.update(self.job, "Tata yoyo")
         with self.assertRaises(ValueError):
-            task = Task.update(self.job, "1:2:3")
+            task = Task.update(self.job, "1,2,3")
 
     def test_update_creates_good_task(self):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-52:1h 26m  9s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-1-1,completed,0.414,52,1h 26m  9s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
-        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertEqual(task.space_group, "P-1-1-1")
         self.assertTrue(task.status_complete)
+        self.assertFalse(task.status_running)
         self.assertFalse(task.status_error)
         self.assertEqual(task.percent, 52)
         self.assertEqual(task.q_factor, 0.414)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 5169))
 
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:nosolution:2h 26m  9s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-1-2,completed,0,0,2h 26m  9s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
-        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertEqual(task.space_group, "P-1-1-2")
         self.assertTrue(task.status_complete)
+        self.assertFalse(task.status_running)
         self.assertFalse(task.status_error)
         self.assertEqual(task.percent, 0)
         self.assertEqual(task.q_factor, 0)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 8769))
 
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:cancelled:0h  0m  0s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,running,0,0,0h  0m  0s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
         self.assertEqual(task.space_group, "P-1-2-1")
         self.assertFalse(task.status_complete)
+        self.assertTrue(task.status_running)
         self.assertFalse(task.status_error)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 0))
 
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:error:1h  1m  1s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-2,new,0,0,0h  0m  0s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
-        self.assertEqual(task.space_group, "P-1-2-1")
+        self.assertEqual(task.space_group, "P-1-2-2")
+        self.assertFalse(task.status_complete)
+        self.assertFalse(task.status_running)
+        self.assertFalse(task.status_error)
+        self.assertEqual(task.exec_time, datetime.timedelta(seconds = 0))
+
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-2-1-1,error,0,0,1h  1m  1s")
+        self.assertEqual(task.job, self.job)
+        self.assertEqual(task.pack, self.pack)
+        self.assertEqual(task.space_group, "P-2-1-1")
         self.assertTrue(task.status_error)
         self.assertEqual(task.exec_time, datetime.timedelta(seconds = 3661))
 
     def test_update_works_on_error(self):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:error:")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,error,0,0,0h  0m  0s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
         self.assertEqual(task.space_group, "P-1-2-1")
         self.assertFalse(task.status_complete)
+        self.assertFalse(task.status_running)
         self.assertTrue(task.status_error)
         self.assertEqual(task.percent, 0)
         self.assertEqual(task.q_factor, 0)
 
     def test_update_works_on_aborted(self):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:aborted:")
+        task = Task.update(self.job,
+                           "P0ACJ8,5,P-1-2-1,aborted,0,0,0h  0m  0s")
         self.assertEqual(task.job, self.job)
         self.assertEqual(task.pack, self.pack)
         self.assertEqual(task.space_group, "P-1-2-1")
         self.assertTrue(task.status_complete)
+        self.assertFalse(task.status_running)
         self.assertFalse(task.status_error)
         self.assertEqual(task.percent, 0)
         self.assertEqual(task.q_factor, 0)
 
+    @mock.patch('contaminer.models.contaminer.PDBHandler.get_r_free')
     @mock.patch('contaminer.models.contaminer.Task.get_final_files')
-    def test_update_gets_final_on_high_percentage(self, mock_get):
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-89:1h 26m  9s")
+    def test_update_gets_final_on_high_percentage(self, mock_get, mock_r_free):
+        mock_r_free.return_value = 0.2
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-1,completed,0.414,89,1h 26m  9s")
         self.assertFalse(mock_get.called)
-        task = Task.update(self.job, "P0ACJ8_5_P-1-2-1:0.414-91:1h 26m  9s")
+        task = Task.update(self.job,
+            "P0ACJ8,5,P-1-2-2,completed,0.414,91,1h 26m  9s")
         self.assertTrue(mock_get.called)
 
     @mock.patch('contaminer.models.contaminer.os.makedirs')

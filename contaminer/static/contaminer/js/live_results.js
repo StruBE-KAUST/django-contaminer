@@ -32,49 +32,53 @@ function update_tasks(response) {
             }
             // Build content of popover
             var popover_content = "<dl>";
-            if (results[i].percent == 0) {
-                popover_content += "<dt>No solution</dt>";
-            } else {
-                // Update indicator
-                var indicator = li.querySelector(".fa_result");
-                indicator.classList.remove(
-                    "fa-times-circle", "failure",
-                    "fa-question-circle", "warning",
-                    "fa-check-circle", "success");
-                // percent_threshold is defined in result.html by django tag
-                if (results[i].percent > percent_threshold) {
-                    indicator.className += " fa-check-circle success";
-                } else { // We already know percent != 0
-                    indicator.className += " fa-question-circle warning";
-                }
-
-                // Update popover content
-                popover_content += "<dt>Percent</dt>";
-                popover_content += "<dd>" + results[i].percent + "</dd>";
-                popover_content += "<dt>Q factor</dt>";
-                popover_content += "<dd>" + results[i].q_factor + "</dd>";
-                popover_content += "<dt>Space group</dt>";
-                popover_content += "<dd>" + results[i].space_group + "</dd>";
-
-                if (results[i].files_available == "True") {
-                    popover_content += "<dt>Files</dt>";
-                    task_details = "?id=" + job_id
-                        + "&uniprot_id=" + results[i].uniprot_id
-                        + "&space_group=" + results[i].space_group
-                        + "&pack_nb=" + results[i].pack_number;
-                    pdb_url = api_url + "/final_pdb" + task_details;
-                    mtz_url = api_url + "/final_mtz" + task_details;
-                    popover_content += "<dd><a href=\"" + pdb_url + "\">PDB</a></dd>";
-                    popover_content += "<dd><a href=\"" + mtz_url + "\">MTZ</a></dd>";
-                    task_name = results[i].uniprot_id + '_'
-                        + results[i].pack_number + '_'
-                        + results[i].space_group
+            if (results[i].hasOwnProperty("percent")) {
+                if (results[i].percent == 0) {
+                    popover_content += "<dt>No solution</dt>";
+                } else {
+                    // Update indicator
+                    var indicator = li.querySelector(".fa_result");
+                    indicator.classList.remove(
+                        "fa-times-circle", "failure",
+                        "fa-question-circle", "warning",
+                        "fa-check-circle", "success");
+                    // percent_threshold is defined in result.html by django tag
+                    if (results[i].percent > percent_threshold) {
+                        indicator.className += " fa-check-circle success";
+                    } else { // We already know percent != 0
+                        indicator.className += " fa-question-circle warning";
+                    }
+                    
+                    // Update popover content
+                    popover_content += "<dt>Percent</dt>";
+                    popover_content += "<dd>" + results[i].percent + "</dd>";
+                    popover_content += "<dt>Q factor</dt>";
+                    popover_content += "<dd>" + results[i].q_factor + "</dd>";
+                    popover_content += "<dt>Space group</dt>";
+                    popover_content += "<dd>" + results[i].space_group + "</dd>";
+                    
+                    if (results[i].files_available == "True") {
+                        popover_content += "<dt>R Free</dt>";
+                        popover_content += "<dd>" + results[i].r_free + "</dd>";
+                        popover_content += "<dt>Files</dt>";
+                        task_details = "?id=" + job_id
+                            + "&uniprot_id=" + results[i].uniprot_id
+                            + "&space_group=" + results[i].space_group
+                            + "&pack_nb=" + results[i].pack_number;
+                        pdb_url = api_url + "/final_pdb" + task_details;
+                        mtz_url = api_url + "/final_mtz" + task_details;
+                        popover_content += "<dd><a href=\"" + pdb_url + "\">PDB</a></dd>";
+                        popover_content += "<dd><a href=\"" + mtz_url + "\">MTZ</a></dd>";
+                        task_name = results[i].uniprot_id + '_'
+                            + results[i].pack_number + '_'
+                            + results[i].space_group
                     ugl_url = uglymol_url + task_name;
-                    popover_content += "<dd><a href=\"" + ugl_url + "\">Uglymol (beta)</a></dd>";
+                        popover_content += "<dd><a href=\"" + ugl_url + "\">Uglymol (beta)</a></dd>";
+                    }
                 }
+                popover_content += "</dl>";
+                li.querySelector("a").setAttribute("data-content", popover_content);
             }
-            popover_content += "</dl>";
-            li.querySelector("a").setAttribute("data-content", popover_content);
         }
     }
 

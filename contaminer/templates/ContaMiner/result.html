@@ -6,7 +6,9 @@
 <h1>{{ job.name }}</h1>
 <div id="messages_placeholder"></div>
 <p>
-  If you liked ContaMiner, please add <q class="mark">data were checked if for protein contaminants using ContaMiner [Hungler et al., 2016]</q> to your methods section.
+  If you liked ContaMiner, you can support us by adding <q class="mark">data
+    were checked for protein contaminants using ContaMiner
+    [Hungler et al., 2016]</q> to your methods section.
 </p>
 <dl>
     {% for category in categories %}
@@ -20,11 +22,13 @@
                data-toggle="popover"
                data-trigger="focus"
                data-html="true"
+               {% if category.name != "User provided models" %}
                title='<a target="blank"
         href="http://www.uniprot.org/uniprot/{{ contaminant.uniprot_id }}">
                     Uniprot
                </a>'
-               data-content=''>
+               {% endif %}
+               data-content='No result yet. Please wait.'>
                 {{ contaminant.short_name }} - {{ contaminant.long_name }}
             </a>
         </li>
