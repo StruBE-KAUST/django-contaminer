@@ -29,6 +29,8 @@ import logging
 import paramiko
 
 from django.apps import apps
+from django.conf import settings
+from shutil import copy2
 
 class SSHChannel(paramiko.SSHClient):
     """
@@ -116,7 +118,7 @@ class SSHChannel(paramiko.SSHClient):
 
         log.debug("Exit")
         return stdout
-        
+
     def exec_command(self, *args, **kwargs):
         """Open a channel then execute command on remote destination."""
         log = logging.getLogger(__name__)
@@ -206,7 +208,9 @@ class SFTPChannel(SSHChannel):
             try:
                 sftp_client.put(filename, remote_filename, confirm=True)
             except IOError as exception:
-                log.warning("Unable to upload file.")
+                log.error("Unable to upload file: " + str(e))
+                log.error("Save files in media root.")
+                copy2(filename, settings.MEDIA_ROOT)
                 raise exception
 
         log.debug("Exit")
