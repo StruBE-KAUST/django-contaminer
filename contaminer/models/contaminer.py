@@ -828,7 +828,9 @@ class Task(models.Model):
         if task.percent > 90:
             task.get_final_files()
             # Save R free value
-            final_PDB = PDBHandler(task.get_final_filename('pdb'))
+            final_PDB_location = os.path.join(settings.MEDIA_ROOT,
+                task.get_final_filename('pdb'))
+            final_PDB = PDBHandler(final_PDB_location)
             task.r_free = final_PDB.get_r_free()
 
         task.exec_time = \
