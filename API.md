@@ -833,17 +833,17 @@ $_FILES['custom_models'] = A list of valid PDB files
 > * (int) job ID
 >
 >
-> Return the current status of the job with the given job ID
-The returned status can be:
-* "New": when the file has been submitted to the web server,
+> Return the current status of the job with the given job ID.
+> The returned status can be:
+> * "New": when the file has been submitted to the web server,
 but the job is not submitted to the cluster. (Live results are
 not available)
-* "Submitted": when the file is uploaded to the server and
+> * "Submitted": when the file is uploaded to the server and
 the tasks are queued. (Live results are not available)
-* "Running": when the tasks started on the cluster. (Live
+> * "Running": when the tasks started on the cluster. (Live
 results are available)
-* "Complete": when all the tasks are complete on the cluster
-* "Error": when an error has been encountered
+> * "Complete": when all the tasks are complete on the cluster.
+> * "Error": when an error has been encountered.
 
 ###### Example Request
 ```
@@ -871,7 +871,7 @@ GET https://{domain}/api/job/status/165
 > Returns empty results if the job if "New" or "Submitted"
 
 
-Use `GET status` to know the current state of the job.
+Use [`GET job/status`](#get-jobstatus) to know the current state of the job.
 
 
 The `pack_number` and `space_group` are the combinaison giving the best
@@ -962,7 +962,7 @@ or "Complete".
 >
 > Return empty results if the job is "New" or "Submitted"
 
-Use `GET status` to know the current state of the job. `files_available`
+Use [`GET job/status`](#get-jobstatus) to know the current state of the job. `files_available`
 indicates if the final files are available for download through the adequate
 URL (see [`GET job/final_pdb`](#get-jobfinal_pdb) and [`GET job/final_mtz`](#get-jobfinal_mzt))
 
