@@ -247,7 +247,11 @@ class SFTPChannel(SSHChannel):
         with self as sftp_client:
             log.info("Get " + str(remote_filename) \
                     + " to " + str(local_filename))
-            sftp_client.get(remote_filename, local_filename)
+            try:
+                sftp_client.get(remote_filename, local_filename)
+            except IOError:
+                log.error("Missing: " + remote_filename)
+                raise
 
         log.debug("Exit")
 
