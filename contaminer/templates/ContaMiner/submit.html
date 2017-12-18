@@ -74,24 +74,19 @@ ContaMiner and ContaBase: a web server and database for early identification of 
 crystallized protein contaminants<br/>
 J. Appl. Cryst. 49, 2252-2258<br/>
 <a target="_blank" href="http://scripts.iucr.org/cgi-bin/paper?ei5009">Read it here</a></p>
-<p>ContaMiner heavily relies on MoRDa, Molrep, and Refmac. We therefore recommend to
-also cite:</p>
+<p>ContaMiner heavily relies on MoRDa. We therefore recommend to also cite:</p>
 </p>Vagin A. &amp; Lebedev A (2015)<br/>
 MoRDa, an automatic molecualr replacement pipeline<br/>
 Acta Cryst. A71, s19<br/>
 <a target="_blank" href="http://scripts.iucr.org/cgi-bin/paper?S2053273315099672">Read it here</a></p>
-<p>Vagin A. &amp; Teplyakov, A. (1997)<br/>
-MOLREP: an automated Program for Molecular Replacement<br/>
-J. Appl. Cryst. 30, 1022-1025<br/>
-<a target="_blank" href="http://scripts.iucr.org/cgi-bin/paper?S0021889897006766">Read it
-    here</a>
 </p>
 
 <h3>It's your turn</h3>
 <div class="row">
     <div class="col-md-8">
-        <p><i class="fa fa-exclamation-triangle warning"></i> Submitting StarAniso files
-can give you suspicious results. Use with care!</P>
+        <p><i class="fa fa-exclamation-triangle warning"></i> Submitting
+        anisotropically cut data can produce false positive, because of
+        possible anomalies within certain CCP4 programs. Use with care!</p>
         {% load crispy_forms_tags %}
         {% crispy form %}
     </div>
