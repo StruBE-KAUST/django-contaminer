@@ -234,7 +234,7 @@ class Contaminant(models.Model):
     used to test a file of diffraction data.
     """
 
-    uniprot_id = models.CharField(max_length=10)
+    uniprot_id = models.CharField(max_length=100)
     category = models.ForeignKey(Category)
     short_name = UpperCaseCharField(max_length=20)
     long_name = models.CharField(max_length=100, null=True, blank=True)
