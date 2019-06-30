@@ -73,7 +73,7 @@ function update_tasks(response) {
                             + results[i].pack_number + '_'
                             + results[i].space_group
                     ugl_url = uglymol_url + task_name;
-                        popover_content += "<dd><a href=\"" + ugl_url + "\">Uglymol</a></dd>";
+                        popover_content += "<dd><a target=\"_blank\" href=\"" + ugl_url + "\">Uglymol</a></dd>";
                     }
                 }
                 popover_content += "</dl>";
